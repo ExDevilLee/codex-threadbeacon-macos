@@ -10,6 +10,9 @@
 
 后续功能设想与验证顺序见 [`ROADMAP.md`](ROADMAP.md)。
 
+GitHub 同类项目、实现差异、命名风险与可参考功能候选见
+[`docs/prior-art-review.md`](docs/prior-art-review.md)。
+
 ## 运行
 
 在本目录执行：

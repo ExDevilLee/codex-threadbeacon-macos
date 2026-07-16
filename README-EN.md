@@ -10,6 +10,10 @@ This is an unofficial community project. It is not affiliated with or endorsed b
 
 See [`ROADMAP.md`](ROADMAP.md) for planned features and their proposed validation order.
 
+See the Chinese
+[`prior-art review`](docs/prior-art-review.md) for related GitHub projects,
+implementation differences, naming risks, and feature candidates.
+
 ## Run
 
 From the project directory:
