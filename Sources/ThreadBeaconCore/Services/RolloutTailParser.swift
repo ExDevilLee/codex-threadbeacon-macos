@@ -33,6 +33,9 @@ public struct RolloutTailParser: Sendable {
         var latestTurn: Date?
         var latestFinal: Date?
         var latestEvent: Date?
+        var latestTokenUsage: TokenUsage?
+        var latestTokenEventAt: Date?
+        var currentTurnBaseline: TokenUsage?
 
         for line in lines {
             guard
@@ -47,6 +50,18 @@ public struct RolloutTailParser: Sendable {
 
             if object["type"] as? String == "turn_context" {
                 latestTurn = max(latestTurn ?? .distantPast, date)
+            }
+
+            if object["type"] as? String == "event_msg",
+               let payload = object["payload"] as? [String: Any],
+               let eventType = payload["type"] as? String {
+                if eventType == "task_started" {
+                    currentTurnBaseline = latestTokenUsage
+                } else if eventType == "token_count",
+                          let usage = parseTokenUsage(from: payload) {
+                    latestTokenUsage = usage
+                    latestTokenEventAt = date
+                }
             }
 
             guard
@@ -78,11 +93,55 @@ public struct RolloutTailParser: Sendable {
             statusChangedAt = latestTurn
         }
 
+        let tokenSnapshot = latestTokenUsage.map { usage in
+            TokenUsageSnapshot(
+                totalTokens: usage.totalTokens,
+                cumulative: usage,
+                currentTurn: currentTurnBaseline.flatMap(usage.subtracting),
+                updatedAt: latestTokenEventAt
+            )
+        }
+
         return RolloutObservation(
             status: status,
             statusChangedAt: statusChangedAt,
-            latestEventAt: latestEvent
+            latestEventAt: latestEvent,
+            tokenUsage: tokenSnapshot
         )
+    }
+
+    private func parseTokenUsage(from payload: [String: Any]) -> TokenUsage? {
+        guard
+            let info = payload["info"] as? [String: Any],
+            let totals = info["total_token_usage"] as? [String: Any],
+            let input = nonnegativeInt64(totals["input_tokens"]),
+            let cachedInput = nonnegativeInt64(totals["cached_input_tokens"]),
+            let output = nonnegativeInt64(totals["output_tokens"]),
+            let reasoningOutput = nonnegativeInt64(totals["reasoning_output_tokens"]),
+            let total = nonnegativeInt64(totals["total_tokens"]),
+            cachedInput <= input,
+            reasoningOutput <= output
+        else {
+            return nil
+        }
+        return TokenUsage(
+            inputTokens: input,
+            cachedInputTokens: cachedInput,
+            outputTokens: output,
+            reasoningOutputTokens: reasoningOutput,
+            totalTokens: total
+        )
+    }
+
+    private func nonnegativeInt64(_ value: Any?) -> Int64? {
+        guard let number = value as? NSNumber else {
+            return nil
+        }
+        let integer = number.int64Value
+        guard integer >= 0, number.doubleValue == Double(integer) else {
+            return nil
+        }
+        return integer
     }
 
     private func parseDate(_ value: String) -> Date? {

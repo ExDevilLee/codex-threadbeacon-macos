@@ -77,5 +77,93 @@ let rolloutTailParserTests = [
         let result = try RolloutTailParser().parse(fileURL: temporaryURL)
 
         try expect(result.status == .justCompleted, "complete line after truncated prefix should parse")
+    },
+    TestCase(name: "token events expose cumulative usage and current turn delta") {
+        let lines = [
+            tokenEvent(
+                timestamp: "2026-07-16T01:00:00Z",
+                input: 900,
+                cached: 400,
+                output: 100,
+                reasoning: 30,
+                total: 1_000
+            ),
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            tokenEvent(
+                timestamp: "2026-07-16T01:02:00Z",
+                input: 1_350,
+                cached: 650,
+                output: 150,
+                reasoning: 40,
+                total: 1_500
+            )
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.tokenUsage?.totalTokens == 1_500, "latest cumulative total should be retained")
+        try expect(result.tokenUsage?.currentTurn?.inputTokens == 450, "turn input should use cumulative delta")
+        try expect(result.tokenUsage?.currentTurn?.cachedInputTokens == 250, "turn cache should use cumulative delta")
+        try expect(result.tokenUsage?.currentTurn?.outputTokens == 50, "turn output should use cumulative delta")
+    },
+    TestCase(name: "token delta is absent without a reliable baseline") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            tokenEvent(
+                timestamp: "2026-07-16T01:02:00Z",
+                input: 1_350,
+                cached: 650,
+                output: 150,
+                reasoning: 40,
+                total: 1_500
+            )
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.tokenUsage?.totalTokens == 1_500, "cumulative total should still be available")
+        try expect(result.tokenUsage?.currentTurn == nil, "missing baseline must not invent a turn total")
+    },
+    TestCase(name: "duplicate cumulative token events are not added together") {
+        let lines = [
+            tokenEvent(timestamp: "2026-07-16T01:00:00Z", input: 900, cached: 400,
+                       output: 100, reasoning: 30, total: 1_000),
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            tokenEvent(timestamp: "2026-07-16T01:02:00Z", input: 1_350, cached: 650,
+                       output: 150, reasoning: 40, total: 1_500),
+            tokenEvent(timestamp: "2026-07-16T01:03:00Z", input: 1_350, cached: 650,
+                       output: 150, reasoning: 40, total: 1_500)
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.tokenUsage?.totalTokens == 1_500, "duplicate totals must not be summed")
+        try expect(result.tokenUsage?.currentTurn?.totalTokens == 500, "turn delta should remain cumulative")
+    },
+    TestCase(name: "backward cumulative values do not produce a turn delta") {
+        let lines = [
+            tokenEvent(timestamp: "2026-07-16T01:00:00Z", input: 900, cached: 400,
+                       output: 100, reasoning: 30, total: 1_000),
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            tokenEvent(timestamp: "2026-07-16T01:02:00Z", input: 800, cached: 350,
+                       output: 90, reasoning: 20, total: 890)
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.tokenUsage?.currentTurn == nil, "backward totals must be rejected")
     }
 ]
+
+private func tokenEvent(
+    timestamp: String,
+    input: Int64,
+    cached: Int64,
+    output: Int64,
+    reasoning: Int64,
+    total: Int64
+) -> String {
+    """
+    {"timestamp":"\(timestamp)","type":"event_msg","payload":{"type":"token_count","info":{"total_token_usage":{"input_tokens":\(input),"cached_input_tokens":\(cached),"output_tokens":\(output),"reasoning_output_tokens":\(reasoning),"total_tokens":\(total)}}}}
+    """
+}
