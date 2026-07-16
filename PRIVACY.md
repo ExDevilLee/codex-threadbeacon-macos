@@ -4,9 +4,11 @@
 
 ThreadBeacon 只在本机读取以下 Codex 数据：
 
-- `~/.codex/state_5.sqlite` 中未归档主任务的 ID、标题、更新时间和 rollout 路径。
+- `~/.codex/state_5.sqlite` 中未归档主任务的 ID、标题、更新时间、累计 Token 和
+  rollout 路径。
 - `~/.codex/session_index.jsonl` 中与任务 ID 对应的最新 rename 名称。
-- rollout JSONL 尾部的事件类型和时间戳，用于判断运行、完成或未知状态。
+- rollout JSONL 尾部的事件类型、时间戳和 Token 数字字段，用于判断状态并计算会话
+  累计与当前 turn 概览。
 
 App 不提取 reasoning summary、用户消息或助手回复正文。
 

@@ -63,6 +63,9 @@ The icon is rendered deterministically with AppKit and can be regenerated locall
 
 - Shows the 8 most recent unarchived primary Codex tasks by default; subagent threads are excluded.
 - Each row shows a status light, localized status label, task title, and status duration.
+- Each row shows a compact cumulative Token total. Hover over the info icon for
+  input, cached and uncached input, output, reasoning, current-turn usage, cache
+  ratio, and update time; click the icon to keep the details open.
 - Task titles prefer the latest renamed value in `session_index.jsonl`, with `threads.title` as fallback.
 - The current version does not read or display conversation summaries or message bodies.
 - Refreshes automatically every 2 seconds and also supports manual refresh.
@@ -73,9 +76,11 @@ The icon is rendered deterministically with AppKit and can be regenerated locall
 
 The app reads only local data:
 
-- `~/.codex/state_5.sqlite`: task metadata and `rollout_path`, opened in SQLite read-only mode.
+- `~/.codex/state_5.sqlite`: task metadata, `rollout_path`, and cumulative
+  `tokens_used`, opened in SQLite read-only mode.
 - `~/.codex/session_index.jsonl`: the latest renamed title matching each task ID.
-- Rollout JSONL: at most the final 2 MiB per task, reading only event types and timestamps to derive status.
+- Rollout JSONL: at most the final 2 MiB per task, reading only event types,
+  timestamps, and numeric Token fields to derive status and usage details.
 
 The app does not extract reasoning summaries or conversation bodies. It does not start a network service, upload data, modify Codex data, or request Accessibility permission. See [`PRIVACY.md`](PRIVACY.md) for the full privacy statement.
 
@@ -84,6 +89,10 @@ The app does not extract reasoning summaries or conversation bodies. It does not
 - `running` means the latest turn has no later `final` or `final_answer` event and has received a new event within 120 seconds.
 - An unresolved turn with no new event for more than 120 seconds becomes `unknown`, preventing interrupted tasks from remaining falsely marked as running. A quiet long-running tool call may also temporarily appear as `unknown`.
 - `justCompleted` is retained for 60 seconds, then derived as `idle`.
+- Current-turn usage is calculated from two cumulative snapshots. If the rollout
+  tail has no reliable baseline, the UI shows `—` instead of guessing from one call.
+- Cumulative Tokens represent processing across model calls. They are not the
+  current context length and are not a cost estimate.
 - The first version does not infer `error` or `needsAction` from silence or timeouts. Those states require explicit evidence in a future version.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
 - The POC is not sandboxed because it reads `~/.codex`. It is not signed, notarized, or automatically updated.

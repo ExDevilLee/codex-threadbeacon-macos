@@ -61,6 +61,8 @@ dist/ThreadBeacon.app
 
 - 默认显示最近 8 个未归档 Codex 主任务，不显示 subagent 子线程。
 - 每行显示状态灯、中文状态、任务标题和状态持续时间。
+- 每行右侧紧凑显示会话累计 Token；悬浮 info 图标可查看输入、缓存输入、非缓存
+  输入、输出、Reasoning、当前 turn、缓存率和更新时间，点击可保持详情打开。
 - 任务标题优先读取 `session_index.jsonl` 中该任务最后一次 rename 的名称；没有有效 rename 记录时回退 `threads.title`。
 - 当前版本不读取或显示会话摘要与正文。
 - 每 2 秒自动刷新，也可使用右上角刷新按钮手动刷新。
@@ -71,9 +73,11 @@ dist/ThreadBeacon.app
 
 App 只在本机读取：
 
-- `~/.codex/state_5.sqlite`：以 SQLite read-only 模式读取任务元数据和 `rollout_path`。
+- `~/.codex/state_5.sqlite`：以 SQLite read-only 模式读取任务元数据、`rollout_path`
+  和累计 `tokens_used`。
 - `~/.codex/session_index.jsonl`：只读匹配任务 ID，取最后一条有效 `thread_name` 作为 rename 后标题。
-- rollout JSONL：每个任务最多读取文件末尾 2 MiB，只提取事件类型和时间戳，用于推导状态。
+- rollout JSONL：每个任务最多读取文件末尾 2 MiB，只提取事件类型、时间戳和 Token
+  数字字段，用于推导状态与 Token 明细。
 
 App 不提取 reasoning summary 或会话正文，不启动网络服务、不上传数据、不修改 Codex 数据，也不使用 Accessibility 权限。完整说明见 [`PRIVACY.md`](PRIVACY.md)。
 
@@ -82,6 +86,9 @@ App 不提取 reasoning summary 或会话正文，不启动网络服务、不上
 - `running` 来自“最新 turn 之后没有 `final` 或 `final_answer`，且 120 秒内仍有新事件”。
 - 未闭合 turn 超过 120 秒没有新事件时降为 `unknown`，避免把中断线程长期误报为运行中。长时间无输出的工具调用也可能暂时被标为 `unknown`。
 - `justCompleted` 保留 60 秒，之后派生为 `idle`。
+- 当前 turn 通过两个累计 Token 快照做差；尾部缺少可靠基线时显示 `—`，不会使用
+  单次调用数据猜测。
+- 累计 Token 是模型历次调用处理量，不代表当前上下文长度，也不提供费用估算。
 - 第一版不从超时或静默推测 `error`、`needsAction`；只有未来获得明确证据时才显示。
 - Codex 的 SQLite schema、session index 和 rollout 格式不是稳定公开 API，Codex 升级后可能需要适配。
 - 为直接读取 `~/.codex`，POC 未启用 App Sandbox，也未做发布签名、公证或自动更新。
