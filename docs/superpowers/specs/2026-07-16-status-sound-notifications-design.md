@@ -82,6 +82,11 @@ app-server 实例中的事件；本机也没有可直接连接的受管 daemon/c
 
 只有 POC 能稳定关联真实 Codex Desktop 任务时，才进入阶段三。
 
+2026-07-17 的 POC 结果为受阻：独立 app-server 能从共享持久化数据列出 Desktop 任务
+ID，但状态均为 `notLoaded`，无法看到 Desktop 已加载线程或接收其实时事件。现阶段不
+进入阶段三，完整证据见
+[`docs/app-server-integration-poc.md`](../../app-server-integration-poc.md)。
+
 ### 阶段三：待操作、警告与失败
 
 - approval request 和可靠的用户输入 request 映射为 `attention`。

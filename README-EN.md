@@ -8,7 +8,8 @@ ThreadBeacon is a native macOS status window for monitoring primary Codex tasks
 at a glance. The first version tests whether a glanceable status view reduces
 the need to repeatedly switch back to Codex. USB displays and Codex controls are
 outside the current scope. The current sound feature only covers reliably detected
-primary-task completion events; approval, error, and retry sounds remain under validation.
+primary-task completion events. An independent app-server cannot observe Codex Desktop
+runtime events, so approval, error, and retry sounds are not currently available.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -17,6 +18,10 @@ See [`ROADMAP.md`](ROADMAP.md) for planned features and their proposed validatio
 See the Chinese
 [`prior-art review`](docs/prior-art-review.md) for related GitHub projects,
 implementation differences, naming risks, and feature candidates.
+
+See the Chinese
+[`app-server integration POC`](docs/app-server-integration-poc.md) for evidence about
+why an independent app-server cannot currently observe Codex Desktop runtime events.
 
 ## Run
 
