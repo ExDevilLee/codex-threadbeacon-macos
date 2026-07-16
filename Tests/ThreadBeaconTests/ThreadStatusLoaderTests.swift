@@ -113,5 +113,73 @@ let threadStatusLoaderTests = [
         let snapshots = try await loader.load(limit: 8)
 
         try expect(snapshots.first?.title == "Renamed sample task", "renamed title should override SQLite title")
+    },
+    TestCase(name: "loader retains rollout token details") {
+        let now = Date(timeIntervalSince1970: 5_000)
+        let cumulative = TokenUsage(
+            inputTokens: 800,
+            cachedInputTokens: 400,
+            outputTokens: 200,
+            reasoningOutputTokens: 50,
+            totalTokens: 1_000
+        )
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "with-details",
+                    title: "With details",
+                    rolloutPath: "/tmp/details",
+                    updatedAt: now,
+                    tokensUsed: 999
+                )]
+            },
+            observe: { _ in
+                RolloutObservation(
+                    tokenUsage: TokenUsageSnapshot(
+                        totalTokens: 1_000,
+                        cumulative: cumulative,
+                        currentTurn: nil,
+                        updatedAt: now
+                    )
+                )
+            },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(limit: 8)
+
+        try expect(
+            snapshots.first?.tokenUsage?.cumulative?.outputTokens == 200,
+            "loader should retain rollout token details"
+        )
+        try expect(snapshots.first?.tokenUsage?.totalTokens == 1_000, "rollout total should win over fallback")
+    },
+    TestCase(name: "loader falls back to SQLite token total") {
+        let now = Date(timeIntervalSince1970: 6_000)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "fallback",
+                    title: "Fallback",
+                    rolloutPath: "/tmp/fallback",
+                    updatedAt: now,
+                    tokensUsed: 42_000
+                )]
+            },
+            observe: { _ in RolloutObservation() },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(limit: 8)
+        let snapshot = snapshots.first
+
+        try expect(
+            snapshot?.tokenUsage?.totalTokens == 42_000,
+            "SQLite total should remain available when rollout details are missing"
+        )
+        try expect(
+            snapshot?.tokenUsage?.cumulative == nil,
+            "fallback total must not invent breakdown fields"
+        )
     }
 ]

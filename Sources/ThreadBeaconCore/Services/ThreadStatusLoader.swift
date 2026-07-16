@@ -71,6 +71,14 @@ public struct ThreadStatusLoader: Sendable {
                 status = observation.status
                 statusChangedAt = observation.statusChangedAt ?? record.updatedAt
             }
+            let tokenUsage = observation.tokenUsage ?? (record.tokensUsed > 0
+                ? TokenUsageSnapshot(
+                    totalTokens: record.tokensUsed,
+                    cumulative: nil,
+                    currentTurn: nil,
+                    updatedAt: nil
+                )
+                : nil)
 
             return ThreadSnapshot(
                 id: record.id,
@@ -78,7 +86,8 @@ public struct ThreadStatusLoader: Sendable {
                 status: status,
                 statusChangedAt: statusChangedAt,
                 updatedAt: record.updatedAt,
-                latestEventAt: observation.latestEventAt
+                latestEventAt: observation.latestEventAt,
+                tokenUsage: tokenUsage
             )
         }
         .sorted(by: snapshotPrecedes)

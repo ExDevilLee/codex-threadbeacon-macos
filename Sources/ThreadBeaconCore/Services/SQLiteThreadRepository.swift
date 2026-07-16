@@ -47,7 +47,9 @@ public struct SQLiteThreadRepository: Sendable {
         defer { sqlite3_close(database) }
 
         let sql = """
-        SELECT id, title, rollout_path, COALESCE(updated_at_ms, updated_at * 1000)
+        SELECT id, title, rollout_path,
+               COALESCE(updated_at_ms, updated_at * 1000),
+               tokens_used
         FROM threads
         WHERE archived = 0
           AND COALESCE(thread_source, '') <> 'subagent'
@@ -77,11 +79,13 @@ public struct SQLiteThreadRepository: Sendable {
                     throw SQLiteThreadRepositoryError.invalidRow
                 }
                 let updatedAtMilliseconds = sqlite3_column_int64(statement, 3)
+                let tokensUsed = sqlite3_column_int64(statement, 4)
                 records.append(ThreadRecord(
                     id: String(cString: idText),
                     title: String(cString: titleText),
                     rolloutPath: String(cString: rolloutText),
-                    updatedAt: Date(timeIntervalSince1970: Double(updatedAtMilliseconds) / 1_000)
+                    updatedAt: Date(timeIntervalSince1970: Double(updatedAtMilliseconds) / 1_000),
+                    tokensUsed: tokensUsed
                 ))
             case SQLITE_DONE:
                 return records

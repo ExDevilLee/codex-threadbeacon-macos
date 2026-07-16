@@ -12,6 +12,7 @@ let sqliteThreadRepositoryTests = [
         try expect(records.map(\.id) == ["new-thread", "older-thread"], "records should use recency order")
         try expect(records.first?.title == "New", "repository should use the persisted thread title")
         try expect(records.first?.rolloutPath == "/tmp/new.jsonl", "rollout path should be retained")
+        try expect(records.first?.tokensUsed == 70_808_875, "repository should retain token total")
     },
     TestCase(name: "repository respects requested limit") {
         let databaseURL = try makeTemporaryThreadDatabase()
@@ -42,13 +43,14 @@ private func makeTemporaryThreadDatabase() throws -> URL {
         updated_at_ms INTEGER,
         recency_at_ms INTEGER NOT NULL,
         archived INTEGER NOT NULL DEFAULT 0,
-        thread_source TEXT
+        thread_source TEXT,
+        tokens_used INTEGER NOT NULL DEFAULT 0
     );
     INSERT INTO threads VALUES
-        ('older-thread', 'Older', '/tmp/older.jsonl', 100, 100000, 100000, 0, 'user'),
-        ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user'),
-        ('subagent-thread', 'Child', '/tmp/child.jsonl', 300, 300000, 500000, 0, 'subagent'),
-        ('archived-thread', 'Archived', '/tmp/archived.jsonl', 400, 400000, 400000, 1, 'user');
+        ('older-thread', 'Older', '/tmp/older.jsonl', 100, 100000, 100000, 0, 'user', 1),
+        ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user', 70808875),
+        ('subagent-thread', 'Child', '/tmp/child.jsonl', 300, 300000, 500000, 0, 'subagent', 2),
+        ('archived-thread', 'Archived', '/tmp/archived.jsonl', 400, 400000, 400000, 1, 'user', 3);
     """
     var errorMessage: UnsafeMutablePointer<CChar>?
     guard sqlite3_exec(database, sql, nil, nil, &errorMessage) == SQLITE_OK else {

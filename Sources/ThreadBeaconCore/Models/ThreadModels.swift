@@ -25,12 +25,20 @@ public struct ThreadRecord: Identifiable, Equatable, Sendable {
     public let title: String
     public let rolloutPath: String
     public let updatedAt: Date
+    public let tokensUsed: Int64
 
-    public init(id: String, title: String, rolloutPath: String, updatedAt: Date) {
+    public init(
+        id: String,
+        title: String,
+        rolloutPath: String,
+        updatedAt: Date,
+        tokensUsed: Int64 = 0
+    ) {
         self.id = id
         self.title = title
         self.rolloutPath = rolloutPath
         self.updatedAt = updatedAt
+        self.tokensUsed = tokensUsed
     }
 }
 
@@ -41,6 +49,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
     public let statusChangedAt: Date
     public let updatedAt: Date
     public let latestEventAt: Date?
+    public let tokenUsage: TokenUsageSnapshot?
 
     public init(
         id: String,
@@ -48,7 +57,8 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         status: ThreadDisplayStatus,
         statusChangedAt: Date,
         updatedAt: Date,
-        latestEventAt: Date?
+        latestEventAt: Date?,
+        tokenUsage: TokenUsageSnapshot? = nil
     ) {
         self.id = id
         self.title = title
@@ -56,5 +66,6 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         self.statusChangedAt = statusChangedAt
         self.updatedAt = updatedAt
         self.latestEventAt = latestEventAt
+        self.tokenUsage = tokenUsage
     }
 }
