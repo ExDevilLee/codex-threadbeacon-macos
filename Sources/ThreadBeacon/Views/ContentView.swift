@@ -21,13 +21,14 @@ struct ContentView: View {
         }
         .task(id: monitoringMode) {
             guard monitoringMode.shouldAutoRefresh else { return }
+            await store.refresh(notificationPolicy: .baseline)
             while !Task.isCancelled {
-                await store.refresh()
                 do {
                     try await Task.sleep(for: .seconds(2))
                 } catch {
                     return
                 }
+                await store.refresh(notificationPolicy: .notify)
             }
         }
     }
@@ -65,7 +66,7 @@ struct ContentView: View {
             .accessibilityLabel(monitoringMode == .active ? "暂停监听" : "恢复监听")
 
             Button {
-                Task { await store.refresh() }
+                Task { await store.refresh(notificationPolicy: .baseline) }
             } label: {
                 Image(systemName: "arrow.clockwise")
                     .frame(width: 18, height: 18)
