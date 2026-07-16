@@ -6,8 +6,9 @@
 
 ThreadBeacon is a native macOS status window for monitoring primary Codex tasks
 at a glance. The first version tests whether a glanceable status view reduces
-the need to repeatedly switch back to Codex. USB displays, Codex controls, and
-a notification system are outside the current scope.
+the need to repeatedly switch back to Codex. USB displays and Codex controls are
+outside the current scope. The current sound feature only covers reliably detected
+primary-task completion events; approval, error, and retry sounds remain under validation.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -59,6 +60,16 @@ The icon is rendered deterministically with AppKit and can be regenerated locall
 ./script/verify_app_icon.sh
 ```
 
+## Sound Assets
+
+Beacon, Chime, and Pulse are short sounds generated deterministically by project scripts;
+they do not come from a third-party sound pack. Regenerate and verify them with:
+
+```bash
+./script/generate_sound_assets.sh
+./script/verify_sound_assets.sh
+```
+
 ## Interface
 
 - Shows the 8 most recent unarchived primary Codex tasks by default; subagent threads are excluded.
@@ -72,6 +83,9 @@ The icon is rendered deterministically with AppKit and can be regenerated locall
 - The toolbar can pause or resume automatic monitoring. Manual refresh remains
   available while paused, and monitoring resumes by default after relaunch.
 - The pin button keeps the window above other apps and persists the selection across launches.
+- The speaker button opens sound settings. You can disable all sounds or completion sounds,
+  choose Beacon, Chime, or Pulse, and preview them. Startup, manual refresh, and resumed
+  monitoring do not replay historical completion events.
 - Sort priority is `error`, `needsAction`, `running`, `justCompleted`, `idle`, then `unknown`.
 
 ## Data And Privacy
@@ -82,7 +96,8 @@ The app reads only local data:
   `tokens_used`, opened in SQLite read-only mode.
 - `~/.codex/session_index.jsonl`: the latest renamed title matching each task ID.
 - Rollout JSONL: at most the final 2 MiB per task, reading only event types,
-  timestamps, and numeric Token fields to derive status and usage details.
+  timestamps, and numeric Token fields to derive status, usage details, and
+  `task_complete` completion events.
 
 The app does not extract reasoning summaries or conversation bodies. It does not start a network service, upload data, modify Codex data, or request Accessibility permission. See [`PRIVACY.md`](PRIVACY.md) for the full privacy statement.
 
@@ -95,6 +110,9 @@ The app does not extract reasoning summaries or conversation bodies. It does not
   tail has no reliable baseline, the UI shows `—` instead of guessing from one call.
 - Cumulative Tokens represent processing across model calls. They are not the
   current context length and are not a cost estimate.
+- The current version plays one `done` sound for a new `task_complete` event only.
+  Retryable errors, 429/503, approvals, and failures require app-server integration
+  evidence and are not guessed from error text.
 - The first version does not infer `error` or `needsAction` from silence or timeouts. Those states require explicit evidence in a future version.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
 - The POC is not sandboxed because it reads `~/.codex`. It is not signed, notarized, or automatically updated.
