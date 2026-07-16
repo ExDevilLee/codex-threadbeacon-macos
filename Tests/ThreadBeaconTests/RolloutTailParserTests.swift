@@ -43,6 +43,19 @@ let rolloutTailParserTests = [
 
         try expect(result.status == .justCompleted, "final_answer should complete the turn")
     },
+    TestCase(name: "task complete exposes latest completion event without message text") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:02:00Z","type":"event_msg","payload":{"type":"task_complete","last_agent_message":"private"}}"#,
+            #"{"timestamp":"2026-07-16T01:04:00Z","type":"event_msg","payload":{"type":"task_complete","last_agent_message":"new private"}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+        let expected = ISO8601DateFormatter().date(from: "2026-07-16T01:04:00Z")
+        let retainedFields = Mirror(reflecting: result).children.compactMap(\.label)
+
+        try expect(result.completionEventAt == expected, "latest task_complete should identify the done event")
+        try expect(!retainedFields.contains("lastAgentMessage"), "completion evidence must not retain message text")
+    },
     TestCase(name: "malformed lines and reasoning alone are ignored") {
         let lines = [
             "not-json",

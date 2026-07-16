@@ -154,6 +154,27 @@ let threadStatusLoaderTests = [
         )
         try expect(snapshots.first?.tokenUsage?.totalTokens == 1_000, "rollout total should win over fallback")
     },
+    TestCase(name: "loader retains rollout completion event") {
+        let now = Date(timeIntervalSince1970: 5_500)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "completed",
+                    title: "Completed",
+                    rolloutPath: "/tmp/completed",
+                    updatedAt: now
+                )]
+            },
+            observe: { _ in
+                RolloutObservation(completionEventAt: now)
+            },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(limit: 8)
+
+        try expect(snapshots.first?.completionEventAt == now, "loader should pass completion evidence to snapshot")
+    },
     TestCase(name: "loader falls back to SQLite token total") {
         let now = Date(timeIntervalSince1970: 6_000)
         let loader = ThreadStatusLoader(

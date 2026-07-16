@@ -49,6 +49,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
     public let statusChangedAt: Date
     public let updatedAt: Date
     public let latestEventAt: Date?
+    public let completionEventAt: Date?
     public let tokenUsage: TokenUsageSnapshot?
 
     public init(
@@ -58,6 +59,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         statusChangedAt: Date,
         updatedAt: Date,
         latestEventAt: Date?,
+        completionEventAt: Date? = nil,
         tokenUsage: TokenUsageSnapshot? = nil
     ) {
         self.id = id
@@ -66,6 +68,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         self.statusChangedAt = statusChangedAt
         self.updatedAt = updatedAt
         self.latestEventAt = latestEventAt
+        self.completionEventAt = completionEventAt
         self.tokenUsage = tokenUsage
     }
 }

@@ -87,6 +87,7 @@ public struct ThreadStatusLoader: Sendable {
                 statusChangedAt: statusChangedAt,
                 updatedAt: record.updatedAt,
                 latestEventAt: observation.latestEventAt,
+                completionEventAt: observation.completionEventAt,
                 tokenUsage: tokenUsage
             )
         }
