@@ -9,6 +9,7 @@ enum TestRunner {
             + sessionIndexTitleRepositoryTests
             + threadStatusLoaderTests
             + threadStatusStoreTests
+            + tokenCountFormatterTests
             + windowPinModeTests
         var failures = 0
 
