@@ -69,6 +69,8 @@ The icon is rendered deterministically with AppKit and can be regenerated locall
 - Task titles prefer the latest renamed value in `session_index.jsonl`, with `threads.title` as fallback.
 - The current version does not read or display conversation summaries or message bodies.
 - Refreshes automatically every 2 seconds and also supports manual refresh.
+- The toolbar can pause or resume automatic monitoring. Manual refresh remains
+  available while paused, and monitoring resumes by default after relaunch.
 - The pin button keeps the window above other apps and persists the selection across launches.
 - Sort priority is `error`, `needsAction`, `running`, `justCompleted`, `idle`, then `unknown`.
 

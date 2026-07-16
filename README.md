@@ -66,6 +66,7 @@ dist/ThreadBeacon.app
 - 任务标题优先读取 `session_index.jsonl` 中该任务最后一次 rename 的名称；没有有效 rename 记录时回退 `threads.title`。
 - 当前版本不读取或显示会话摘要与正文。
 - 每 2 秒自动刷新，也可使用右上角刷新按钮手动刷新。
+- 标题栏可暂停或恢复自动监听；暂停期间仍可手动刷新，重新启动 App 后默认恢复监听。
 - 可使用右上角图钉按钮让窗口保持在其他 App 之前；选择会在重启后保留。
 - 排序优先级为 `error`、`needsAction`、`running`、`justCompleted`、`idle`、`unknown`。
 
