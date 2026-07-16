@@ -1,0 +1,60 @@
+import Foundation
+
+public enum ThreadDisplayStatus: String, CaseIterable, Sendable {
+    case error
+    case needsAction
+    case running
+    case justCompleted
+    case idle
+    case unknown
+
+    public var sortOrder: Int {
+        switch self {
+        case .error: 0
+        case .needsAction: 1
+        case .running: 2
+        case .justCompleted: 3
+        case .idle: 4
+        case .unknown: 5
+        }
+    }
+}
+
+public struct ThreadRecord: Identifiable, Equatable, Sendable {
+    public let id: String
+    public let title: String
+    public let rolloutPath: String
+    public let updatedAt: Date
+
+    public init(id: String, title: String, rolloutPath: String, updatedAt: Date) {
+        self.id = id
+        self.title = title
+        self.rolloutPath = rolloutPath
+        self.updatedAt = updatedAt
+    }
+}
+
+public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
+    public let id: String
+    public let title: String
+    public let status: ThreadDisplayStatus
+    public let statusChangedAt: Date
+    public let updatedAt: Date
+    public let latestEventAt: Date?
+
+    public init(
+        id: String,
+        title: String,
+        status: ThreadDisplayStatus,
+        statusChangedAt: Date,
+        updatedAt: Date,
+        latestEventAt: Date?
+    ) {
+        self.id = id
+        self.title = title
+        self.status = status
+        self.statusChangedAt = statusChangedAt
+        self.updatedAt = updatedAt
+        self.latestEventAt = latestEventAt
+    }
+}
