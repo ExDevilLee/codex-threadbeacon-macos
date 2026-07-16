@@ -10,10 +10,20 @@ struct ThreadRowView: View {
                 .padding(.top, 4)
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(snapshot.title.isEmpty ? "未命名任务" : snapshot.title)
-                    .font(.system(size: 13, weight: .medium))
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 7) {
+                    Text(snapshot.title.isEmpty ? "未命名任务" : snapshot.title)
+                        .font(.system(size: 13, weight: .medium))
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    if let tokenUsage = snapshot.tokenUsage {
+                        Text(TokenCountFormatter.string(for: tokenUsage.totalTokens))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .fixedSize()
+                        TokenInfoButton(snapshot: tokenUsage)
+                    }
+                }
 
                 HStack(spacing: 6) {
                     Text(snapshot.status.displayName)
