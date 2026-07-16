@@ -17,18 +17,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct ThreadBeaconApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store: ThreadStatusStore
+    private let soundPlayer: SoundPlaybackService
 
     init() {
         let repository = SQLiteThreadRepository(databaseURL: CodexPaths.stateDatabaseURL)
         let loader = ThreadStatusLoader(repository: repository)
-        _store = StateObject(wrappedValue: ThreadStatusStore {
-            try await loader.load(limit: 8)
-        })
+        let history = SoundNotificationHistory()
+        let player = SoundPlaybackService()
+        soundPlayer = player
+        _store = StateObject(wrappedValue: ThreadStatusStore(
+            load: {
+                try await loader.load(limit: 8)
+            },
+            notificationTracker: SoundNotificationTracker(initialSeenEventIDs: history.load()),
+            onNotification: { event in
+                player.play(event)
+            },
+            onNotificationHistoryChange: { eventIDs in
+                history.save(eventIDs)
+            }
+        ))
     }
 
     var body: some Scene {
         WindowGroup("ThreadBeacon") {
-            ContentView(store: store)
+            ContentView(store: store, previewSound: soundPlayer.preview)
                 .frame(minWidth: 360, minHeight: 240)
         }
         .defaultSize(width: 420, height: 360)

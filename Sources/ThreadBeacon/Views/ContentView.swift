@@ -5,6 +5,8 @@ struct ContentView: View {
     @ObservedObject var store: ThreadStatusStore
     @AppStorage("windowPinned") private var isWindowPinned = false
     @State private var monitoringMode = MonitoringMode.active
+    @State private var isShowingSoundSettings = false
+    let previewSound: (CompletionSound) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -53,6 +55,19 @@ struct ContentView: View {
             .buttonStyle(.borderless)
             .help(isWindowPinned ? "取消钉住" : "钉在最前面")
             .accessibilityLabel(isWindowPinned ? "取消钉住" : "钉在最前面")
+
+            Button {
+                isShowingSoundSettings.toggle()
+            } label: {
+                Image(systemName: "speaker.wave.2")
+                    .frame(width: 18, height: 18)
+            }
+            .buttonStyle(.borderless)
+            .help("提示音设置")
+            .accessibilityLabel("提示音设置")
+            .popover(isPresented: $isShowingSoundSettings) {
+                SoundSettingsView(preview: previewSound)
+            }
 
             Button {
                 monitoringMode.toggle()
