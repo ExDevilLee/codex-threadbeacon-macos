@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var store: ThreadStatusStore
     @AppStorage("windowPinned") private var isWindowPinned = false
+    @State private var monitoringMode = MonitoringMode.active
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,7 +19,8 @@ struct ContentView: View {
             WindowLevelBridge(mode: WindowPinMode(isPinned: isWindowPinned))
                 .frame(width: 0, height: 0)
         }
-        .task {
+        .task(id: monitoringMode) {
+            guard monitoringMode.shouldAutoRefresh else { return }
             while !Task.isCancelled {
                 await store.refresh()
                 do {
@@ -50,6 +52,17 @@ struct ContentView: View {
             .buttonStyle(.borderless)
             .help(isWindowPinned ? "取消钉住" : "钉在最前面")
             .accessibilityLabel(isWindowPinned ? "取消钉住" : "钉在最前面")
+
+            Button {
+                monitoringMode.toggle()
+            } label: {
+                Image(systemName: monitoringMode == .active ? "pause.fill" : "play.fill")
+                    .foregroundStyle(monitoringMode == .paused ? Color.accentColor : Color.secondary)
+                    .frame(width: 18, height: 18)
+            }
+            .buttonStyle(.borderless)
+            .help(monitoringMode == .active ? "暂停监听" : "恢复监听")
+            .accessibilityLabel(monitoringMode == .active ? "暂停监听" : "恢复监听")
 
             Button {
                 Task { await store.refresh() }
@@ -95,6 +108,13 @@ struct ContentView: View {
                 Text(errorMessage)
                     .lineLimit(1)
                     .help(errorMessage)
+            } else if monitoringMode == .paused {
+                Image(systemName: "pause.circle.fill")
+                if let refreshedAt = store.lastRefreshedAt {
+                    Text("监听已暂停 · 上次更新 \(refreshedAt.formatted(date: .omitted, time: .standard))")
+                } else {
+                    Text("监听已暂停 · 尚未更新")
+                }
             } else if let refreshedAt = store.lastRefreshedAt {
                 Image(systemName: store.isRefreshing ? "arrow.triangle.2.circlepath" : "checkmark.circle")
                 Text("更新于 \(refreshedAt.formatted(date: .omitted, time: .standard))")
