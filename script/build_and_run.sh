@@ -8,9 +8,14 @@ MACOS="$CONTENTS/MacOS"
 RESOURCES="$CONTENTS/Resources"
 PLIST="$CONTENTS/Info.plist"
 ICON="$ROOT/Resources/AppIcon.icns"
+SOUNDS="$ROOT/Resources/Sounds"
 
 if [[ ! -s "$ICON" ]]; then
     echo "Missing app icon: $ICON" >&2
+    exit 1
+fi
+if [[ ! -d "$SOUNDS" ]]; then
+    echo "Missing sound assets: $SOUNDS" >&2
     exit 1
 fi
 
@@ -22,6 +27,8 @@ rm -rf "$APP"
 mkdir -p "$MACOS" "$RESOURCES"
 cp "$BIN_DIR/ThreadBeacon" "$MACOS/ThreadBeacon"
 cp "$ICON" "$RESOURCES/AppIcon.icns"
+mkdir -p "$RESOURCES/Sounds"
+cp "$SOUNDS"/*.wav "$RESOURCES/Sounds/"
 chmod +x "$MACOS/ThreadBeacon"
 
 plutil -create xml1 "$PLIST"
