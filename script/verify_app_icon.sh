@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="$ROOT/dist/CodexThreadStatus.app"
+APP="$ROOT/dist/ThreadBeacon.app"
 PLIST="$APP/Contents/Info.plist"
 
 test -s "$ROOT/Resources/AppIcon-1024.png"

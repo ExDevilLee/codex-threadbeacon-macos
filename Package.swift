@@ -5,30 +5,30 @@ import PackageDescription
 let languageModes: [SwiftLanguageMode] = [.v6]
 
 let package = Package(
-    name: "CodexThreadStatus",
+    name: "ThreadBeacon",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "CodexThreadStatus", targets: ["CodexThreadStatus"])
+        .executable(name: "ThreadBeacon", targets: ["ThreadBeacon"])
     ],
     targets: [
         .systemLibrary(name: "CSQLite"),
         .target(
-            name: "CodexThreadStatusCore",
+            name: "ThreadBeaconCore",
             dependencies: ["CSQLite"]
         ),
         .executableTarget(
-            name: "CodexThreadStatus",
-            dependencies: ["CodexThreadStatusCore"]
+            name: "ThreadBeacon",
+            dependencies: ["ThreadBeaconCore"]
         ),
         .executableTarget(
-            name: "CodexThreadStatusTests",
-            dependencies: ["CodexThreadStatusCore", "CSQLite"],
-            path: "Tests/CodexThreadStatusTests"
+            name: "ThreadBeaconTests",
+            dependencies: ["ThreadBeaconCore", "CSQLite"],
+            path: "Tests/ThreadBeaconTests"
         ),
         .executableTarget(
-            name: "CodexThreadStatusProbe",
-            dependencies: ["CodexThreadStatusCore"],
-            path: "Tools/CodexThreadStatusProbe"
+            name: "ThreadBeaconProbe",
+            dependencies: ["ThreadBeaconCore"],
+            path: "Tools/ThreadBeaconProbe"
         )
     ],
     swiftLanguageModes: languageModes

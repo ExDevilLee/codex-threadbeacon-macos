@@ -1,4 +1,4 @@
-import CodexThreadStatusCore
+import ThreadBeaconCore
 import Foundation
 
 let rolloutTailParserTests = [

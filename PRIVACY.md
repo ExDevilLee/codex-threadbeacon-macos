@@ -2,7 +2,7 @@
 
 ## 数据范围
 
-Codex 红绿灯只在本机读取以下 Codex 数据：
+ThreadBeacon 只在本机读取以下 Codex 数据：
 
 - `~/.codex/state_5.sqlite` 中未归档主任务的 ID、标题、更新时间和 rollout 路径。
 - `~/.codex/session_index.jsonl` 中与任务 ID 对应的最新 rename 名称。

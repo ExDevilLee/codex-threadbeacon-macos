@@ -1,4 +1,4 @@
-import CodexThreadStatusCore
+import ThreadBeaconCore
 import SwiftUI
 
 struct StatusDotView: View {

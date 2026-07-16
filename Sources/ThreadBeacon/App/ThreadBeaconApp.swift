@@ -1,5 +1,5 @@
 import AppKit
-import CodexThreadStatusCore
+import ThreadBeaconCore
 import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -14,7 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct CodexThreadStatusApp: App {
+struct ThreadBeaconApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store: ThreadStatusStore
 
@@ -27,7 +27,7 @@ struct CodexThreadStatusApp: App {
     }
 
     var body: some Scene {
-        WindowGroup("Codex 红绿灯") {
+        WindowGroup("ThreadBeacon") {
             ContentView(store: store)
                 .frame(minWidth: 360, minHeight: 240)
         }

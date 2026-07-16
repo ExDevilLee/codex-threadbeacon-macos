@@ -1,4 +1,4 @@
-import CodexThreadStatusCore
+import ThreadBeaconCore
 
 let threadStatusTests = [
     TestCase(name: "status priority places actionable states first") {

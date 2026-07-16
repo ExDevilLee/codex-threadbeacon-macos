@@ -4,6 +4,10 @@
 
 查询日期：2026-07-16
 
+当前命名决定：产品名称为 `ThreadBeacon for Codex`，App 显示名为
+`ThreadBeacon`，macOS 平台仓库为 `codex-threadbeacon-macos`。下文保留检索时使用的
+旧项目名和旧仓库 URL，作为 prior-art 结论与开发时间线证据。
+
 本次核查采用 `small prior-art scan`：通过 GitHub repository search、code
 search、项目 README、关键源码和相关文件的提交历史，选取 8 个代表性项目进行
 对比。它不是对 GitHub 的穷尽检索，项目功能也可能在本次查询后继续变化。
@@ -136,9 +140,9 @@ GitHub 搜索已经出现以下命名模式：
 - `Codex 红绿灯`
 - `codex-honglvdeng-traffic-light`
 
-因此，“Codex 红绿灯”适合作为中文功能描述，但作为公开产品名和仓库 slug 的辨识度
-偏低。公开前建议单独决定是否更换为更具识别性的名称，并继续保留“非官方社区工具”
-声明。此次核查不自动重命名项目。
+因此，“Codex 红绿灯”只保留为中文功能类比，正式产品名采用
+`ThreadBeacon for Codex`，macOS 仓库采用 `codex-threadbeacon-macos`。项目继续保留
+“非官方社区工具”声明。
 
 ## 后续避免雷同争议的执行规则
 

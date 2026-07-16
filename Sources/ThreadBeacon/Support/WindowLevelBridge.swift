@@ -1,5 +1,5 @@
 import AppKit
-import CodexThreadStatusCore
+import ThreadBeaconCore
 import SwiftUI
 
 struct WindowLevelBridge: NSViewRepresentable {

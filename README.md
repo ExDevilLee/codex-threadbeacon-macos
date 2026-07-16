@@ -1,10 +1,12 @@
-# Codex 红绿灯
+# ThreadBeacon for Codex
 
 简体中文 | [English](README-EN.md)
 
 ## 目标
 
-这是一个独立的本地 macOS 小窗口，用于同时查看最近 Codex 主任务的状态。第一版验证的是“集中看状态是否比反复切回 Codex 更省注意力”，不包含 USB 小屏、Codex 控制或通知系统。
+ThreadBeacon 是一个用于集中查看 Codex 主任务状态的原生 macOS 小窗口。第一版验证
+的是“集中看状态是否比反复切回 Codex 更省注意力”，不包含 USB 小屏、Codex 控制或
+通知系统。
 
 本项目是非官方社区工具，与 OpenAI 无隶属或背书关系。`Codex` 是其相应权利人的商标。
 
@@ -24,7 +26,7 @@ GitHub 同类项目、实现差异、命名风险与可参考功能候选见
 脚本会构建并启动：
 
 ```text
-dist/CodexThreadStatus.app
+dist/ThreadBeacon.app
 ```
 
 其他验证命令：
@@ -90,7 +92,7 @@ App 不提取 reasoning summary 或会话正文，不启动网络服务、不上
 停止进程并删除构建产物：
 
 ```bash
-pkill -x CodexThreadStatus 2>/dev/null || true
+pkill -x ThreadBeacon 2>/dev/null || true
 rm -rf dist .build
 ```
 
@@ -100,3 +102,8 @@ rm -rf dist .build
 
 - 本项目采用 [MIT License](LICENSE)。
 - 安全问题报告方式见 [`SECURITY.md`](SECURITY.md)。
+
+## 平台仓库
+
+ThreadBeacon 的平台实现使用独立仓库维护。当前仓库只包含原生 macOS App；其他平台
+实现实际创建后，会在这里加入 `Related projects` 链接，不提前链接尚不存在的仓库。

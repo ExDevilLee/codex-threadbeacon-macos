@@ -1,4 +1,4 @@
-import CodexThreadStatusCore
+import ThreadBeaconCore
 
 let windowPinModeTests = [
     TestCase(name: "window pin state maps to normal and floating modes") {

@@ -8,4 +8,5 @@
 
 ## 支持范围
 
-当前项目仍是 POC，仅支持 README 中列出的 macOS 和本地 Codex 数据路径。未经签名、公证的本地构建不应被视为正式发布包。
+ThreadBeacon 当前仍是 POC，仅支持 README 中列出的 macOS 和本地 Codex 数据路径。
+未经正式签名、公证的本地构建不应被视为正式发布包。

@@ -1,10 +1,13 @@
-# Codex Traffic Light
+# ThreadBeacon for Codex
 
 [简体中文](README.md) | English
 
 ## Purpose
 
-Codex Traffic Light is a small standalone macOS window for monitoring the status of recent primary Codex tasks. The first version tests whether a glanceable status view reduces the need to repeatedly switch back to Codex. USB displays, Codex controls, and a notification system are outside the current scope.
+ThreadBeacon is a native macOS status window for monitoring primary Codex tasks
+at a glance. The first version tests whether a glanceable status view reduces
+the need to repeatedly switch back to Codex. USB displays, Codex controls, and
+a notification system are outside the current scope.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -25,7 +28,7 @@ From the project directory:
 The script builds and launches:
 
 ```text
-dist/CodexThreadStatus.app
+dist/ThreadBeacon.app
 ```
 
 Additional verification commands:
@@ -91,7 +94,7 @@ The app does not extract reasoning summaries or conversation bodies. It does not
 Stop the process and remove build artifacts:
 
 ```bash
-pkill -x CodexThreadStatus 2>/dev/null || true
+pkill -x ThreadBeacon 2>/dev/null || true
 rm -rf dist .build
 ```
 
@@ -101,3 +104,9 @@ The POC does not install a system service, login item, or global configuration.
 
 - Licensed under the [MIT License](LICENSE).
 - See [`SECURITY.md`](SECURITY.md) for security reporting guidance.
+
+## Platform Repositories
+
+ThreadBeacon keeps platform implementations in separate repositories. This
+repository contains only the native macOS app. Links under `Related projects`
+will be added when another platform implementation actually exists.

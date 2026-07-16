@@ -1,5 +1,5 @@
 import CSQLite
-import CodexThreadStatusCore
+import ThreadBeaconCore
 import Foundation
 
 let sqliteThreadRepositoryTests = [

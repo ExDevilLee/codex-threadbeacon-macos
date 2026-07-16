@@ -2,4 +2,4 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-exec "$ROOT/script/swiftpm.sh" run CodexThreadStatusTests
+exec "$ROOT/script/swiftpm.sh" run ThreadBeaconTests

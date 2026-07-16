@@ -1,8 +1,8 @@
-import CodexThreadStatusCore
+import ThreadBeaconCore
 import Foundation
 
 @main
-enum CodexThreadStatusProbe {
+enum ThreadBeaconProbe {
     static func main() async throws {
         let repository = SQLiteThreadRepository(databaseURL: CodexPaths.stateDatabaseURL)
         let loader = ThreadStatusLoader(repository: repository)
