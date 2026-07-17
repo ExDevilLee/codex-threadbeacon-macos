@@ -26,19 +26,22 @@ public struct ThreadRecord: Identifiable, Equatable, Sendable {
     public let rolloutPath: String
     public let updatedAt: Date
     public let tokensUsed: Int64
+    public let subagentCount: Int
 
     public init(
         id: String,
         title: String,
         rolloutPath: String,
         updatedAt: Date,
-        tokensUsed: Int64 = 0
+        tokensUsed: Int64 = 0,
+        subagentCount: Int = 0
     ) {
         self.id = id
         self.title = title
         self.rolloutPath = rolloutPath
         self.updatedAt = updatedAt
         self.tokensUsed = tokensUsed
+        self.subagentCount = max(0, subagentCount)
     }
 }
 

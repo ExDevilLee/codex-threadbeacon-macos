@@ -13,6 +13,7 @@ let sqliteThreadRepositoryTests = [
         try expect(records.first?.title == "New", "repository should use the persisted thread title")
         try expect(records.first?.rolloutPath == "/tmp/new.jsonl", "rollout path should be retained")
         try expect(records.first?.tokensUsed == 70_808_875, "repository should retain token total")
+        try expect(records.first?.subagentCount == 3, "all direct child relationships should be counted")
     },
     TestCase(name: "repository respects requested limit") {
         let databaseURL = try makeTemporaryThreadDatabase()
@@ -21,10 +22,21 @@ let sqliteThreadRepositoryTests = [
         let records = try SQLiteThreadRepository(databaseURL: databaseURL).loadRecent(limit: 1)
 
         try expect(records.map(\.id) == ["new-thread"], "limit should cap result count")
+    },
+    TestCase(name: "repository falls back when spawn edges table is unavailable") {
+        let databaseURL = try makeTemporaryThreadDatabase(includeSpawnEdges: false)
+        defer { try? FileManager.default.removeItem(at: databaseURL) }
+
+        let records = try SQLiteThreadRepository(databaseURL: databaseURL).loadRecent(limit: 8)
+
+        try expect(
+            records.allSatisfy { $0.subagentCount == 0 },
+            "missing relationship table should fall back to zero"
+        )
     }
 ]
 
-private func makeTemporaryThreadDatabase() throws -> URL {
+private func makeTemporaryThreadDatabase(includeSpawnEdges: Bool = true) throws -> URL {
     let url = FileManager.default.temporaryDirectory
         .appendingPathComponent(UUID().uuidString)
         .appendingPathExtension("sqlite")
@@ -34,6 +46,17 @@ private func makeTemporaryThreadDatabase() throws -> URL {
     }
     defer { sqlite3_close(database) }
 
+    let relationshipSQL = includeSpawnEdges ? """
+    CREATE TABLE thread_spawn_edges (
+        parent_thread_id TEXT NOT NULL,
+        child_thread_id TEXT NOT NULL PRIMARY KEY,
+        status TEXT NOT NULL
+    );
+    INSERT INTO thread_spawn_edges VALUES
+        ('new-thread', 'subagent-thread', 'open'),
+        ('new-thread', 'legacy-child', 'closed'),
+        ('new-thread', 'archived-child', 'closed');
+    """ : ""
     let sql = """
     CREATE TABLE threads (
         id TEXT PRIMARY KEY,
@@ -50,7 +73,10 @@ private func makeTemporaryThreadDatabase() throws -> URL {
         ('older-thread', 'Older', '/tmp/older.jsonl', 100, 100000, 100000, 0, 'user', 1),
         ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user', 70808875),
         ('subagent-thread', 'Child', '/tmp/child.jsonl', 300, 300000, 500000, 0, 'subagent', 2),
+        ('legacy-child', 'Legacy Child', '/tmp/legacy.jsonl', 310, 310000, 510000, 0, NULL, 4),
+        ('archived-child', 'Archived Child', '/tmp/archived-child.jsonl', 320, 320000, 520000, 1, NULL, 5),
         ('archived-thread', 'Archived', '/tmp/archived.jsonl', 400, 400000, 400000, 1, 'user', 3);
+    \(relationshipSQL)
     """
     var errorMessage: UnsafeMutablePointer<CChar>?
     guard sqlite3_exec(database, sql, nil, nil, &errorMessage) == SQLITE_OK else {

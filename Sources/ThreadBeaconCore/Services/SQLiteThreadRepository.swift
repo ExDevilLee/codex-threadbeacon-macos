@@ -46,16 +46,8 @@ public struct SQLiteThreadRepository: Sendable {
         }
         defer { sqlite3_close(database) }
 
-        let sql = """
-        SELECT id, title, rollout_path,
-               COALESCE(updated_at_ms, updated_at * 1000),
-               tokens_used
-        FROM threads
-        WHERE archived = 0
-          AND COALESCE(thread_source, '') <> 'subagent'
-        ORDER BY recency_at_ms DESC, id DESC
-        LIMIT ?
-        """
+        let hasSpawnEdges = try hasSpawnEdgesTable(in: database)
+        let sql = hasSpawnEdges ? relationshipAwareSQL : legacySQL
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK,
               let statement else {
@@ -80,18 +72,88 @@ public struct SQLiteThreadRepository: Sendable {
                 }
                 let updatedAtMilliseconds = sqlite3_column_int64(statement, 3)
                 let tokensUsed = sqlite3_column_int64(statement, 4)
+                let subagentCountValue = sqlite3_column_int64(statement, 5)
+                guard
+                    subagentCountValue >= 0,
+                    let subagentCount = Int(exactly: subagentCountValue)
+                else {
+                    throw SQLiteThreadRepositoryError.invalidRow
+                }
                 records.append(ThreadRecord(
                     id: String(cString: idText),
                     title: String(cString: titleText),
                     rolloutPath: String(cString: rolloutText),
                     updatedAt: Date(timeIntervalSince1970: Double(updatedAtMilliseconds) / 1_000),
-                    tokensUsed: tokensUsed
+                    tokensUsed: tokensUsed,
+                    subagentCount: subagentCount
                 ))
             case SQLITE_DONE:
                 return records
             default:
                 throw SQLiteThreadRepositoryError.database(databaseMessage(database))
             }
+        }
+    }
+
+    private var relationshipAwareSQL: String {
+        """
+        SELECT t.id, t.title, t.rollout_path,
+               COALESCE(t.updated_at_ms, t.updated_at * 1000),
+               t.tokens_used,
+               COALESCE(children.child_count, 0)
+        FROM threads AS t
+        LEFT JOIN (
+            SELECT parent_thread_id, COUNT(*) AS child_count
+            FROM thread_spawn_edges
+            GROUP BY parent_thread_id
+        ) AS children ON children.parent_thread_id = t.id
+        WHERE t.archived = 0
+          AND COALESCE(t.thread_source, '') <> 'subagent'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM thread_spawn_edges AS edge
+              WHERE edge.child_thread_id = t.id
+          )
+        ORDER BY t.recency_at_ms DESC, t.id DESC
+        LIMIT ?
+        """
+    }
+
+    private var legacySQL: String {
+        """
+        SELECT id, title, rollout_path,
+               COALESCE(updated_at_ms, updated_at * 1000),
+               tokens_used,
+               0
+        FROM threads
+        WHERE archived = 0
+          AND COALESCE(thread_source, '') <> 'subagent'
+        ORDER BY recency_at_ms DESC, id DESC
+        LIMIT ?
+        """
+    }
+
+    private func hasSpawnEdgesTable(in database: OpaquePointer) throws -> Bool {
+        let sql = """
+        SELECT 1
+        FROM sqlite_master
+        WHERE type = 'table' AND name = 'thread_spawn_edges'
+        LIMIT 1
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK,
+              let statement else {
+            throw SQLiteThreadRepositoryError.database(databaseMessage(database))
+        }
+        defer { sqlite3_finalize(statement) }
+
+        switch sqlite3_step(statement) {
+        case SQLITE_ROW:
+            return true
+        case SQLITE_DONE:
+            return false
+        default:
+            throw SQLiteThreadRepositoryError.database(databaseMessage(database))
         }
     }
 
