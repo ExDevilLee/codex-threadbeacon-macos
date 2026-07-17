@@ -7,15 +7,17 @@ public final class ThreadStatusStore: ObservableObject {
     @Published public private(set) var lastRefreshedAt: Date?
     @Published public private(set) var errorMessage: String?
     @Published public private(set) var isRefreshing = false
+    @Published public private(set) var expandedThreadIDs: Set<String> = []
 
-    private let load: @Sendable () async throws -> [ThreadSnapshot]
+    private let load: @Sendable (Set<String>) async throws -> [ThreadSnapshot]
     private let now: @Sendable () -> Date
     private var notificationTracker: SoundNotificationTracker
+    private var pendingRefreshPolicy: RefreshNotificationPolicy?
     private let onNotification: @MainActor (SoundNotificationEvent) -> Void
     private let onNotificationHistoryChange: @MainActor ([String]) -> Void
 
     public init(
-        load: @escaping @Sendable () async throws -> [ThreadSnapshot],
+        load: @escaping @Sendable (Set<String>) async throws -> [ThreadSnapshot],
         now: @escaping @Sendable () -> Date = Date.init,
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
@@ -28,30 +30,59 @@ public final class ThreadStatusStore: ObservableObject {
         self.onNotificationHistoryChange = onNotificationHistoryChange
     }
 
+    public func toggleExpansion(for threadID: String) {
+        if expandedThreadIDs.contains(threadID) {
+            expandedThreadIDs.remove(threadID)
+        } else {
+            expandedThreadIDs.insert(threadID)
+        }
+    }
+
     public func refresh(notificationPolicy: RefreshNotificationPolicy = .baseline) async {
-        guard !isRefreshing else {
+        if isRefreshing {
+            pendingRefreshPolicy = mergedPolicy(pendingRefreshPolicy, notificationPolicy)
             return
         }
         isRefreshing = true
-        defer { isRefreshing = false }
+        var currentPolicy = notificationPolicy
 
-        let operation = load
-        do {
-            let nextSnapshots = try await Task.detached(priority: .utility) {
-                try await operation()
-            }.value
-            snapshots = nextSnapshots
-            lastRefreshedAt = now()
-            errorMessage = nil
+        while true {
+            let operation = load
+            let requestedExpandedThreadIDs = expandedThreadIDs
+            do {
+                let nextSnapshots = try await Task.detached(priority: .utility) {
+                    try await operation(requestedExpandedThreadIDs)
+                }.value
+                snapshots = nextSnapshots
+                lastRefreshedAt = now()
+                errorMessage = nil
 
-            let previousHistory = notificationTracker.seenEventIDs
-            let events = notificationTracker.observe(nextSnapshots, policy: notificationPolicy)
-            if notificationTracker.seenEventIDs != previousHistory {
-                onNotificationHistoryChange(notificationTracker.seenEventIDs)
+                let previousHistory = notificationTracker.seenEventIDs
+                let events = notificationTracker.observe(nextSnapshots, policy: currentPolicy)
+                if notificationTracker.seenEventIDs != previousHistory {
+                    onNotificationHistoryChange(notificationTracker.seenEventIDs)
+                }
+                events.forEach(onNotification)
+            } catch {
+                errorMessage = error.localizedDescription
             }
-            events.forEach(onNotification)
-        } catch {
-            errorMessage = error.localizedDescription
+
+            guard let nextPolicy = pendingRefreshPolicy else {
+                isRefreshing = false
+                return
+            }
+            pendingRefreshPolicy = nil
+            currentPolicy = nextPolicy
         }
+    }
+
+    private func mergedPolicy(
+        _ existing: RefreshNotificationPolicy?,
+        _ incoming: RefreshNotificationPolicy
+    ) -> RefreshNotificationPolicy {
+        if existing == .notify || incoming == .notify {
+            return .notify
+        }
+        return .baseline
     }
 }

@@ -33,6 +33,24 @@ let sqliteThreadRepositoryTests = [
             records.allSatisfy { $0.subagentCount == 0 },
             "missing relationship table should fall back to zero"
         )
+    },
+    TestCase(name: "repository loads direct subagents for requested parents") {
+        let databaseURL = try makeTemporaryThreadDatabase()
+        defer { try? FileManager.default.removeItem(at: databaseURL) }
+
+        let recordsByParent = try SQLiteThreadRepository(databaseURL: databaseURL)
+            .loadDirectSubagents(parentIDs: ["new-thread"])
+        let records = recordsByParent["new-thread"] ?? []
+
+        try expect(
+            records.map(\.id) == ["archived-child", "legacy-child", "subagent-thread"],
+            "all direct children should load in recency order"
+        )
+        try expect(records[0].parentID == "new-thread", "parent identity should be retained")
+        try expect(records[0].agentNickname == "archived-agent", "agent nickname should load")
+        try expect(records[1].agentRole == "explorer", "agent role should load")
+        try expect(records[2].model == "gpt-test", "model should load")
+        try expect(records[2].reasoningEffort == "high", "reasoning effort should load")
     }
 ]
 
@@ -67,15 +85,19 @@ private func makeTemporaryThreadDatabase(includeSpawnEdges: Bool = true) throws 
         recency_at_ms INTEGER NOT NULL,
         archived INTEGER NOT NULL DEFAULT 0,
         thread_source TEXT,
-        tokens_used INTEGER NOT NULL DEFAULT 0
+        tokens_used INTEGER NOT NULL DEFAULT 0,
+        agent_nickname TEXT,
+        agent_role TEXT,
+        model TEXT,
+        reasoning_effort TEXT
     );
     INSERT INTO threads VALUES
-        ('older-thread', 'Older', '/tmp/older.jsonl', 100, 100000, 100000, 0, 'user', 1),
-        ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user', 70808875),
-        ('subagent-thread', 'Child', '/tmp/child.jsonl', 300, 300000, 500000, 0, 'subagent', 2),
-        ('legacy-child', 'Legacy Child', '/tmp/legacy.jsonl', 310, 310000, 510000, 0, NULL, 4),
-        ('archived-child', 'Archived Child', '/tmp/archived-child.jsonl', 320, 320000, 520000, 1, NULL, 5),
-        ('archived-thread', 'Archived', '/tmp/archived.jsonl', 400, 400000, 400000, 1, 'user', 3);
+        ('older-thread', 'Older', '/tmp/older.jsonl', 100, 100000, 100000, 0, 'user', 1, NULL, NULL, NULL, NULL),
+        ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user', 70808875, NULL, NULL, NULL, NULL),
+        ('subagent-thread', 'Child', '/tmp/child.jsonl', 300, 300000, 500000, 0, 'subagent', 2, 'worker-agent', 'worker', 'gpt-test', 'high'),
+        ('legacy-child', 'Legacy Child', '/tmp/legacy.jsonl', 310, 310000, 510000, 0, NULL, 4, 'legacy-agent', 'explorer', 'gpt-test', 'medium'),
+        ('archived-child', 'Archived Child', '/tmp/archived-child.jsonl', 320, 320000, 520000, 1, NULL, 5, 'archived-agent', 'default', 'gpt-test', 'low'),
+        ('archived-thread', 'Archived', '/tmp/archived.jsonl', 400, 400000, 400000, 1, 'user', 3, NULL, NULL, NULL, NULL);
     \(relationshipSQL)
     """
     var errorMessage: UnsafeMutablePointer<CChar>?

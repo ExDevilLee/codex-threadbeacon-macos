@@ -3,6 +3,8 @@ import SwiftUI
 
 struct ThreadRowView: View {
     let snapshot: ThreadSnapshot
+    let isSubagentExpanded: Bool
+    let toggleSubagents: () -> Void
 
     var body: some View {
         HStack(alignment: .top, spacing: 10) {
@@ -17,7 +19,11 @@ struct ThreadRowView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     if let label = SubagentCountFormatter.label(for: snapshot.subagentCount) {
-                        SubagentCountBadge(label: label)
+                        SubagentCountBadge(
+                            label: label,
+                            isExpanded: isSubagentExpanded,
+                            toggle: toggleSubagents
+                        )
 
                         if snapshot.tokenUsage != nil {
                             Divider()

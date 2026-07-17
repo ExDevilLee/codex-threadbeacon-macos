@@ -86,7 +86,11 @@ they do not come from a third-party sound pack. Regenerate and verify them with:
   default; subagent threads are excluded.
 - Each row shows a status light, localized status label, task title, and status duration.
 - A primary task that created Subagents shows its direct Subagent count beside the title. This is
-  a historical relationship count, not a live running count, and no child-task content is read or
+  a historical relationship count, not a live running count.
+- Click the Subagent count to expand direct children inline. Each row shows
+  `agent alias | title`, status, recent activity, and the child's cumulative Token usage. Hover
+  over or click the info icon for nickname, role, model, reasoning effort, and Token details.
+  Child data is read only while expanded; conversation bodies and deeper task-tree levels are not
   displayed.
 - Each row shows a compact cumulative Token total. Hover over the info icon for
   input, cached and uncached input, output, reasoning, current-turn usage, cache
@@ -107,7 +111,8 @@ they do not come from a third-party sound pack. Regenerate and verify them with:
 The app reads only local data:
 
 - `~/.codex/state_5.sqlite`: task metadata, `rollout_path`, cumulative `tokens_used`,
-  and parent-child relationship counts, opened in SQLite read-only mode.
+  parent-child relationships, and nickname, role, model, and reasoning effort for expanded direct
+  Subagents, opened in SQLite read-only mode.
 - `~/.codex/session_index.jsonl`: the latest renamed title matching each task ID.
 - Rollout JSONL: at most the final 2 MiB per task, reading only event types,
   timestamps, and numeric Token fields to derive status, usage details, and

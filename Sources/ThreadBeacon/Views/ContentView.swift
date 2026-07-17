@@ -112,7 +112,34 @@ struct ContentView: View {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(store.snapshots.enumerated()), id: \.element.id) { index, snapshot in
-                        ThreadRowView(snapshot: snapshot)
+                        let isExpanded = store.expandedThreadIDs.contains(snapshot.id)
+                        VStack(spacing: 0) {
+                            ThreadRowView(
+                                snapshot: snapshot,
+                                isSubagentExpanded: isExpanded,
+                                toggleSubagents: {
+                                    store.toggleExpansion(for: snapshot.id)
+                                    Task { await store.refresh(notificationPolicy: .baseline) }
+                                }
+                            )
+
+                            if isExpanded {
+                                Divider().padding(.leading, 42)
+                                if snapshot.subagents.isEmpty {
+                                    SubagentLoadingRow(
+                                        isRefreshing: store.isRefreshing,
+                                        hasError: store.errorMessage != nil
+                                    )
+                                } else {
+                                    ForEach(Array(snapshot.subagents.enumerated()), id: \.element.id) { childIndex, subagent in
+                                        SubagentRowView(snapshot: subagent)
+                                        if childIndex < snapshot.subagents.count - 1 {
+                                            Divider().padding(.leading, 50)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         if index < store.snapshots.count - 1 {
                             Divider().padding(.leading, 42)
                         }

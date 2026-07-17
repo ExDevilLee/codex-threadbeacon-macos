@@ -26,8 +26,8 @@ struct ThreadBeaconApp: App {
         let player = SoundPlaybackService()
         soundPlayer = player
         _store = StateObject(wrappedValue: ThreadStatusStore(
-            load: {
-                try await loader.load(limit: 8)
+            load: { expandedThreadIDs in
+                try await loader.load(limit: 8, expandedThreadIDs: expandedThreadIDs)
             },
             notificationTracker: SoundNotificationTracker(initialSeenEventIDs: history.load()),
             onNotification: { event in

@@ -6,11 +6,13 @@ enum TestRunner {
         let tests = threadStatusTests
             + threadCountFormatterTests
             + monitoringModeTests
+            + relativeActivityFormatterTests
             + rolloutTailParserTests
             + soundNotificationTests
             + sqliteThreadRepositoryTests
             + subagentCountFormatterTests
             + sessionIndexTitleRepositoryTests
+            + subagentAliasFormatterTests
             + threadStatusLoaderTests
             + threadStatusStoreTests
             + tokenCountFormatterTests

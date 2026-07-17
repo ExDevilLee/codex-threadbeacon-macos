@@ -225,5 +225,97 @@ let threadStatusLoaderTests = [
             snapshots.first?.subagentCount == 3,
             "loader should pass direct child count to snapshots"
         )
+    },
+    TestCase(name: "loader only loads and sorts subagents for expanded visible parents") {
+        let now = Date(timeIntervalSince1970: 7_000)
+        let requestedParents = StringSetBox()
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "parent",
+                    title: "Parent",
+                    rolloutPath: "/tmp/parent",
+                    updatedAt: now,
+                    subagentCount: 2
+                )]
+            },
+            loadSubagentRecords: { parentIDs in
+                requestedParents.replace(parentIDs)
+                return [
+                    "parent": [
+                        SubagentRecord(
+                            id: "idle-child",
+                            parentID: "parent",
+                            title: "Original child title",
+                            rolloutPath: "/tmp/idle-child",
+                            updatedAt: now,
+                            tokensUsed: 20,
+                            agentNickname: "idle-agent",
+                            agentRole: "explorer",
+                            model: "gpt-test",
+                            reasoningEffort: "medium"
+                        ),
+                        SubagentRecord(
+                            id: "running-child",
+                            parentID: "parent",
+                            title: "Running child",
+                            rolloutPath: "/tmp/running-child",
+                            updatedAt: now,
+                            tokensUsed: 30
+                        )
+                    ]
+                ]
+            },
+            loadTitleOverrides: { ["idle-child": "Renamed child"] },
+            observe: { url in
+                switch url.path {
+                case "/tmp/running-child":
+                    RolloutObservation(
+                        status: .running,
+                        statusChangedAt: now.addingTimeInterval(-10),
+                        latestEventAt: now.addingTimeInterval(-5)
+                    )
+                case "/tmp/idle-child":
+                    RolloutObservation(
+                        status: .justCompleted,
+                        statusChangedAt: now.addingTimeInterval(-120),
+                        latestEventAt: now.addingTimeInterval(-120)
+                    )
+                default:
+                    RolloutObservation(status: .idle, statusChangedAt: now)
+                }
+            },
+            now: { now },
+            completedRetention: 60
+        )
+
+        let snapshots = try await loader.load(
+            limit: 8,
+            expandedThreadIDs: ["parent", "not-visible"]
+        )
+        let subagents = snapshots.first?.subagents ?? []
+
+        try expect(requestedParents.values == ["parent"], "only visible expanded parents should load")
+        try expect(
+            subagents.map(\.id) == ["running-child", "idle-child"],
+            "subagents should use status priority"
+        )
+        try expect(subagents[1].title == "Renamed child", "subagent rename should override SQLite title")
+        try expect(subagents[1].status == .idle, "subagents should reuse completion retention")
+        try expect(subagents[1].agentRole == "explorer", "subagent details should be retained")
+        try expect(subagents[1].tokenUsage?.totalTokens == 20, "SQLite token fallback should be retained")
     }
 ]
+
+private final class StringSetBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: Set<String> = []
+
+    var values: Set<String> {
+        lock.withLock { storage }
+    }
+
+    func replace(_ values: Set<String>) {
+        lock.withLock { storage = values }
+    }
+}

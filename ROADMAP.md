@@ -31,6 +31,11 @@
   Reasoning、当前 turn 和缓存率；默认不聚合 subagent。
 - 主任务行显示直接 Subagent 总数，并使用父子关系表补强子任务过滤；数量不表示实时
   运行状态。
+- **已完成（Feature 6A）**：点击数量标记可行内展开直接 Subagent，默认以
+  `Agent 别名 ｜ 标题` 显示名称，并显示状态、最近活动和自身累计 Token；info 详情显示
+  昵称、角色、模型、Reasoning 和 Token 明细。
+- **已完成（Feature 6A）**：只为已展开且当前可见的主任务批量读取子任务，展开状态仅
+  在本次 App 生命周期保留；不读取正文、不显示更深任务树、不聚合父子 Token。
 - **POC 已验证**：Codex CLI 创建并 rename 的真实任务可进入现有列表；状态、rename 后
   标题、rollout 事件和 Token 数据均可由当前只读数据链路获取。验证边界见
   [`docs/codex-cli-compatibility.md`](docs/codex-cli-compatibility.md)。
@@ -71,10 +76,9 @@
 ### 更多状态与数据
 
 - `状态颜色`：保留现有红黄绿灯的主语义，补充 `needsAction`、`error`、`unknown` 时避免只依赖颜色表达。
-- `Subagent 展开详情与实时状态`：总数标记只表达历史直接子任务数量；展开详情、活动
-  数量、状态颜色和任务树 Token 聚合继续保留为后续候选。可行性边界见
-  [`docs/subagent-count-feasibility.md`](docs/subagent-count-feasibility.md)。下一阶段建议先实现
-  直接 Subagent 的行内展开，只显示状态、标题、最近活动和自身累计 Token；详细调研见
+- `Subagent 后续增强`：直接 Subagent 行内展开已完成；可靠的实时活动数量、异常提示、
+  更深任务树和任务树 Token 聚合继续保留为后续候选。可行性边界见
+  [`docs/subagent-count-feasibility.md`](docs/subagent-count-feasibility.md) 和
   [`docs/subagent-expansion-and-compaction-feasibility.md`](docs/subagent-expansion-and-compaction-feasibility.md)。
 - `压缩可观测性`：rollout 可显示历史压缩次数和最近完成时间，但不能判断实时压缩状态或
   百分比进度；共享 app-server 或可选 `PreCompact` / `PostCompact` Hook 可提供开始、完成和
@@ -115,7 +119,7 @@
 - 哪些任务最值得置顶：长期任务、正在运行任务，还是用户手动选择的任务？
 - “忽略”应持续到手动恢复，还是任务再次运行时自动恢复？
 - 当前紧凑 Token 概览能否帮助决策，还是仍会增加状态窗负担？
-- 当前 Subagent 总数标记是否真正帮助理解任务复杂度，还是增加了列表负担？
+- 当前 Subagent 行内展开是否帮助判断并行任务进度，还是增加了列表滚动负担？
 - Codex 后续是否会提供可供独立 App 使用的只读实时事件接口？
 - Codex CLI 的归档、resume 和跨版本升级是否始终保持当前任务身份、rename 与状态语义？
 
@@ -123,7 +127,7 @@
 
 1. 任务右键菜单：置顶、忽略与恢复。
 2. 状态数据源健康诊断和最小 Settings 收口。
-3. 扩展状态与 subagent 数据可行性验证。
+3. 扩展状态与 Subagent 后续增强可行性验证。
 4. Codex CLI 长生命周期与跨版本兼容性验证。
 5. 国际化与主题设置。
 6. Windows 版本评估与移植。

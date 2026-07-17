@@ -12,7 +12,7 @@ let threadStatusStoreTests = [
             latestEventAt: Date()
         )
         let store = await MainActor.run {
-            ThreadStatusStore(load: { [snapshot] })
+            ThreadStatusStore(load: { _ in [snapshot] })
         }
 
         await store.refresh()
@@ -32,7 +32,7 @@ let threadStatusStoreTests = [
         let receivedHistory = EventHistoryBox()
         let store = await MainActor.run {
             ThreadStatusStore(
-                load: { await sequence.next() },
+                load: { _ in await sequence.next() },
                 onNotification: { event in receivedEvents.append(event) },
                 onNotificationHistoryChange: { ids in receivedHistory.replace(ids) }
             )
@@ -45,6 +45,50 @@ let threadStatusStoreTests = [
         try expect(receivedEvents.values.count == 1, "only the new automatic completion should notify")
         try expect(receivedEvents.values.first?.category == .done, "completion should use done category")
         try expect(receivedHistory.values.count == 2, "new event IDs should be persisted")
+    },
+    TestCase(name: "store passes transient expanded thread IDs to refreshes") {
+        let receivedExpansions = ExpansionHistoryBox()
+        let store = await MainActor.run {
+            ThreadStatusStore(load: { expandedThreadIDs in
+                receivedExpansions.append(expandedThreadIDs)
+                return []
+            })
+        }
+
+        await MainActor.run { store.toggleExpansion(for: "parent") }
+        await store.refresh()
+        let expanded = await MainActor.run { store.expandedThreadIDs }
+
+        try expect(expanded == ["parent"], "expanded thread state should be retained in memory")
+        try expect(receivedExpansions.values == [["parent"]], "refresh should request expanded children")
+
+        await MainActor.run { store.toggleExpansion(for: "parent") }
+        await store.refresh()
+        let collapsed = await MainActor.run { store.expandedThreadIDs }
+
+        try expect(collapsed.isEmpty, "second toggle should collapse the thread")
+        try expect(receivedExpansions.values.last == [], "collapsed refresh should stop requesting children")
+    },
+    TestCase(name: "store queues expansion refresh while another refresh is running") {
+        let gate = RefreshLoadGate()
+        let store = await MainActor.run {
+            ThreadStatusStore(load: { expandedThreadIDs in
+                await gate.load(expandedThreadIDs)
+            })
+        }
+
+        let initialRefresh = Task { await store.refresh() }
+        await gate.waitUntilFirstLoadStarts()
+        await MainActor.run { store.toggleExpansion(for: "parent") }
+        await store.refresh()
+        await gate.releaseFirstLoad()
+        await initialRefresh.value
+
+        let requests = await gate.requests
+        try expect(
+            requests == [[], ["parent"]],
+            "an expansion during refresh should trigger one follow-up load"
+        )
     }
 ]
 
@@ -73,6 +117,54 @@ private final class EventHistoryBox: @unchecked Sendable {
 
     func replace(_ ids: [String]) {
         values = ids
+    }
+}
+
+private final class ExpansionHistoryBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [Set<String>] = []
+
+    var values: [Set<String>] {
+        lock.withLock { storage }
+    }
+
+    func append(_ value: Set<String>) {
+        lock.withLock { storage.append(value) }
+    }
+}
+
+private actor RefreshLoadGate {
+    private(set) var requests: [Set<String>] = []
+    private var firstLoadStarted = false
+    private var startContinuation: CheckedContinuation<Void, Never>?
+    private var releaseContinuation: CheckedContinuation<Void, Never>?
+
+    func load(_ expandedThreadIDs: Set<String>) async -> [ThreadSnapshot] {
+        requests.append(expandedThreadIDs)
+        guard requests.count == 1 else {
+            return []
+        }
+        firstLoadStarted = true
+        startContinuation?.resume()
+        startContinuation = nil
+        await withCheckedContinuation { continuation in
+            releaseContinuation = continuation
+        }
+        return []
+    }
+
+    func waitUntilFirstLoadStarts() async {
+        guard !firstLoadStarted else {
+            return
+        }
+        await withCheckedContinuation { continuation in
+            startContinuation = continuation
+        }
+    }
+
+    func releaseFirstLoad() {
+        releaseContinuation?.resume()
+        releaseContinuation = nil
     }
 }
 

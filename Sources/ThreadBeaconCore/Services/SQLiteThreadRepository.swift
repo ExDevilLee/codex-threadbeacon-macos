@@ -95,6 +95,104 @@ public struct SQLiteThreadRepository: Sendable {
         }
     }
 
+    public func loadDirectSubagents(parentIDs: [String]) throws -> [String: [SubagentRecord]] {
+        let parentIDs = Array(Set(parentIDs)).sorted()
+        guard !parentIDs.isEmpty else {
+            return [:]
+        }
+        guard parentIDs.count <= Int(Int32.max) else {
+            throw SQLiteThreadRepositoryError.invalidLimit
+        }
+
+        var database: OpaquePointer?
+        let openResult = sqlite3_open_v2(
+            databaseURL.path,
+            &database,
+            SQLITE_OPEN_READONLY,
+            nil
+        )
+        guard openResult == SQLITE_OK, let database else {
+            let message = database.map(databaseMessage) ?? "无法打开数据库"
+            if let database {
+                sqlite3_close(database)
+            }
+            throw SQLiteThreadRepositoryError.database(message)
+        }
+        defer { sqlite3_close(database) }
+
+        guard try hasSpawnEdgesTable(in: database) else {
+            return [:]
+        }
+
+        let placeholders = Array(repeating: "?", count: parentIDs.count).joined(separator: ", ")
+        let sql = """
+        SELECT edge.parent_thread_id,
+               child.id,
+               child.title,
+               child.rollout_path,
+               COALESCE(child.updated_at_ms, child.updated_at * 1000),
+               child.tokens_used,
+               child.agent_nickname,
+               child.agent_role,
+               child.model,
+               child.reasoning_effort
+        FROM thread_spawn_edges AS edge
+        JOIN threads AS child ON child.id = edge.child_thread_id
+        WHERE edge.parent_thread_id IN (\(placeholders))
+        ORDER BY edge.parent_thread_id,
+                 child.recency_at_ms DESC,
+                 child.id DESC
+        """
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK,
+              let statement else {
+            throw SQLiteThreadRepositoryError.database(databaseMessage(database))
+        }
+        defer { sqlite3_finalize(statement) }
+
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        for (offset, parentID) in parentIDs.enumerated() {
+            guard sqlite3_bind_text(statement, Int32(offset + 1), parentID, -1, transient) == SQLITE_OK else {
+                throw SQLiteThreadRepositoryError.database(databaseMessage(database))
+            }
+        }
+
+        var recordsByParent: [String: [SubagentRecord]] = [:]
+        while true {
+            switch sqlite3_step(statement) {
+            case SQLITE_ROW:
+                guard
+                    let parentIDText = sqlite3_column_text(statement, 0),
+                    let idText = sqlite3_column_text(statement, 1),
+                    let titleText = sqlite3_column_text(statement, 2),
+                    let rolloutText = sqlite3_column_text(statement, 3)
+                else {
+                    throw SQLiteThreadRepositoryError.invalidRow
+                }
+                let parentID = String(cString: parentIDText)
+                let record = SubagentRecord(
+                    id: String(cString: idText),
+                    parentID: parentID,
+                    title: String(cString: titleText),
+                    rolloutPath: String(cString: rolloutText),
+                    updatedAt: Date(
+                        timeIntervalSince1970: Double(sqlite3_column_int64(statement, 4)) / 1_000
+                    ),
+                    tokensUsed: sqlite3_column_int64(statement, 5),
+                    agentNickname: optionalString(statement, column: 6),
+                    agentRole: optionalString(statement, column: 7),
+                    model: optionalString(statement, column: 8),
+                    reasoningEffort: optionalString(statement, column: 9)
+                )
+                recordsByParent[parentID, default: []].append(record)
+            case SQLITE_DONE:
+                return recordsByParent
+            default:
+                throw SQLiteThreadRepositoryError.database(databaseMessage(database))
+            }
+        }
+    }
+
     private var relationshipAwareSQL: String {
         """
         SELECT t.id, t.title, t.rollout_path,
@@ -162,5 +260,14 @@ public struct SQLiteThreadRepository: Sendable {
             return "未知 SQLite 错误"
         }
         return String(cString: message)
+    }
+
+    private func optionalString(_ statement: OpaquePointer, column: Int32) -> String? {
+        guard sqlite3_column_type(statement, column) != SQLITE_NULL,
+              let text = sqlite3_column_text(statement, column) else {
+            return nil
+        }
+        let value = String(cString: text)
+        return value.isEmpty ? nil : value
     }
 }
