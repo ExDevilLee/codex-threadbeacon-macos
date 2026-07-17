@@ -90,10 +90,11 @@ let threadStatusStoreTests = [
             "an expansion during refresh should trigger one follow-up load"
         )
     },
-    TestCase(name: "store requests pinned and ignored threads with extra recent candidates") {
+    TestCase(name: "store requests list preference tasks with extra recent candidates") {
         let requests = LoadRequestBox()
         let preferences = ThreadListPreferences(
             pinnedThreadIDs: ["pinned"],
+            favoriteThreadIDs: ["favorite"],
             ignoredRules: [
                 "ignored": IgnoredThreadRule(
                     threadID: "ignored",
@@ -117,6 +118,8 @@ let threadStatusStoreTests = [
 
         try expect(requests.values.first?.includedThreadIDs == ["ignored", "pinned"],
                    "load should include pinned and ignored task IDs")
+        try expect(requests.values.first?.favoriteThreadIDs == ["favorite"],
+                   "load should request favorites through the archived-aware path")
         try expect(requests.values.first?.recentLimit == 9,
                    "ignored tasks should increase the recent candidate limit")
     },
@@ -159,6 +162,51 @@ let threadStatusStoreTests = [
         try expect(!isPinned, "unavailable task should not remain permanently pinned")
         try expect(preferenceHistory.values.last?.pinnedThreadIDs.isEmpty == true,
                    "pruned pin should be persisted")
+    },
+    TestCase(name: "store toggles favorite and favorites-only mode") {
+        let preferenceHistory = PreferenceHistoryBox()
+        let candidates = [
+            storeListSnapshot(id: "favorite", status: .idle, eventSecond: 10),
+            storeListSnapshot(id: "regular", status: .running, eventSecond: 20)
+        ]
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in candidates },
+                onPreferencesChange: { preferenceHistory.append($0) }
+            )
+        }
+
+        await store.refresh()
+        await MainActor.run {
+            store.toggleFavorite(for: "favorite")
+            store.toggleFavoritesOnly()
+        }
+
+        let result = await MainActor.run {
+            (
+                store.snapshots.map(\.id),
+                store.isFavorite("favorite"),
+                store.showsFavoritesOnly
+            )
+        }
+        try expect(result.0 == ["favorite"], "favorites-only mode should update the visible list immediately")
+        try expect(result.1, "store should expose favorite state")
+        try expect(result.2, "store should expose favorites-only mode")
+        try expect(preferenceHistory.values.last?.favoriteThreadIDs == ["favorite"],
+                   "favorite state should be persisted")
+        try expect(preferenceHistory.values.last?.showsFavoritesOnly == true,
+                   "favorites-only mode should be persisted")
+    },
+    TestCase(name: "store keeps unavailable favorite IDs") {
+        let preferences = ThreadListPreferences(favoriteThreadIDs: ["temporarily-missing"])
+        let store = await MainActor.run {
+            ThreadStatusStore(load: { _ in [] }, initialPreferences: preferences)
+        }
+
+        await store.refresh()
+
+        let remainsFavorite = await MainActor.run { store.isFavorite("temporarily-missing") }
+        try expect(remainsFavorite, "missing favorite should survive temporary data-source gaps")
     },
     TestCase(name: "store ignores task immediately and suppresses its notification") {
         let initial = storeListSnapshot(id: "hidden", status: .idle, eventSecond: 10)

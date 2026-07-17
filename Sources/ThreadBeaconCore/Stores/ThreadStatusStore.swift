@@ -4,15 +4,18 @@ import Foundation
 public struct ThreadLoadRequest: Equatable, Sendable {
     public let expandedThreadIDs: Set<String>
     public let includedThreadIDs: Set<String>
+    public let favoriteThreadIDs: Set<String>
     public let recentLimit: Int
 
     public init(
         expandedThreadIDs: Set<String>,
         includedThreadIDs: Set<String>,
+        favoriteThreadIDs: Set<String> = [],
         recentLimit: Int
     ) {
         self.expandedThreadIDs = expandedThreadIDs
         self.includedThreadIDs = includedThreadIDs
+        self.favoriteThreadIDs = favoriteThreadIDs
         self.recentLimit = recentLimit
     }
 }
@@ -66,6 +69,14 @@ public final class ThreadStatusStore: ObservableObject {
         preferences.pinnedThreadIDs.contains(threadID)
     }
 
+    public func isFavorite(_ threadID: String) -> Bool {
+        preferences.favoriteThreadIDs.contains(threadID)
+    }
+
+    public var showsFavoritesOnly: Bool {
+        preferences.showsFavoritesOnly
+    }
+
     public func ignoredTitle(for threadID: String) -> String? {
         candidateSnapshots.first { $0.id == threadID }?.title
     }
@@ -85,6 +96,22 @@ public final class ThreadStatusStore: ObservableObject {
             } else {
                 preferences.pinnedThreadIDs.insert(threadID)
             }
+        }
+    }
+
+    public func toggleFavorite(for threadID: String) {
+        updatePreferences { preferences in
+            if preferences.favoriteThreadIDs.contains(threadID) {
+                preferences.favoriteThreadIDs.remove(threadID)
+            } else {
+                preferences.favoriteThreadIDs.insert(threadID)
+            }
+        }
+    }
+
+    public func toggleFavoritesOnly() {
+        updatePreferences { preferences in
+            preferences.showsFavoritesOnly.toggle()
         }
     }
 
@@ -157,6 +184,7 @@ public final class ThreadStatusStore: ObservableObject {
         return ThreadLoadRequest(
             expandedThreadIDs: expandedThreadIDs,
             includedThreadIDs: includedIDs,
+            favoriteThreadIDs: preferences.favoriteThreadIDs,
             recentLimit: recentLimit
         )
     }

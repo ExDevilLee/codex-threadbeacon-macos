@@ -31,6 +31,7 @@ struct ThreadBeaconApp: App {
                 try await loader.load(
                     limit: request.recentLimit,
                     includedThreadIDs: request.includedThreadIDs,
+                    favoriteThreadIDs: request.favoriteThreadIDs,
                     expandedThreadIDs: request.expandedThreadIDs
                 )
             },

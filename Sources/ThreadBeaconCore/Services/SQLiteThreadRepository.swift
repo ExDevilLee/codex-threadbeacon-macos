@@ -63,6 +63,17 @@ public struct SQLiteThreadRepository: Sendable {
     }
 
     public func loadByIDs(_ threadIDs: [String]) throws -> [ThreadRecord] {
+        try loadByIDs(threadIDs, includingArchived: false)
+    }
+
+    public func loadByIDsIncludingArchived(_ threadIDs: [String]) throws -> [ThreadRecord] {
+        try loadByIDs(threadIDs, includingArchived: true)
+    }
+
+    private func loadByIDs(
+        _ threadIDs: [String],
+        includingArchived: Bool
+    ) throws -> [ThreadRecord] {
         let threadIDs = Array(Set(threadIDs)).sorted()
         guard !threadIDs.isEmpty else {
             return []
@@ -89,7 +100,11 @@ public struct SQLiteThreadRepository: Sendable {
 
         let hasSpawnEdges = try hasSpawnEdgesTable(in: database)
         let placeholders = Array(repeating: "?", count: threadIDs.count).joined(separator: ", ")
-        let sql = explicitThreadSQL(placeholders: placeholders, hasSpawnEdges: hasSpawnEdges)
+        let sql = explicitThreadSQL(
+            placeholders: placeholders,
+            hasSpawnEdges: hasSpawnEdges,
+            includingArchived: includingArchived
+        )
         var statement: OpaquePointer?
         guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK,
               let statement else {
@@ -125,6 +140,7 @@ public struct SQLiteThreadRepository: Sendable {
                 let updatedAtMilliseconds = sqlite3_column_int64(statement, 3)
                 let tokensUsed = sqlite3_column_int64(statement, 4)
                 let subagentCountValue = sqlite3_column_int64(statement, 5)
+                let isArchived = sqlite3_column_int(statement, 6) != 0
                 guard
                     subagentCountValue >= 0,
                     let subagentCount = Int(exactly: subagentCountValue)
@@ -137,7 +153,8 @@ public struct SQLiteThreadRepository: Sendable {
                     rolloutPath: String(cString: rolloutText),
                     updatedAt: Date(timeIntervalSince1970: Double(updatedAtMilliseconds) / 1_000),
                     tokensUsed: tokensUsed,
-                    subagentCount: subagentCount
+                    subagentCount: subagentCount,
+                    isArchived: isArchived
                 ))
             case SQLITE_DONE:
                 return records
@@ -250,7 +267,8 @@ public struct SQLiteThreadRepository: Sendable {
         SELECT t.id, t.title, t.rollout_path,
                COALESCE(t.updated_at_ms, t.updated_at * 1000),
                t.tokens_used,
-               COALESCE(children.child_count, 0)
+               COALESCE(children.child_count, 0),
+               t.archived
         FROM threads AS t
         LEFT JOIN (
             SELECT parent_thread_id, COUNT(*) AS child_count
@@ -274,7 +292,8 @@ public struct SQLiteThreadRepository: Sendable {
         SELECT id, title, rollout_path,
                COALESCE(updated_at_ms, updated_at * 1000),
                tokens_used,
-               0
+               0,
+               archived
         FROM threads
         WHERE archived = 0
           AND COALESCE(thread_source, '') <> 'subagent'
@@ -283,13 +302,19 @@ public struct SQLiteThreadRepository: Sendable {
         """
     }
 
-    private func explicitThreadSQL(placeholders: String, hasSpawnEdges: Bool) -> String {
+    private func explicitThreadSQL(
+        placeholders: String,
+        hasSpawnEdges: Bool,
+        includingArchived: Bool
+    ) -> String {
+        let archiveClause = includingArchived ? "" : "AND t.archived = 0"
         if hasSpawnEdges {
             return """
             SELECT t.id, t.title, t.rollout_path,
                    COALESCE(t.updated_at_ms, t.updated_at * 1000),
                    t.tokens_used,
-                   COALESCE(children.child_count, 0)
+                   COALESCE(children.child_count, 0),
+                   t.archived
             FROM threads AS t
             LEFT JOIN (
                 SELECT parent_thread_id, COUNT(*) AS child_count
@@ -297,7 +322,7 @@ public struct SQLiteThreadRepository: Sendable {
                 GROUP BY parent_thread_id
             ) AS children ON children.parent_thread_id = t.id
             WHERE t.id IN (\(placeholders))
-              AND t.archived = 0
+              \(archiveClause)
               AND COALESCE(t.thread_source, '') <> 'subagent'
               AND NOT EXISTS (
                   SELECT 1
@@ -307,14 +332,16 @@ public struct SQLiteThreadRepository: Sendable {
             ORDER BY t.recency_at_ms DESC, t.id DESC
             """
         }
+        let legacyArchiveClause = includingArchived ? "" : "AND archived = 0"
         return """
         SELECT id, title, rollout_path,
                COALESCE(updated_at_ms, updated_at * 1000),
                tokens_used,
-               0
+               0,
+               archived
         FROM threads
         WHERE id IN (\(placeholders))
-          AND archived = 0
+          \(legacyArchiveClause)
           AND COALESCE(thread_source, '') <> 'subagent'
         ORDER BY recency_at_ms DESC, id DESC
         """

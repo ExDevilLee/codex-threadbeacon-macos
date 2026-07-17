@@ -49,6 +49,18 @@ struct ContentView: View {
             Spacer(minLength: 8)
 
             Button {
+                store.toggleFavoritesOnly()
+                Task { await store.refresh(notificationPolicy: .baseline) }
+            } label: {
+                Image(systemName: store.showsFavoritesOnly ? "star.fill" : "star")
+                    .foregroundStyle(store.showsFavoritesOnly ? Color.accentColor : Color.secondary)
+                    .frame(width: 18, height: 18)
+            }
+            .buttonStyle(.borderless)
+            .help(store.showsFavoritesOnly ? "显示全部任务" : "仅显示收藏")
+            .accessibilityLabel(store.showsFavoritesOnly ? "显示全部任务" : "仅显示收藏")
+
+            Button {
                 isWindowPinned.toggle()
             } label: {
                 Image(systemName: isWindowPinned ? "pin.fill" : "pin")
@@ -120,8 +132,8 @@ struct ContentView: View {
     private var content: some View {
         if store.snapshots.isEmpty {
             ContentUnavailableView(
-                "暂无 Codex 任务",
-                systemImage: "list.bullet.rectangle"
+                store.showsFavoritesOnly ? "暂无收藏任务" : "暂无 Codex 任务",
+                systemImage: store.showsFavoritesOnly ? "star" : "list.bullet.rectangle"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
@@ -133,6 +145,7 @@ struct ContentView: View {
                             ThreadRowView(
                                 snapshot: snapshot,
                                 isPinned: store.isPinned(snapshot.id),
+                                isFavorite: store.isFavorite(snapshot.id),
                                 isSubagentExpanded: isExpanded,
                                 toggleSubagents: {
                                     store.toggleExpansion(for: snapshot.id)
@@ -140,6 +153,16 @@ struct ContentView: View {
                                 }
                             )
                             .contextMenu {
+                                Button {
+                                    store.toggleFavorite(for: snapshot.id)
+                                    Task { await store.refresh(notificationPolicy: .baseline) }
+                                } label: {
+                                    Label(
+                                        store.isFavorite(snapshot.id) ? "取消收藏" : "收藏会话",
+                                        systemImage: store.isFavorite(snapshot.id) ? "star.slash" : "star"
+                                    )
+                                }
+
                                 Button {
                                     store.togglePin(for: snapshot.id)
                                     Task { await store.refresh(notificationPolicy: .baseline) }

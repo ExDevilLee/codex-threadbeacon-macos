@@ -113,6 +113,26 @@ let threadListPolicyTests = [
             result.preferences.ignoredRules.keys.sorted() == ["still-hidden"],
             "only the rule with a newer turn should be removed"
         )
+    },
+    TestCase(name: "thread list can show only favorite tasks") {
+        let preferences = ThreadListPreferences(
+            favoriteThreadIDs: ["favorite", "archived-favorite"],
+            showsFavoritesOnly: true
+        )
+        let result = ThreadListPolicy.evaluate(
+            candidates: [
+                listSnapshot(id: "regular", status: .running, eventSecond: 30),
+                listSnapshot(id: "favorite", status: .idle, eventSecond: 20),
+                listSnapshot(id: "archived-favorite", status: .idle, eventSecond: 10, isArchived: true)
+            ],
+            preferences: preferences,
+            limit: 8
+        )
+
+        try expect(
+            result.visibleSnapshots.map(\.id) == ["favorite", "archived-favorite"],
+            "favorites-only mode should hide every non-favorite task"
+        )
     }
 ]
 
@@ -120,7 +140,8 @@ private func listSnapshot(
     id: String,
     status: ThreadDisplayStatus,
     eventSecond: TimeInterval,
-    taskStartedSecond: TimeInterval? = nil
+    taskStartedSecond: TimeInterval? = nil,
+    isArchived: Bool = false
 ) -> ThreadSnapshot {
     let eventDate = Date(timeIntervalSince1970: eventSecond)
     return ThreadSnapshot(
@@ -130,6 +151,7 @@ private func listSnapshot(
         statusChangedAt: eventDate,
         updatedAt: eventDate,
         latestEventAt: eventDate,
-        latestTaskStartedAt: taskStartedSecond.map(Date.init(timeIntervalSince1970:))
+        latestTaskStartedAt: taskStartedSecond.map(Date.init(timeIntervalSince1970:)),
+        isArchived: isArchived
     )
 }

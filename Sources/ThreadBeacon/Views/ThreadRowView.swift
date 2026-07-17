@@ -4,6 +4,7 @@ import SwiftUI
 struct ThreadRowView: View {
     let snapshot: ThreadSnapshot
     let isPinned: Bool
+    let isFavorite: Bool
     let isSubagentExpanded: Bool
     let toggleSubagents: () -> Void
 
@@ -20,6 +21,22 @@ struct ThreadRowView: View {
                             .foregroundStyle(.secondary)
                             .help("已置顶")
                             .accessibilityLabel("已置顶")
+                    }
+
+                    if isFavorite {
+                        Image(systemName: "star.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.yellow)
+                            .help("已收藏")
+                            .accessibilityLabel("已收藏")
+                    }
+
+                    if snapshot.isArchived {
+                        Image(systemName: "archivebox.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .help("已归档")
+                            .accessibilityLabel("已归档")
                     }
 
                     Text(snapshot.title.isEmpty ? "未命名任务" : snapshot.title)
@@ -81,7 +98,10 @@ struct ThreadRowView: View {
     }
 
     private var primaryStatusText: String {
-        snapshot.serviceIncident?.phase == .failed ? "服务失败" : snapshot.status.displayName
+        if snapshot.isArchived {
+            return "已归档"
+        }
+        return snapshot.serviceIncident?.phase == .failed ? "服务失败" : snapshot.status.displayName
     }
 }
 

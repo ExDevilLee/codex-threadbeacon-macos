@@ -38,7 +38,10 @@ public enum ThreadListPolicy {
         let ignoredSnapshots = candidates
             .filter { ignoredIDs.contains($0.id) }
             .sorted { precedes($0, $1, pinnedThreadIDs: preferences.pinnedThreadIDs) }
-        let visibleSnapshots = candidates
+        let displayCandidates = preferences.showsFavoritesOnly
+            ? candidates.filter { preferences.favoriteThreadIDs.contains($0.id) }
+            : candidates
+        let visibleSnapshots = displayCandidates
             .filter { !ignoredIDs.contains($0.id) }
             .sorted { precedes($0, $1, pinnedThreadIDs: preferences.pinnedThreadIDs) }
             .prefix(max(0, limit))

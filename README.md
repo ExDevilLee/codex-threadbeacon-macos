@@ -83,7 +83,8 @@ Alert；两类通知都可自由选择六种声音。可重复生成并验证：
 
 ## 界面
 
-- 默认显示最近 8 个未归档 Codex Desktop 与 Codex CLI 主任务，不显示 subagent 子线程。
+- 默认显示最近 8 个未归档 Codex Desktop 与 Codex CLI 主任务，不显示 subagent 子线程；
+  已收藏的归档主任务可在收藏筛选中继续显示。
 - 每行显示状态灯、中文状态、任务标题和状态持续时间。
 - 创建过 Subagent 的主任务会在标题右侧显示直接 Subagent 总数；这是历史关系数量，
   不代表当前正在运行的数量。
@@ -98,8 +99,12 @@ Alert；两类通知都可自由选择六种声音。可重复生成并验证：
 - 每 2 秒自动刷新，也可使用右上角刷新按钮手动刷新。
 - 标题栏可暂停或恢复自动监听；暂停期间仍可手动刷新，重新启动 App 后默认恢复监听。
 - 可使用右上角图钉按钮让窗口保持在其他 App 之前；选择会在重启后保留。
-- 右键主任务可置顶或忽略。状态优先级始终高于置顶，同一状态内置顶任务优先；普通
-  忽略会在该任务出现新 turn 时自动恢复。
+- 右键主任务可收藏、置顶或忽略。收藏形成独立的长期关注集合，不改变排序；标题栏
+  星标按钮可在全部任务与仅收藏之间切换，筛选状态会在重启后保留。
+- 已归档收藏显示灰色`已归档`状态，保留可读取的 rename 标题和 Token，不显示为运行中，
+  也不触发完成或异常提示音。
+- 状态优先级始终高于置顶，同一状态内置顶任务优先；普通忽略会在该任务出现新 turn 时
+  自动恢复。
 - 存在已忽略任务时，标题栏显示 `eye.slash` 管理按钮，可逐项恢复或全部恢复。
 - 标题栏扬声器按钮打开提示音设置；完成与 429/503 服务异常可分别关闭、从六种内置
   声音中选择并试听。启动、手动刷新和恢复监听不会补播历史事件。
@@ -112,7 +117,8 @@ Alert；两类通知都可自由选择六种声音。可重复生成并验证：
 
 App 只在本机读取：
 
-- `~/.codex/state_5.sqlite`：以 SQLite read-only 模式读取任务元数据、`rollout_path`、
+- `~/.codex/state_5.sqlite`：以 SQLite read-only 模式读取近期未归档任务及已收藏归档任务
+  的元数据、`rollout_path`、归档状态、
   累计 `tokens_used`、父子任务关系，以及已展开直接 Subagent 的昵称、角色、模型和
   Reasoning effort。
 - `~/.codex/session_index.jsonl`：只读匹配任务 ID，取最后一条有效 `thread_name` 作为 rename 后标题。
@@ -161,4 +167,8 @@ rm -rf dist .build
 ## 平台仓库
 
 ThreadBeacon 的平台实现使用独立仓库维护。当前仓库只包含原生 macOS App；其他平台
-实现实际创建后，会在这里加入 `Related projects` 链接，不提前链接尚不存在的仓库。
+实现使用各自仓库独立开发和发布。
+
+Related projects：
+
+- [Codex ThreadBeacon for Windows](https://github.com/ExDevilLee/codex-threadbeacon-windows)

@@ -346,6 +346,48 @@ let threadStatusLoaderTests = [
         try expect(Set(snapshots.map(\.id)) == ["included", "recent"], "records should merge by ID")
         try expect(snapshots.count == 2, "duplicate recent record should be removed")
     },
+    TestCase(name: "loader normalizes archived favorites and suppresses notifications") {
+        let now = Date(timeIntervalSince1970: 7_700)
+        let requestedFavorites = StringSetBox()
+        let archived = ThreadRecord(
+            id: "archived",
+            title: "Archived favorite",
+            rolloutPath: "/tmp/archived",
+            updatedAt: now.addingTimeInterval(-100),
+            tokensUsed: 42,
+            isArchived: true
+        )
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in [] },
+            loadFavoriteRecords: { ids in
+                requestedFavorites.replace(ids)
+                return [archived]
+            },
+            observe: { _ in
+                RolloutObservation(
+                    status: .running,
+                    statusChangedAt: now.addingTimeInterval(-10),
+                    latestEventAt: now.addingTimeInterval(-5),
+                    completionEventAt: now.addingTimeInterval(-5)
+                )
+            },
+            now: { now }
+        )
+
+        let snapshot = try await loader.load(
+            limit: 8,
+            includedThreadIDs: [],
+            favoriteThreadIDs: ["archived"],
+            expandedThreadIDs: []
+        ).first
+
+        try expect(requestedFavorites.values == ["archived"], "loader should request favorite IDs separately")
+        try expect(snapshot?.isArchived == true, "archived flag should reach the UI snapshot")
+        try expect(snapshot?.status == .idle, "archived task must not appear to be running")
+        try expect(snapshot?.completionEventAt == nil, "archived task must not emit completion evidence")
+        try expect(snapshot?.serviceIncident == nil, "archived task must not expose active incidents")
+        try expect(snapshot?.tokenUsage?.totalTokens == 42, "archived task should retain token details")
+    },
     TestCase(name: "loader lets final service failure override rollout completion") {
         let now = Date(timeIntervalSince1970: 8_000)
         let incident = ServiceIncident(

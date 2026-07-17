@@ -29,6 +29,7 @@ public struct ThreadRecord: Identifiable, Equatable, Sendable {
     public let updatedAt: Date
     public let tokensUsed: Int64
     public let subagentCount: Int
+    public let isArchived: Bool
 
     public init(
         id: String,
@@ -36,7 +37,8 @@ public struct ThreadRecord: Identifiable, Equatable, Sendable {
         rolloutPath: String,
         updatedAt: Date,
         tokensUsed: Int64 = 0,
-        subagentCount: Int = 0
+        subagentCount: Int = 0,
+        isArchived: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -44,6 +46,7 @@ public struct ThreadRecord: Identifiable, Equatable, Sendable {
         self.updatedAt = updatedAt
         self.tokensUsed = tokensUsed
         self.subagentCount = max(0, subagentCount)
+        self.isArchived = isArchived
     }
 }
 
@@ -137,6 +140,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
     public let subagentCount: Int
     public let subagents: [SubagentSnapshot]
     public let serviceIncident: ServiceIncident?
+    public let isArchived: Bool
 
     public init(
         id: String,
@@ -150,7 +154,8 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         tokenUsage: TokenUsageSnapshot? = nil,
         subagentCount: Int = 0,
         subagents: [SubagentSnapshot] = [],
-        serviceIncident: ServiceIncident? = nil
+        serviceIncident: ServiceIncident? = nil,
+        isArchived: Bool = false
     ) {
         self.id = id
         self.title = title
@@ -164,5 +169,6 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         self.subagentCount = max(0, subagentCount)
         self.subagents = subagents
         self.serviceIncident = serviceIncident
+        self.isArchived = isArchived
     }
 }

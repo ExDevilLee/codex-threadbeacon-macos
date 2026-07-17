@@ -89,7 +89,7 @@ notification can use any of the six sounds. Regenerate and verify them with:
 ## Interface
 
 - Shows the 8 most recent unarchived primary Codex Desktop and Codex CLI tasks by
-  default; subagent threads are excluded.
+  default; subagent threads are excluded. Archived favorites remain available in the favorites filter.
 - Each row shows a status light, localized status label, task title, and status duration.
 - A primary task that created Subagents shows its direct Subagent count beside the title. This is
   a historical relationship count, not a live running count.
@@ -107,9 +107,13 @@ notification can use any of the six sounds. Regenerate and verify them with:
 - The toolbar can pause or resume automatic monitoring. Manual refresh remains
   available while paused, and monitoring resumes by default after relaunch.
 - The pin button keeps the window above other apps and persists the selection across launches.
-- Right-click a primary task to pin or ignore it. Status priority remains above pinning, while
-  pinned tasks lead within the same status. A normal ignore rule clears automatically when a
-  newer turn starts.
+- Right-click a primary task to favorite, pin, or ignore it. Favorites form a durable watchlist
+  without changing sort order. The toolbar star switches between all tasks and favorites only,
+  and persists that filter across launches.
+- Archived favorites use a neutral `Archived` state while retaining available renamed titles and
+  Token data. They never appear as running or trigger completion or incident sounds.
+- Status priority remains above pinning, while pinned tasks lead within the same status. A normal
+  ignore rule clears automatically when a newer turn starts.
 - When ignored tasks exist, an `eye.slash` toolbar button can restore one task or all tasks.
 - The speaker button opens sound settings. Completion and 429/503 incident sounds can be
   disabled independently and selected from six built-in sounds. Startup, manual refresh, and
@@ -124,7 +128,8 @@ notification can use any of the six sounds. Regenerate and verify them with:
 
 The app reads only local data:
 
-- `~/.codex/state_5.sqlite`: task metadata, `rollout_path`, cumulative `tokens_used`,
+- `~/.codex/state_5.sqlite`: metadata, `rollout_path`, archive state, and cumulative `tokens_used`
+  for recent unarchived tasks and archived favorites,
   parent-child relationships, and nickname, role, model, and reasoning effort for expanded direct
   Subagents, opened in SQLite read-only mode.
 - `~/.codex/session_index.jsonl`: the latest renamed title matching each task ID.
@@ -178,5 +183,9 @@ The POC does not install a system service, login item, or global configuration.
 ## Platform Repositories
 
 ThreadBeacon keeps platform implementations in separate repositories. This
-repository contains only the native macOS app. Links under `Related projects`
-will be added when another platform implementation actually exists.
+repository contains only the native macOS app; each platform is developed and
+released independently.
+
+Related projects:
+
+- [Codex ThreadBeacon for Windows](https://github.com/ExDevilLee/codex-threadbeacon-windows)

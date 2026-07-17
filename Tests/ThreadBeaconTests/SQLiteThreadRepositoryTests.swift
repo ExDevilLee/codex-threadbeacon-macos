@@ -35,6 +35,20 @@ let sqliteThreadRepositoryTests = [
             "explicit lookup should exclude archived, subagent, and missing threads"
         )
     },
+    TestCase(name: "repository loads archived primary favorites by ID") {
+        let databaseURL = try makeTemporaryThreadDatabase()
+        defer { try? FileManager.default.removeItem(at: databaseURL) }
+
+        let records = try SQLiteThreadRepository(databaseURL: databaseURL)
+            .loadByIDsIncludingArchived(["new-thread", "archived-thread", "subagent-thread", "missing"])
+
+        try expect(
+            records.map(\.id) == ["archived-thread", "new-thread"],
+            "favorite lookup should include archived primary tasks but exclude subagents and missing IDs"
+        )
+        try expect(records.first?.isArchived == true, "archived lifecycle state should be retained")
+        try expect(records.last?.isArchived == false, "active lifecycle state should be retained")
+    },
     TestCase(name: "repository falls back when spawn edges table is unavailable") {
         let databaseURL = try makeTemporaryThreadDatabase(includeSpawnEdges: false)
         defer { try? FileManager.default.removeItem(at: databaseURL) }
