@@ -12,7 +12,12 @@ try FileManager.default.createDirectory(at: outputDirectory, withIntermediateDir
 let designs: [(fileName: String, segments: [(frequency: Double, duration: Double)])] = [
     ("Done-Beacon.wav", [(659.25, 0.11), (987.77, 0.18)]),
     ("Done-Chime.wav", [(523.25, 0.10), (659.25, 0.10), (783.99, 0.20)]),
-    ("Done-Pulse.wav", [(783.99, 0.08), (0, 0.04), (1046.50, 0.16)])
+    ("Done-Pulse.wav", [(783.99, 0.08), (0, 0.04), (1046.50, 0.16)]),
+    ("Done-Alert.wav", [
+        (880.00, 0.08), (0, 0.04), (659.25, 0.08), (0, 0.04), (440.00, 0.16)
+    ]),
+    ("Done-Resolve.wav", [(392.00, 0.08), (523.25, 0.10), (659.25, 0.18)]),
+    ("Done-Knock.wav", [(196.00, 0.06), (0, 0.035), (174.61, 0.10)])
 ]
 
 func appendASCII(_ value: String, to data: inout Data) {

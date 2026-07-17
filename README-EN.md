@@ -76,8 +76,10 @@ The icon is rendered deterministically with AppKit and can be regenerated locall
 
 ## Sound Assets
 
-Beacon, Chime, and Pulse are short sounds generated deterministically by project scripts;
-they do not come from a third-party sound pack. Regenerate and verify them with:
+Beacon, Chime, Pulse, Alert, Resolve, and Knock are short sounds generated deterministically
+by project scripts; they do not come from a third-party sound pack. Completion defaults to
+Chime, while 429/503 incidents default to the descending Alert sound. Either
+notification can use any of the six sounds. Regenerate and verify them with:
 
 ```bash
 ./script/generate_sound_assets.sh
@@ -106,8 +108,8 @@ they do not come from a third-party sound pack. Regenerate and verify them with:
   available while paused, and monitoring resumes by default after relaunch.
 - The pin button keeps the window above other apps and persists the selection across launches.
 - The speaker button opens sound settings. Completion and 429/503 incident sounds can be
-  disabled and selected independently from Beacon, Chime, and Pulse. Startup, manual refresh,
-  and resumed monitoring do not replay historical events.
+  disabled independently and selected from six built-in sounds. Startup, manual refresh, and
+  resumed monitoring do not replay historical events.
 - Retryable 429/503 incidents appear as yellow `warning`; exhausted retries appear as red
   `error`. One incident episode plays at most one warning sound, and failures suppress a
   misleading completion sound.

@@ -53,7 +53,8 @@
 - **已完成（阶段一）**：主任务收到新的 `task_complete` 事件时播放一次 `done` 提示音。
 - **已完成（阶段一）**：默认避免重复播放；App 重启、手动刷新、暂停和恢复监听不会把
   旧任务误判为新完成。
-- **已完成（阶段一）**：提示音设置支持总开关、完成开关、三个内置声音和试听。
+- **已完成（阶段一）**：提示音设置支持总开关、完成开关、六个内置声音和试听；完成
+  默认使用 Chime，服务异常默认使用 Alert，两类通知可分别选择。
 - **POC 已完成（阶段二）**：独立 app-server 能列出 Desktop 任务 ID，但所有状态均为
   `notLoaded`，无法看到 Desktop 已加载线程或接收其实时事件；详见
   [`docs/app-server-integration-poc.md`](docs/app-server-integration-poc.md)。

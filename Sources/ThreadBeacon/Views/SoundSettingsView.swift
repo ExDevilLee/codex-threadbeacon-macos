@@ -4,10 +4,10 @@ struct SoundSettingsView: View {
     @AppStorage(SoundPreferenceKeys.notificationsEnabled) private var enabled = true
     @AppStorage(SoundPreferenceKeys.doneEnabled) private var doneEnabled = true
     @AppStorage(SoundPreferenceKeys.selectedDoneSound)
-    private var selectedDone = CompletionSound.beacon.rawValue
+    private var selectedDone = CompletionSound.chime.rawValue
     @AppStorage(SoundPreferenceKeys.warningEnabled) private var warningEnabled = true
     @AppStorage(SoundPreferenceKeys.selectedWarningSound)
-    private var selectedWarning = CompletionSound.chime.rawValue
+    private var selectedWarning = CompletionSound.alert.rawValue
 
     let preview: (CompletionSound) -> Void
 
@@ -23,7 +23,7 @@ struct SoundSettingsView: View {
             }
             .disabled(!enabled || !doneEnabled)
             Button("试听完成声音") {
-                preview(CompletionSound(rawValue: selectedDone) ?? .beacon)
+                preview(CompletionSound(rawValue: selectedDone) ?? .chime)
             }
             .disabled(!enabled || !doneEnabled)
 
@@ -38,7 +38,7 @@ struct SoundSettingsView: View {
             }
             .disabled(!enabled || !warningEnabled)
             Button("试听异常声音") {
-                preview(CompletionSound(rawValue: selectedWarning) ?? .chime)
+                preview(CompletionSound(rawValue: selectedWarning) ?? .alert)
             }
             .disabled(!enabled || !warningEnabled)
         }

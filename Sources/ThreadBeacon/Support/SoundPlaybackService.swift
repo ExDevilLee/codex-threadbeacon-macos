@@ -11,9 +11,9 @@ final class SoundPlaybackService {
         defaults.register(defaults: [
             SoundPreferenceKeys.notificationsEnabled: true,
             SoundPreferenceKeys.doneEnabled: true,
-            SoundPreferenceKeys.selectedDoneSound: CompletionSound.beacon.rawValue,
+            SoundPreferenceKeys.selectedDoneSound: CompletionSound.chime.rawValue,
             SoundPreferenceKeys.warningEnabled: true,
-            SoundPreferenceKeys.selectedWarningSound: CompletionSound.chime.rawValue
+            SoundPreferenceKeys.selectedWarningSound: CompletionSound.alert.rawValue
         ])
     }
 
@@ -25,11 +25,11 @@ final class SoundPlaybackService {
         case .done:
             guard defaults.bool(forKey: SoundPreferenceKeys.doneEnabled) else { return }
             let raw = defaults.string(forKey: SoundPreferenceKeys.selectedDoneSound)
-            play(CompletionSound(rawValue: raw ?? "") ?? .beacon)
+            play(CompletionSound(rawValue: raw ?? "") ?? .chime)
         case .warning, .failure:
             guard defaults.bool(forKey: SoundPreferenceKeys.warningEnabled) else { return }
             let raw = defaults.string(forKey: SoundPreferenceKeys.selectedWarningSound)
-            play(CompletionSound(rawValue: raw ?? "") ?? .chime)
+            play(CompletionSound(rawValue: raw ?? "") ?? .alert)
         case .attention, .interrupted:
             return
         }

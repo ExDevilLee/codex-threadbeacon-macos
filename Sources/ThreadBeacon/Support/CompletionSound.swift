@@ -13,6 +13,9 @@ enum CompletionSound: String, CaseIterable, Identifiable {
     case beacon
     case chime
     case pulse
+    case alert
+    case resolve
+    case knock
 
     var id: String { rawValue }
 
@@ -21,6 +24,9 @@ enum CompletionSound: String, CaseIterable, Identifiable {
         case .beacon: "Beacon"
         case .chime: "Chime"
         case .pulse: "Pulse"
+        case .alert: "Alert"
+        case .resolve: "Resolve"
+        case .knock: "Knock"
         }
     }
 

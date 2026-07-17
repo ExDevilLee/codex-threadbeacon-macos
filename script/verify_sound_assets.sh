@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-for name in Done-Beacon Done-Chime Done-Pulse; do
+for name in Done-Beacon Done-Chime Done-Pulse Done-Alert Done-Resolve Done-Knock; do
     test -s "$ROOT/Resources/Sounds/$name.wav"
     test -s "$ROOT/dist/ThreadBeacon.app/Contents/Resources/Sounds/$name.wav"
     afinfo "$ROOT/Resources/Sounds/$name.wav" | rg -q "44100 Hz"
