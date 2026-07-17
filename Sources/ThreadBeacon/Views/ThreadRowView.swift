@@ -18,6 +18,12 @@ struct ThreadRowView: View {
 
                     if let label = SubagentCountFormatter.label(for: snapshot.subagentCount) {
                         SubagentCountBadge(label: label)
+
+                        if snapshot.tokenUsage != nil {
+                            Divider()
+                                .frame(height: 12)
+                                .accessibilityHidden(true)
+                        }
                     }
 
                     if let tokenUsage = snapshot.tokenUsage {
