@@ -79,6 +79,9 @@ they do not come from a third-party sound pack. Regenerate and verify them with:
 
 - Shows the 8 most recent unarchived primary Codex tasks by default; subagent threads are excluded.
 - Each row shows a status light, localized status label, task title, and status duration.
+- A primary task that created Subagents shows its direct Subagent count beside the title. This is
+  a historical relationship count, not a live running count, and no child-task content is read or
+  displayed.
 - Each row shows a compact cumulative Token total. Hover over the info icon for
   input, cached and uncached input, output, reasoning, current-turn usage, cache
   ratio, and update time; click the icon to keep the details open.
@@ -97,8 +100,8 @@ they do not come from a third-party sound pack. Regenerate and verify them with:
 
 The app reads only local data:
 
-- `~/.codex/state_5.sqlite`: task metadata, `rollout_path`, and cumulative
-  `tokens_used`, opened in SQLite read-only mode.
+- `~/.codex/state_5.sqlite`: task metadata, `rollout_path`, cumulative `tokens_used`,
+  and parent-child relationship counts, opened in SQLite read-only mode.
 - `~/.codex/session_index.jsonl`: the latest renamed title matching each task ID.
 - Rollout JSONL: at most the final 2 MiB per task, reading only event types,
   timestamps, and numeric Token fields to derive status, usage details, and
