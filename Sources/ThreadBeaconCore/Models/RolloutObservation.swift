@@ -5,6 +5,7 @@ public struct RolloutObservation: Equatable, Sendable {
     public var statusChangedAt: Date?
     public var latestEventAt: Date?
     public var completionEventAt: Date?
+    public var latestTaskStartedAt: Date?
     public var tokenUsage: TokenUsageSnapshot?
 
     public init(
@@ -12,12 +13,14 @@ public struct RolloutObservation: Equatable, Sendable {
         statusChangedAt: Date? = nil,
         latestEventAt: Date? = nil,
         completionEventAt: Date? = nil,
+        latestTaskStartedAt: Date? = nil,
         tokenUsage: TokenUsageSnapshot? = nil
     ) {
         self.status = status
         self.statusChangedAt = statusChangedAt
         self.latestEventAt = latestEventAt
         self.completionEventAt = completionEventAt
+        self.latestTaskStartedAt = latestTaskStartedAt
         self.tokenUsage = tokenUsage
     }
 }

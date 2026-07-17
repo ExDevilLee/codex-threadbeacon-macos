@@ -57,15 +57,21 @@
 - **POC 已完成（阶段二）**：独立 app-server 能列出 Desktop 任务 ID，但所有状态均为
   `notLoaded`，无法看到 Desktop 已加载线程或接收其实时事件；详见
   [`docs/app-server-integration-poc.md`](docs/app-server-integration-poc.md)。
-- **受阻（阶段三）**：当前不实现 `attention`、`warning`、`failure`。等待 Codex 提供
-  共享 daemon、只读订阅接口或稳定 hook 后再验证；自动重试期间保持静音的产品决策
-  不变。
+- **已完成（阶段三）**：通过只读 `logs_2.sqlite` 的三个白名单 target 识别 HTTP
+  429/503。自动重试显示黄色 `warning`，重试耗尽显示红色 `error`；新 turn 和同 turn
+  后续成功会清除旧 warning。
+- **已完成（阶段三）**：每个异常 episode 只播放一次独立警告音；最终失败覆盖 rollout
+  的误导性完成状态，不播放错误的完成音。详见
+  [`docs/service-incident-monitoring.md`](docs/service-incident-monitoring.md)。
+- **仍受阻**：`attention` / 授权等待没有可靠只读数据源；等待共享 daemon、只读订阅
+  接口或稳定 hook 后再验证，不从会话正文猜测。
 - 支持用户选择自定义提示音作为后续候选；实现前先确认音频格式、文件权限、文件被
   移动或删除后的回退行为，以及是否会增加 App Sandbox 和发布复杂度。
 
 ### 最小 Settings
 
-- 配置刷新间隔、最大显示任务数和完成提示音；提示音可关闭、试听和选择。
+- 配置刷新间隔、最大显示任务数、完成提示音和服务异常提示音；两类声音可分别关闭、
+  试听和选择。
 - 管理已忽略任务，并支持恢复。
 - 配置界面语言；默认跟随系统，也可由用户明确指定。
 - 配置主题颜色；支持 `System`、`Light` 和 `Dark`，默认跟随系统。

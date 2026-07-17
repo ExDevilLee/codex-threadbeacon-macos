@@ -3,6 +3,7 @@ import Foundation
 public struct ThreadStatusLoader: Sendable {
     private let loadRecords: @Sendable (Int) throws -> [ThreadRecord]
     private let loadSubagentRecords: @Sendable (Set<String>) throws -> [String: [SubagentRecord]]
+    private let loadIncidents: @Sendable (Set<String>) throws -> [String: ServiceIncident]
     private let loadTitleOverrides: @Sendable () throws -> [String: String]
     private let observe: @Sendable (URL) throws -> RolloutObservation
     private let now: @Sendable () -> Date
@@ -17,10 +18,14 @@ public struct ThreadStatusLoader: Sendable {
         runningFreshness: TimeInterval = 120
     ) {
         let titleRepository = SessionIndexTitleRepository(indexURL: CodexPaths.sessionIndexURL)
+        let logRepository = LogEventRepository(databaseURL: CodexPaths.logsDatabaseURL)
         self.init(
             loadRecords: { limit in try repository.loadRecent(limit: limit) },
             loadSubagentRecords: { parentIDs in
                 try repository.loadDirectSubagents(parentIDs: Array(parentIDs))
+            },
+            loadIncidents: { threadIDs in
+                try logRepository.loadLatestIncidents(threadIDs: threadIDs)
             },
             loadTitleOverrides: { try titleRepository.loadLatestTitles() },
             observe: { url in try parser.parse(fileURL: url) },
@@ -33,6 +38,7 @@ public struct ThreadStatusLoader: Sendable {
     public init(
         loadRecords: @escaping @Sendable (Int) throws -> [ThreadRecord],
         loadSubagentRecords: @escaping @Sendable (Set<String>) throws -> [String: [SubagentRecord]] = { _ in [:] },
+        loadIncidents: @escaping @Sendable (Set<String>) throws -> [String: ServiceIncident] = { _ in [:] },
         loadTitleOverrides: @escaping @Sendable () throws -> [String: String] = { [:] },
         observe: @escaping @Sendable (URL) throws -> RolloutObservation,
         now: @escaping @Sendable () -> Date = Date.init,
@@ -41,6 +47,7 @@ public struct ThreadStatusLoader: Sendable {
     ) {
         self.loadRecords = loadRecords
         self.loadSubagentRecords = loadSubagentRecords
+        self.loadIncidents = loadIncidents
         self.loadTitleOverrides = loadTitleOverrides
         self.observe = observe
         self.now = now
@@ -57,6 +64,7 @@ public struct ThreadStatusLoader: Sendable {
         let titleOverrides = (try? loadTitleOverrides()) ?? [:]
         let currentDate = now()
         let visibleThreadIDs = Set(records.map(\.id))
+        let incidentsByThread = (try? loadIncidents(visibleThreadIDs)) ?? [:]
         let requestedParentIDs = expandedThreadIDs.intersection(visibleThreadIDs)
         let subagentRecordsByParent = requestedParentIDs.isEmpty
             ? [:]
@@ -75,6 +83,10 @@ public struct ThreadStatusLoader: Sendable {
                 fallbackDate: record.updatedAt,
                 currentDate: currentDate
             )
+            let incident = activeIncident(
+                incidentsByThread[record.id],
+                observation: observation
+            )
             let tokenUsage = tokenUsage(for: observation, fallbackTokens: record.tokensUsed)
             let subagents = (subagentRecordsByParent[record.id] ?? [])
                 .map { subagent in
@@ -89,17 +101,45 @@ public struct ThreadStatusLoader: Sendable {
             return ThreadSnapshot(
                 id: record.id,
                 title: titleOverrides[record.id] ?? record.title,
-                status: state.status,
-                statusChangedAt: state.changedAt,
+                status: incident.map(displayStatus) ?? state.status,
+                statusChangedAt: incident?.occurredAt ?? state.changedAt,
                 updatedAt: record.updatedAt,
                 latestEventAt: observation.latestEventAt,
-                completionEventAt: observation.completionEventAt,
+                completionEventAt: incident == nil ? observation.completionEventAt : nil,
                 tokenUsage: tokenUsage,
                 subagentCount: record.subagentCount,
-                subagents: subagents
+                subagents: subagents,
+                serviceIncident: incident
             )
         }
         .sorted(by: snapshotPrecedes)
+    }
+
+    private func activeIncident(
+        _ incident: ServiceIncident?,
+        observation: RolloutObservation
+    ) -> ServiceIncident? {
+        guard let incident else {
+            return nil
+        }
+        if let latestTaskStartedAt = observation.latestTaskStartedAt,
+           latestTaskStartedAt > incident.occurredAt {
+            return nil
+        }
+        if incident.phase == .retrying,
+           observation.status == .justCompleted,
+           let completedAt = observation.statusChangedAt,
+           completedAt > incident.occurredAt {
+            return nil
+        }
+        return incident
+    }
+
+    private func displayStatus(for incident: ServiceIncident) -> ThreadDisplayStatus {
+        switch incident.phase {
+        case .retrying: .warning
+        case .failed: .error
+        }
     }
 
     private func makeSubagentSnapshot(

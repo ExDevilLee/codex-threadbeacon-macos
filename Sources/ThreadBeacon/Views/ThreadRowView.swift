@@ -42,9 +42,21 @@ struct ThreadRowView: View {
                 }
 
                 HStack(spacing: 6) {
-                    Text(snapshot.status.displayName)
+                    Text(primaryStatusText)
                         .fontWeight(.medium)
                         .foregroundStyle(snapshot.status.color)
+                    if let incident = snapshot.serviceIncident {
+                        if let statusCode = incident.httpStatusCode {
+                            Text("·")
+                            Text("HTTP \(statusCode)")
+                        }
+                        if incident.phase == .retrying,
+                           let attempt = incident.retryAttempt,
+                           let limit = incident.retryLimit {
+                            Text("·")
+                            Text("重试 \(attempt)/\(limit)")
+                        }
+                    }
                     Text("·")
                     Text(RelativeTimeFormatter.statusDuration(since: snapshot.statusChangedAt))
                 }
@@ -58,6 +70,10 @@ struct ThreadRowView: View {
         .frame(maxWidth: .infinity, minHeight: 60, alignment: .topLeading)
         .contentShape(Rectangle())
     }
+
+    private var primaryStatusText: String {
+        snapshot.serviceIncident?.phase == .failed ? "服务失败" : snapshot.status.displayName
+    }
 }
 
 extension ThreadDisplayStatus {
@@ -65,6 +81,7 @@ extension ThreadDisplayStatus {
         switch self {
         case .error: "错误"
         case .needsAction: "需要操作"
+        case .warning: "服务异常"
         case .running: "运行中"
         case .justCompleted: "刚完成"
         case .idle: "空闲"
@@ -76,6 +93,7 @@ extension ThreadDisplayStatus {
         switch self {
         case .error: .red
         case .needsAction: .orange
+        case .warning: .yellow
         case .running: .blue
         case .justCompleted: .green
         case .idle: .secondary

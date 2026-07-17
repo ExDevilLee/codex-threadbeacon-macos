@@ -304,8 +304,109 @@ let threadStatusLoaderTests = [
         try expect(subagents[1].status == .idle, "subagents should reuse completion retention")
         try expect(subagents[1].agentRole == "explorer", "subagent details should be retained")
         try expect(subagents[1].tokenUsage?.totalTokens == 20, "SQLite token fallback should be retained")
+    },
+    TestCase(name: "loader lets final service failure override rollout completion") {
+        let now = Date(timeIntervalSince1970: 8_000)
+        let incident = ServiceIncident(
+            episodeID: "turn-failed",
+            phase: .failed,
+            httpStatusCode: 503,
+            retryAttempt: 5,
+            retryLimit: 5,
+            occurredAt: now.addingTimeInterval(-10)
+        )
+        let loader = incidentLoader(
+            now: now,
+            incident: incident,
+            observation: RolloutObservation(
+                status: .running,
+                statusChangedAt: now.addingTimeInterval(-100),
+                latestEventAt: now.addingTimeInterval(-9),
+                completionEventAt: now.addingTimeInterval(-9),
+                latestTaskStartedAt: now.addingTimeInterval(-100)
+            )
+        )
+
+        let snapshot = try await loader.load(limit: 8).first
+
+        try expect(snapshot?.status == .error, "final service failure should override rollout status")
+        try expect(snapshot?.serviceIncident == incident, "failure details should reach the snapshot")
+        try expect(snapshot?.completionEventAt == nil, "failure must suppress generic completion evidence")
+        try expect(snapshot?.statusChangedAt == incident.occurredAt, "failure time should drive duration")
+    },
+    TestCase(name: "loader exposes active service retry as warning") {
+        let now = Date(timeIntervalSince1970: 9_000)
+        let incident = ServiceIncident(
+            episodeID: "turn-retrying",
+            phase: .retrying,
+            httpStatusCode: 429,
+            retryAttempt: 3,
+            retryLimit: 5,
+            occurredAt: now.addingTimeInterval(-5)
+        )
+        let loader = incidentLoader(
+            now: now,
+            incident: incident,
+            observation: RolloutObservation(
+                status: .running,
+                statusChangedAt: now.addingTimeInterval(-20),
+                latestEventAt: now.addingTimeInterval(-5),
+                latestTaskStartedAt: now.addingTimeInterval(-20)
+            )
+        )
+
+        let snapshot = try await loader.load(limit: 8).first
+
+        try expect(snapshot?.status == .warning, "active retry should use warning status")
+        try expect(snapshot?.serviceIncident == incident, "retry details should reach the snapshot")
+    },
+    TestCase(name: "loader clears old service incident after a newer task starts") {
+        let now = Date(timeIntervalSince1970: 10_000)
+        let incident = ServiceIncident(
+            episodeID: "old-turn",
+            phase: .failed,
+            httpStatusCode: 503,
+            retryAttempt: 5,
+            retryLimit: 5,
+            occurredAt: now.addingTimeInterval(-30)
+        )
+        let loader = incidentLoader(
+            now: now,
+            incident: incident,
+            observation: RolloutObservation(
+                status: .running,
+                statusChangedAt: now.addingTimeInterval(-10),
+                latestEventAt: now.addingTimeInterval(-5),
+                latestTaskStartedAt: now.addingTimeInterval(-10)
+            )
+        )
+
+        let snapshot = try await loader.load(limit: 8).first
+
+        try expect(snapshot?.status == .running, "new task_started should restore rollout status")
+        try expect(snapshot?.serviceIncident == nil, "old incident details should be cleared")
     }
 ]
+
+private func incidentLoader(
+    now: Date,
+    incident: ServiceIncident,
+    observation: RolloutObservation
+) -> ThreadStatusLoader {
+    ThreadStatusLoader(
+        loadRecords: { _ in
+            [ThreadRecord(
+                id: "parent",
+                title: "Parent",
+                rolloutPath: "/tmp/parent",
+                updatedAt: now
+            )]
+        },
+        loadIncidents: { _ in ["parent": incident] },
+        observe: { _ in observation },
+        now: { now }
+    )
+}
 
 private final class StringSetBox: @unchecked Sendable {
     private let lock = NSLock()

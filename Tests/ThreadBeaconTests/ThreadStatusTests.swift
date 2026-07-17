@@ -11,6 +11,10 @@ let threadStatusTests = [
             "needsAction should sort before running"
         )
         try expect(
+            ThreadDisplayStatus.warning.sortOrder < ThreadDisplayStatus.running.sortOrder,
+            "warning should sort before running"
+        )
+        try expect(
             ThreadDisplayStatus.running.sortOrder < ThreadDisplayStatus.idle.sortOrder,
             "running should sort before idle"
         )

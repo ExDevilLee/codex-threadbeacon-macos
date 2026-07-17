@@ -40,6 +40,13 @@ public struct SoundNotificationTracker: Sendable {
     ) -> [SoundNotificationEvent] {
         let seen = Set(seenEventIDs)
         let candidates = snapshots.compactMap { snapshot -> SoundNotificationEvent? in
+            if let incident = snapshot.serviceIncident {
+                return SoundNotificationEvent(
+                    id: "warning:\(snapshot.id):\(incident.episodeID)",
+                    threadID: snapshot.id,
+                    category: .warning
+                )
+            }
             guard let completedAt = snapshot.completionEventAt else { return nil }
             let milliseconds = Int64((completedAt.timeIntervalSince1970 * 1_000).rounded())
             return SoundNotificationEvent(

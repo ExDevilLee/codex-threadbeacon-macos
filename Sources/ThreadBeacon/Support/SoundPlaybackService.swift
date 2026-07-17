@@ -11,18 +11,28 @@ final class SoundPlaybackService {
         defaults.register(defaults: [
             SoundPreferenceKeys.notificationsEnabled: true,
             SoundPreferenceKeys.doneEnabled: true,
-            SoundPreferenceKeys.selectedDoneSound: CompletionSound.beacon.rawValue
+            SoundPreferenceKeys.selectedDoneSound: CompletionSound.beacon.rawValue,
+            SoundPreferenceKeys.warningEnabled: true,
+            SoundPreferenceKeys.selectedWarningSound: CompletionSound.chime.rawValue
         ])
     }
 
     func play(_ event: SoundNotificationEvent) {
-        guard event.category == .done,
-              defaults.bool(forKey: SoundPreferenceKeys.notificationsEnabled),
-              defaults.bool(forKey: SoundPreferenceKeys.doneEnabled) else {
+        guard defaults.bool(forKey: SoundPreferenceKeys.notificationsEnabled) else {
             return
         }
-        let raw = defaults.string(forKey: SoundPreferenceKeys.selectedDoneSound)
-        play(CompletionSound(rawValue: raw ?? "") ?? .beacon)
+        switch event.category {
+        case .done:
+            guard defaults.bool(forKey: SoundPreferenceKeys.doneEnabled) else { return }
+            let raw = defaults.string(forKey: SoundPreferenceKeys.selectedDoneSound)
+            play(CompletionSound(rawValue: raw ?? "") ?? .beacon)
+        case .warning, .failure:
+            guard defaults.bool(forKey: SoundPreferenceKeys.warningEnabled) else { return }
+            let raw = defaults.string(forKey: SoundPreferenceKeys.selectedWarningSound)
+            play(CompletionSound(rawValue: raw ?? "") ?? .chime)
+        case .attention, .interrupted:
+            return
+        }
     }
 
     func preview(_ sound: CompletionSound) {

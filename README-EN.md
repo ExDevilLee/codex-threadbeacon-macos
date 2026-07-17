@@ -8,9 +8,9 @@ ThreadBeacon is a native macOS status window for monitoring primary Codex Deskto
 and Codex CLI tasks at a glance. The first version tests whether a glanceable status
 view reduces the need to repeatedly switch back to Codex. USB displays and Codex
 controls are outside the current scope. The current sound feature only covers reliably
-detected primary-task completion events. An independent app-server cannot observe
-Codex Desktop runtime events, so approval, error, and retry sounds are not currently
-available.
+detected primary-task completion events and explicit HTTP 429/503 retries or terminal
+failures found in local structured logs. Approval waiting still has no reliable read-only
+data source.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -23,6 +23,10 @@ implementation differences, naming risks, and feature candidates.
 See the Chinese
 [`app-server integration POC`](docs/app-server-integration-poc.md) for evidence about
 why an independent app-server cannot currently observe Codex Desktop runtime events.
+
+See the Chinese
+[`service incident monitoring design`](docs/service-incident-monitoring.md) for the
+429/503 data source, state rules, and privacy boundary.
 
 See the Chinese
 [`Codex CLI compatibility POC`](docs/codex-cli-compatibility.md) for the verified data
@@ -101,10 +105,14 @@ they do not come from a third-party sound pack. Regenerate and verify them with:
 - The toolbar can pause or resume automatic monitoring. Manual refresh remains
   available while paused, and monitoring resumes by default after relaunch.
 - The pin button keeps the window above other apps and persists the selection across launches.
-- The speaker button opens sound settings. You can disable all sounds or completion sounds,
-  choose Beacon, Chime, or Pulse, and preview them. Startup, manual refresh, and resumed
-  monitoring do not replay historical completion events.
-- Sort priority is `error`, `needsAction`, `running`, `justCompleted`, `idle`, then `unknown`.
+- The speaker button opens sound settings. Completion and 429/503 incident sounds can be
+  disabled and selected independently from Beacon, Chime, and Pulse. Startup, manual refresh,
+  and resumed monitoring do not replay historical events.
+- Retryable 429/503 incidents appear as yellow `warning`; exhausted retries appear as red
+  `error`. One incident episode plays at most one warning sound, and failures suppress a
+  misleading completion sound.
+- Sort priority is `error`, `needsAction`, `warning`, `running`, `justCompleted`, `idle`, then
+  `unknown`.
 
 ## Data And Privacy
 
@@ -117,8 +125,14 @@ The app reads only local data:
 - Rollout JSONL: at most the final 2 MiB per task, reading only event types,
   timestamps, and numeric Token fields to derive status, usage details, and
   `task_complete` completion events.
+- `~/.codex/logs_2.sqlite`: opened read-only and restricted to three allowlisted targets for
+  visible tasks. Only turn IDs, HTTP 429/503 status, retry progress, and terminal failure time
+  are extracted.
 
-The app does not extract reasoning summaries or conversation bodies. It does not start a network service, upload data, modify Codex data, or request Accessibility permission. See [`PRIVACY.md`](PRIVACY.md) for the full privacy statement.
+The app does not read `codex_http_client::transport` or extract reasoning summaries,
+conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
+service, upload data, modify Codex data, or request Accessibility permission. See
+[`PRIVACY.md`](PRIVACY.md) for the full privacy statement.
 
 ## POC Limitations
 
@@ -129,10 +143,12 @@ The app does not extract reasoning summaries or conversation bodies. It does not
   tail has no reliable baseline, the UI shows `—` instead of guessing from one call.
 - Cumulative Tokens represent processing across model calls. They are not the
   current context length and are not a cost estimate.
-- The current version plays one `done` sound for a new `task_complete` event only.
-  Retryable errors, 429/503, approvals, and failures require app-server integration
-  evidence and are not guessed from error text.
-- The first version does not infer `error` or `needsAction` from silence or timeouts. Those states require explicit evidence in a future version.
+- The current version plays one completion sound for a new `task_complete` event and one
+  incident sound for a new 429/503 episode. A later success clears a retry warning; a terminal
+  failure overrides a misleading rollout `task_complete`.
+- The app does not infer `error`, `warning`, or `needsAction` from silence, timeouts, or
+  conversation text. Current error and warning states require allowlisted 429/503 log evidence;
+  approval status is not implemented.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
 - The POC is not sandboxed because it reads `~/.codex`. It is not signed, notarized, or automatically updated.
 - The current machine has a SwiftPM Manifest/Test runtime mismatch in Command Line Tools. Project scripts work around it with a temporary, untracked `.build/swiftpm-libs/` copy. Use the provided scripts instead of relying on `swift test` directly.

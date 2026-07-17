@@ -56,6 +56,20 @@ let rolloutTailParserTests = [
         try expect(result.completionEventAt == expected, "latest task_complete should identify the done event")
         try expect(!retainedFields.contains("lastAgentMessage"), "completion evidence must not retain message text")
     },
+    TestCase(name: "task started exposes latest incident clearing boundary") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:03:00Z","type":"event_msg","payload":{"type":"task_started"}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+        let expected = ISO8601DateFormatter().date(from: "2026-07-16T01:03:00Z")
+
+        try expect(
+            result.latestTaskStartedAt == expected,
+            "latest task_started should clear older service incidents"
+        )
+    },
     TestCase(name: "malformed lines and reasoning alone are ignored") {
         let lines = [
             "not-json",

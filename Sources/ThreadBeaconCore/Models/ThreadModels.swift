@@ -3,6 +3,7 @@ import Foundation
 public enum ThreadDisplayStatus: String, CaseIterable, Sendable {
     case error
     case needsAction
+    case warning
     case running
     case justCompleted
     case idle
@@ -12,10 +13,11 @@ public enum ThreadDisplayStatus: String, CaseIterable, Sendable {
         switch self {
         case .error: 0
         case .needsAction: 1
-        case .running: 2
-        case .justCompleted: 3
-        case .idle: 4
-        case .unknown: 5
+        case .warning: 2
+        case .running: 3
+        case .justCompleted: 4
+        case .idle: 5
+        case .unknown: 6
         }
     }
 }
@@ -133,6 +135,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
     public let tokenUsage: TokenUsageSnapshot?
     public let subagentCount: Int
     public let subagents: [SubagentSnapshot]
+    public let serviceIncident: ServiceIncident?
 
     public init(
         id: String,
@@ -144,7 +147,8 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         completionEventAt: Date? = nil,
         tokenUsage: TokenUsageSnapshot? = nil,
         subagentCount: Int = 0,
-        subagents: [SubagentSnapshot] = []
+        subagents: [SubagentSnapshot] = [],
+        serviceIncident: ServiceIncident? = nil
     ) {
         self.id = id
         self.title = title
@@ -156,5 +160,6 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         self.tokenUsage = tokenUsage
         self.subagentCount = max(0, subagentCount)
         self.subagents = subagents
+        self.serviceIncident = serviceIncident
     }
 }

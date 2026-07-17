@@ -10,4 +10,9 @@ public enum CodexPaths {
         FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".codex/session_index.jsonl")
     }
+
+    public static var logsDatabaseURL: URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent(".codex/logs_2.sqlite")
+    }
 }

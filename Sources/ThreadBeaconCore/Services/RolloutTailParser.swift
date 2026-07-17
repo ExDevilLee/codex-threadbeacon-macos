@@ -34,6 +34,7 @@ public struct RolloutTailParser: Sendable {
         var latestFinal: Date?
         var latestEvent: Date?
         var latestCompletionEventAt: Date?
+        var latestTaskStartedAt: Date?
         var latestTokenUsage: TokenUsage?
         var latestTokenEventAt: Date?
         var currentTurnBaseline: TokenUsage?
@@ -58,6 +59,7 @@ public struct RolloutTailParser: Sendable {
                let eventType = payload["type"] as? String {
                 if eventType == "task_started" {
                     currentTurnBaseline = latestTokenUsage
+                    latestTaskStartedAt = max(latestTaskStartedAt ?? .distantPast, date)
                 } else if eventType == "task_complete" {
                     latestCompletionEventAt = max(latestCompletionEventAt ?? .distantPast, date)
                 } else if eventType == "token_count",
@@ -110,6 +112,7 @@ public struct RolloutTailParser: Sendable {
             statusChangedAt: statusChangedAt,
             latestEventAt: latestEvent,
             completionEventAt: latestCompletionEventAt,
+            latestTaskStartedAt: latestTaskStartedAt,
             tokenUsage: tokenSnapshot
         )
     }

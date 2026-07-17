@@ -4,6 +4,8 @@ enum SoundPreferenceKeys {
     static let notificationsEnabled = "soundNotificationsEnabled"
     static let doneEnabled = "doneSoundEnabled"
     static let selectedDoneSound = "selectedDoneSound"
+    static let warningEnabled = "warningSoundEnabled"
+    static let selectedWarningSound = "selectedWarningSound"
     static let seenEventIDs = "seenSoundNotificationEventIDs"
 }
 
