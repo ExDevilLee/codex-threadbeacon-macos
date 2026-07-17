@@ -31,6 +31,9 @@
   Reasoning、当前 turn 和缓存率；默认不聚合 subagent。
 - 主任务行显示直接 Subagent 总数，并使用父子关系表补强子任务过滤；数量不表示实时
   运行状态。
+- **POC 已验证**：Codex CLI 创建并 rename 的真实任务可进入现有列表；状态、rename 后
+  标题、rollout 事件和 Token 数据均可由当前只读数据链路获取。验证边界见
+  [`docs/codex-cli-compatibility.md`](docs/codex-cli-compatibility.md)。
 
 ## 近期：日常操作闭环
 
@@ -82,9 +85,11 @@
 
 ### Codex CLI 适配
 
-- 验证 Codex CLI 会话是否写入当前使用的 SQLite、session index 和 rollout 数据源。
-- 如果 App 与 CLI 的数据格式或生命周期不同，先设计统一的只读任务快照层，再接入 UI。
-- 明确 CLI 无 Codex App rename、归档或窗口状态时的回退命名与过滤规则。
+- **POC 已验证**：当前真实 CLI 样本写入 ThreadBeacon 使用的 SQLite、session index 和
+  rollout 数据源，无需新增数据源即可显示任务、rename 后标题、状态和 Token。
+- 当前结论基于 macOS 和 `codex-cli 0.144.1` 的单个真实样本，不等同于完整兼容承诺。
+- 后续验证 CLI 任务的归档、resume、跨版本升级和长生命周期行为；若数据格式或生命
+  周期出现差异，再评估统一的只读任务快照层。
 
 ## 后续：覆盖范围
 
@@ -112,13 +117,13 @@
 - 当前紧凑 Token 概览能否帮助决策，还是仍会增加状态窗负担？
 - 当前 Subagent 总数标记是否真正帮助理解任务复杂度，还是增加了列表负担？
 - Codex 后续是否会提供可供独立 App 使用的只读实时事件接口？
-- Codex CLI 与 Codex App 是否能共享同一个任务身份和 rename 语义？
+- Codex CLI 的归档、resume 和跨版本升级是否始终保持当前任务身份、rename 与状态语义？
 
 ## 建议顺序
 
 1. 任务右键菜单：置顶、忽略与恢复。
 2. 状态数据源健康诊断和最小 Settings 收口。
 3. 扩展状态与 subagent 数据可行性验证。
-4. Codex CLI 兼容性 POC。
+4. Codex CLI 长生命周期与跨版本兼容性验证。
 5. 国际化与主题设置。
 6. Windows 版本评估与移植。

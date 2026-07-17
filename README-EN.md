@@ -4,12 +4,13 @@
 
 ## Purpose
 
-ThreadBeacon is a native macOS status window for monitoring primary Codex tasks
-at a glance. The first version tests whether a glanceable status view reduces
-the need to repeatedly switch back to Codex. USB displays and Codex controls are
-outside the current scope. The current sound feature only covers reliably detected
-primary-task completion events. An independent app-server cannot observe Codex Desktop
-runtime events, so approval, error, and retry sounds are not currently available.
+ThreadBeacon is a native macOS status window for monitoring primary Codex Desktop
+and Codex CLI tasks at a glance. The first version tests whether a glanceable status
+view reduces the need to repeatedly switch back to Codex. USB displays and Codex
+controls are outside the current scope. The current sound feature only covers reliably
+detected primary-task completion events. An independent app-server cannot observe
+Codex Desktop runtime events, so approval, error, and retry sounds are not currently
+available.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -22,6 +23,10 @@ implementation differences, naming risks, and feature candidates.
 See the Chinese
 [`app-server integration POC`](docs/app-server-integration-poc.md) for evidence about
 why an independent app-server cannot currently observe Codex Desktop runtime events.
+
+See the Chinese
+[`Codex CLI compatibility POC`](docs/codex-cli-compatibility.md) for the verified data
+path and the remaining compatibility boundaries.
 
 ## Run
 
@@ -77,7 +82,8 @@ they do not come from a third-party sound pack. Regenerate and verify them with:
 
 ## Interface
 
-- Shows the 8 most recent unarchived primary Codex tasks by default; subagent threads are excluded.
+- Shows the 8 most recent unarchived primary Codex Desktop and Codex CLI tasks by
+  default; subagent threads are excluded.
 - Each row shows a status light, localized status label, task title, and status duration.
 - A primary task that created Subagents shows its direct Subagent count beside the title. This is
   a historical relationship count, not a live running count, and no child-task content is read or
