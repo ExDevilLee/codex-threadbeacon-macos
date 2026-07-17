@@ -88,7 +88,8 @@ public struct ThreadStatusLoader: Sendable {
                 updatedAt: record.updatedAt,
                 latestEventAt: observation.latestEventAt,
                 completionEventAt: observation.completionEventAt,
-                tokenUsage: tokenUsage
+                tokenUsage: tokenUsage,
+                subagentCount: record.subagentCount
             )
         }
         .sorted(by: snapshotPrecedes)

@@ -202,5 +202,28 @@ let threadStatusLoaderTests = [
             snapshot?.tokenUsage?.cumulative == nil,
             "fallback total must not invent breakdown fields"
         )
+    },
+    TestCase(name: "loader retains direct subagent count") {
+        let now = Date(timeIntervalSince1970: 6_500)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "parent",
+                    title: "Parent",
+                    rolloutPath: "/tmp/parent",
+                    updatedAt: now,
+                    subagentCount: 3
+                )]
+            },
+            observe: { _ in RolloutObservation() },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(limit: 8)
+
+        try expect(
+            snapshots.first?.subagentCount == 3,
+            "loader should pass direct child count to snapshots"
+        )
     }
 ]
