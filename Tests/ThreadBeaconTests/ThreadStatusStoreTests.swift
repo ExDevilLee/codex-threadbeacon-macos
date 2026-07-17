@@ -49,8 +49,8 @@ let threadStatusStoreTests = [
     TestCase(name: "store passes transient expanded thread IDs to refreshes") {
         let receivedExpansions = ExpansionHistoryBox()
         let store = await MainActor.run {
-            ThreadStatusStore(load: { expandedThreadIDs in
-                receivedExpansions.append(expandedThreadIDs)
+            ThreadStatusStore(load: { request in
+                receivedExpansions.append(request.expandedThreadIDs)
                 return []
             })
         }
@@ -72,8 +72,8 @@ let threadStatusStoreTests = [
     TestCase(name: "store queues expansion refresh while another refresh is running") {
         let gate = RefreshLoadGate()
         let store = await MainActor.run {
-            ThreadStatusStore(load: { expandedThreadIDs in
-                await gate.load(expandedThreadIDs)
+            ThreadStatusStore(load: { request in
+                await gate.load(request.expandedThreadIDs)
             })
         }
 
@@ -89,6 +89,158 @@ let threadStatusStoreTests = [
             requests == [[], ["parent"]],
             "an expansion during refresh should trigger one follow-up load"
         )
+    },
+    TestCase(name: "store requests pinned and ignored threads with extra recent candidates") {
+        let requests = LoadRequestBox()
+        let preferences = ThreadListPreferences(
+            pinnedThreadIDs: ["pinned"],
+            ignoredRules: [
+                "ignored": IgnoredThreadRule(
+                    threadID: "ignored",
+                    ignoredAt: Date(timeIntervalSince1970: 10),
+                    mode: .untilNextTurn
+                )
+            ]
+        )
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { request in
+                    requests.append(request)
+                    return []
+                },
+                initialPreferences: preferences,
+                visibleLimit: 8
+            )
+        }
+
+        await store.refresh()
+
+        try expect(requests.values.first?.includedThreadIDs == ["ignored", "pinned"],
+                   "load should include pinned and ignored task IDs")
+        try expect(requests.values.first?.recentLimit == 9,
+                   "ignored tasks should increase the recent candidate limit")
+    },
+    TestCase(name: "store pinning reorders same-status tasks and persists") {
+        let preferenceHistory = PreferenceHistoryBox()
+        let candidates = [
+            storeListSnapshot(id: "recent", status: .running, eventSecond: 20),
+            storeListSnapshot(id: "older", status: .running, eventSecond: 10)
+        ]
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in candidates },
+                onPreferencesChange: { preferenceHistory.append($0) }
+            )
+        }
+
+        await store.refresh()
+        await MainActor.run { store.togglePin(for: "older") }
+
+        let result = await MainActor.run { (store.snapshots.map(\.id), store.isPinned("older")) }
+        try expect(result.0 == ["older", "recent"], "pin should reorder tasks within one status")
+        try expect(result.1, "store should expose pinned state")
+        try expect(preferenceHistory.values.last?.pinnedThreadIDs == ["older"],
+                   "pin change should be persisted")
+    },
+    TestCase(name: "store prunes pinned task missing from successful load") {
+        let preferenceHistory = PreferenceHistoryBox()
+        let preferences = ThreadListPreferences(pinnedThreadIDs: ["archived"])
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in [] },
+                initialPreferences: preferences,
+                onPreferencesChange: { preferenceHistory.append($0) }
+            )
+        }
+
+        await store.refresh()
+
+        let isPinned = await MainActor.run { store.isPinned("archived") }
+        try expect(!isPinned, "unavailable task should not remain permanently pinned")
+        try expect(preferenceHistory.values.last?.pinnedThreadIDs.isEmpty == true,
+                   "pruned pin should be persisted")
+    },
+    TestCase(name: "store ignores task immediately and suppresses its notification") {
+        let initial = storeListSnapshot(id: "hidden", status: .idle, eventSecond: 10)
+        let completed = completedStoreSnapshot(id: "hidden", second: 20)
+        let sequence = SnapshotSequence(values: [[initial], [completed]])
+        let receivedEvents = EventBox()
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in await sequence.next() },
+                now: { Date(timeIntervalSince1970: 15) },
+                onNotification: { receivedEvents.append($0) }
+            )
+        }
+
+        await store.refresh(notificationPolicy: .baseline)
+        await MainActor.run { store.ignore("hidden") }
+        await store.refresh(notificationPolicy: .notify)
+
+        let result = await MainActor.run { (store.snapshots, store.ignoredThreadIDs) }
+        try expect(result.0.isEmpty, "ignored task should disappear immediately")
+        try expect(result.1 == ["hidden"], "ignored rule should remain visible to recovery UI")
+        try expect(receivedEvents.values.isEmpty, "ignored task should not emit completion sound")
+    },
+    TestCase(name: "store automatically restores ignored task after new turn") {
+        let preferenceHistory = PreferenceHistoryBox()
+        let preferences = ThreadListPreferences(
+            ignoredRules: [
+                "resumed": IgnoredThreadRule(
+                    threadID: "resumed",
+                    ignoredAt: Date(timeIntervalSince1970: 30),
+                    mode: .untilNextTurn
+                )
+            ]
+        )
+        let resumed = storeListSnapshot(
+            id: "resumed",
+            status: .running,
+            eventSecond: 41,
+            taskStartedSecond: 40
+        )
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in [resumed] },
+                initialPreferences: preferences,
+                onPreferencesChange: { preferenceHistory.append($0) }
+            )
+        }
+
+        await store.refresh()
+
+        let result = await MainActor.run { (store.snapshots.map(\.id), store.ignoredThreadIDs) }
+        try expect(result.0 == ["resumed"], "new turn should make ignored task visible again")
+        try expect(result.1.isEmpty, "new turn should remove ignored rule")
+        try expect(preferenceHistory.values.last?.ignoredRules.isEmpty == true,
+                   "automatic restore should persist the cleared rule")
+    },
+    TestCase(name: "store restores one or all ignored tasks") {
+        let preferences = ThreadListPreferences(
+            ignoredRules: [
+                "a": IgnoredThreadRule(
+                    threadID: "a",
+                    ignoredAt: Date(timeIntervalSince1970: 10),
+                    mode: .untilNextTurn
+                ),
+                "b": IgnoredThreadRule(
+                    threadID: "b",
+                    ignoredAt: Date(timeIntervalSince1970: 10),
+                    mode: .untilNextTurn
+                )
+            ]
+        )
+        let store = await MainActor.run {
+            ThreadStatusStore(load: { _ in [] }, initialPreferences: preferences)
+        }
+
+        await MainActor.run { store.restoreIgnored("a") }
+        let afterOne = await MainActor.run { store.ignoredThreadIDs }
+        await MainActor.run { store.restoreAllIgnored() }
+        let afterAll = await MainActor.run { store.ignoredThreadIDs }
+
+        try expect(afterOne == ["b"], "single restore should keep other rules")
+        try expect(afterAll.isEmpty, "restore all should clear every ignored rule")
     }
 ]
 
@@ -129,6 +281,32 @@ private final class ExpansionHistoryBox: @unchecked Sendable {
     }
 
     func append(_ value: Set<String>) {
+        lock.withLock { storage.append(value) }
+    }
+}
+
+private final class LoadRequestBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [ThreadLoadRequest] = []
+
+    var values: [ThreadLoadRequest] {
+        lock.withLock { storage }
+    }
+
+    func append(_ value: ThreadLoadRequest) {
+        lock.withLock { storage.append(value) }
+    }
+}
+
+private final class PreferenceHistoryBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [ThreadListPreferences] = []
+
+    var values: [ThreadListPreferences] {
+        lock.withLock { storage }
+    }
+
+    func append(_ value: ThreadListPreferences) {
         lock.withLock { storage.append(value) }
     }
 }
@@ -178,5 +356,23 @@ private func completedStoreSnapshot(id: String, second: TimeInterval) -> ThreadS
         updatedAt: date,
         latestEventAt: date,
         completionEventAt: date
+    )
+}
+
+private func storeListSnapshot(
+    id: String,
+    status: ThreadDisplayStatus,
+    eventSecond: TimeInterval,
+    taskStartedSecond: TimeInterval? = nil
+) -> ThreadSnapshot {
+    let date = Date(timeIntervalSince1970: eventSecond)
+    return ThreadSnapshot(
+        id: id,
+        title: id,
+        status: status,
+        statusChangedAt: date,
+        updatedAt: date,
+        latestEventAt: date,
+        latestTaskStartedAt: taskStartedSecond.map(Date.init(timeIntervalSince1970:))
     )
 }

@@ -23,6 +23,18 @@ let sqliteThreadRepositoryTests = [
 
         try expect(records.map(\.id) == ["new-thread"], "limit should cap result count")
     },
+    TestCase(name: "repository loads requested active primary threads by ID") {
+        let databaseURL = try makeTemporaryThreadDatabase()
+        defer { try? FileManager.default.removeItem(at: databaseURL) }
+
+        let records = try SQLiteThreadRepository(databaseURL: databaseURL)
+            .loadByIDs(["new-thread", "archived-thread", "subagent-thread", "missing"])
+
+        try expect(
+            records.map(\.id) == ["new-thread"],
+            "explicit lookup should exclude archived, subagent, and missing threads"
+        )
+    },
     TestCase(name: "repository falls back when spawn edges table is unavailable") {
         let databaseURL = try makeTemporaryThreadDatabase(includeSpawnEdges: false)
         defer { try? FileManager.default.removeItem(at: databaseURL) }

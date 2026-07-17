@@ -305,6 +305,47 @@ let threadStatusLoaderTests = [
         try expect(subagents[1].agentRole == "explorer", "subagent details should be retained")
         try expect(subagents[1].tokenUsage?.totalTokens == 20, "SQLite token fallback should be retained")
     },
+    TestCase(name: "loader merges explicitly included threads without duplicates") {
+        let now = Date(timeIntervalSince1970: 7_500)
+        let requestedIDs = StringSetBox()
+        let recent = ThreadRecord(
+            id: "recent",
+            title: "Recent",
+            rolloutPath: "/tmp/recent",
+            updatedAt: now
+        )
+        let included = ThreadRecord(
+            id: "included",
+            title: "Included",
+            rolloutPath: "/tmp/included",
+            updatedAt: now.addingTimeInterval(-100)
+        )
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in [recent] },
+            loadIncludedRecords: { ids in
+                requestedIDs.replace(ids)
+                return [recent, included]
+            },
+            observe: { _ in
+                RolloutObservation(
+                    status: .idle,
+                    statusChangedAt: now,
+                    latestEventAt: now
+                )
+            },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(
+            limit: 1,
+            includedThreadIDs: ["included", "recent"],
+            expandedThreadIDs: []
+        )
+
+        try expect(requestedIDs.values == ["included", "recent"], "loader should request included IDs")
+        try expect(Set(snapshots.map(\.id)) == ["included", "recent"], "records should merge by ID")
+        try expect(snapshots.count == 2, "duplicate recent record should be removed")
+    },
     TestCase(name: "loader lets final service failure override rollout completion") {
         let now = Date(timeIntervalSince1970: 8_000)
         let incident = ServiceIncident(

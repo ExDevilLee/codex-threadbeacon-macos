@@ -131,6 +131,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
     public let statusChangedAt: Date
     public let updatedAt: Date
     public let latestEventAt: Date?
+    public let latestTaskStartedAt: Date?
     public let completionEventAt: Date?
     public let tokenUsage: TokenUsageSnapshot?
     public let subagentCount: Int
@@ -144,6 +145,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         statusChangedAt: Date,
         updatedAt: Date,
         latestEventAt: Date?,
+        latestTaskStartedAt: Date? = nil,
         completionEventAt: Date? = nil,
         tokenUsage: TokenUsageSnapshot? = nil,
         subagentCount: Int = 0,
@@ -156,6 +158,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         self.statusChangedAt = statusChangedAt
         self.updatedAt = updatedAt
         self.latestEventAt = latestEventAt
+        self.latestTaskStartedAt = latestTaskStartedAt
         self.completionEventAt = completionEventAt
         self.tokenUsage = tokenUsage
         self.subagentCount = max(0, subagentCount)

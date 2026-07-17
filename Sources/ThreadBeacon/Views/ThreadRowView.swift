@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ThreadRowView: View {
     let snapshot: ThreadSnapshot
+    let isPinned: Bool
     let isSubagentExpanded: Bool
     let toggleSubagents: () -> Void
 
@@ -13,6 +14,14 @@ struct ThreadRowView: View {
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 7) {
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .help("已置顶")
+                            .accessibilityLabel("已置顶")
+                    }
+
                     Text(snapshot.title.isEmpty ? "未命名任务" : snapshot.title)
                         .font(.system(size: 13, weight: .medium))
                         .lineLimit(1)

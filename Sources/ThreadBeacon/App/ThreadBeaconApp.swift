@@ -23,18 +23,27 @@ struct ThreadBeaconApp: App {
         let repository = SQLiteThreadRepository(databaseURL: CodexPaths.stateDatabaseURL)
         let loader = ThreadStatusLoader(repository: repository)
         let history = SoundNotificationHistory()
+        let preferenceRepository = ThreadListPreferenceRepository()
         let player = SoundPlaybackService()
         soundPlayer = player
         _store = StateObject(wrappedValue: ThreadStatusStore(
-            load: { expandedThreadIDs in
-                try await loader.load(limit: 8, expandedThreadIDs: expandedThreadIDs)
+            load: { request in
+                try await loader.load(
+                    limit: request.recentLimit,
+                    includedThreadIDs: request.includedThreadIDs,
+                    expandedThreadIDs: request.expandedThreadIDs
+                )
             },
+            initialPreferences: preferenceRepository.load(),
             notificationTracker: SoundNotificationTracker(initialSeenEventIDs: history.load()),
             onNotification: { event in
                 player.play(event)
             },
             onNotificationHistoryChange: { eventIDs in
                 history.save(eventIDs)
+            },
+            onPreferencesChange: { preferences in
+                preferenceRepository.save(preferences)
             }
         ))
     }

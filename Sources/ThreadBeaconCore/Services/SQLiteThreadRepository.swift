@@ -59,6 +59,58 @@ public struct SQLiteThreadRepository: Sendable {
             throw SQLiteThreadRepositoryError.database(databaseMessage(database))
         }
 
+        return try readThreadRecords(statement: statement, database: database)
+    }
+
+    public func loadByIDs(_ threadIDs: [String]) throws -> [ThreadRecord] {
+        let threadIDs = Array(Set(threadIDs)).sorted()
+        guard !threadIDs.isEmpty else {
+            return []
+        }
+        guard threadIDs.count <= Int(Int32.max) else {
+            throw SQLiteThreadRepositoryError.invalidLimit
+        }
+
+        var database: OpaquePointer?
+        let openResult = sqlite3_open_v2(
+            databaseURL.path,
+            &database,
+            SQLITE_OPEN_READONLY,
+            nil
+        )
+        guard openResult == SQLITE_OK, let database else {
+            let message = database.map(databaseMessage) ?? "无法打开数据库"
+            if let database {
+                sqlite3_close(database)
+            }
+            throw SQLiteThreadRepositoryError.database(message)
+        }
+        defer { sqlite3_close(database) }
+
+        let hasSpawnEdges = try hasSpawnEdgesTable(in: database)
+        let placeholders = Array(repeating: "?", count: threadIDs.count).joined(separator: ", ")
+        let sql = explicitThreadSQL(placeholders: placeholders, hasSpawnEdges: hasSpawnEdges)
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(database, sql, -1, &statement, nil) == SQLITE_OK,
+              let statement else {
+            throw SQLiteThreadRepositoryError.database(databaseMessage(database))
+        }
+        defer { sqlite3_finalize(statement) }
+
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        for (offset, threadID) in threadIDs.enumerated() {
+            guard sqlite3_bind_text(statement, Int32(offset + 1), threadID, -1, transient) == SQLITE_OK else {
+                throw SQLiteThreadRepositoryError.database(databaseMessage(database))
+            }
+        }
+
+        return try readThreadRecords(statement: statement, database: database)
+    }
+
+    private func readThreadRecords(
+        statement: OpaquePointer,
+        database: OpaquePointer
+    ) throws -> [ThreadRecord] {
         var records: [ThreadRecord] = []
         while true {
             switch sqlite3_step(statement) {
@@ -228,6 +280,43 @@ public struct SQLiteThreadRepository: Sendable {
           AND COALESCE(thread_source, '') <> 'subagent'
         ORDER BY recency_at_ms DESC, id DESC
         LIMIT ?
+        """
+    }
+
+    private func explicitThreadSQL(placeholders: String, hasSpawnEdges: Bool) -> String {
+        if hasSpawnEdges {
+            return """
+            SELECT t.id, t.title, t.rollout_path,
+                   COALESCE(t.updated_at_ms, t.updated_at * 1000),
+                   t.tokens_used,
+                   COALESCE(children.child_count, 0)
+            FROM threads AS t
+            LEFT JOIN (
+                SELECT parent_thread_id, COUNT(*) AS child_count
+                FROM thread_spawn_edges
+                GROUP BY parent_thread_id
+            ) AS children ON children.parent_thread_id = t.id
+            WHERE t.id IN (\(placeholders))
+              AND t.archived = 0
+              AND COALESCE(t.thread_source, '') <> 'subagent'
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM thread_spawn_edges AS edge
+                  WHERE edge.child_thread_id = t.id
+              )
+            ORDER BY t.recency_at_ms DESC, t.id DESC
+            """
+        }
+        return """
+        SELECT id, title, rollout_path,
+               COALESCE(updated_at_ms, updated_at * 1000),
+               tokens_used,
+               0
+        FROM threads
+        WHERE id IN (\(placeholders))
+          AND archived = 0
+          AND COALESCE(thread_source, '') <> 'subagent'
+        ORDER BY recency_at_ms DESC, id DESC
         """
     }
 

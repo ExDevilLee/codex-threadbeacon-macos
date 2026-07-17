@@ -2,6 +2,7 @@ import Foundation
 
 public struct ThreadStatusLoader: Sendable {
     private let loadRecords: @Sendable (Int) throws -> [ThreadRecord]
+    private let loadIncludedRecords: @Sendable (Set<String>) throws -> [ThreadRecord]
     private let loadSubagentRecords: @Sendable (Set<String>) throws -> [String: [SubagentRecord]]
     private let loadIncidents: @Sendable (Set<String>) throws -> [String: ServiceIncident]
     private let loadTitleOverrides: @Sendable () throws -> [String: String]
@@ -21,6 +22,7 @@ public struct ThreadStatusLoader: Sendable {
         let logRepository = LogEventRepository(databaseURL: CodexPaths.logsDatabaseURL)
         self.init(
             loadRecords: { limit in try repository.loadRecent(limit: limit) },
+            loadIncludedRecords: { threadIDs in try repository.loadByIDs(Array(threadIDs)) },
             loadSubagentRecords: { parentIDs in
                 try repository.loadDirectSubagents(parentIDs: Array(parentIDs))
             },
@@ -37,6 +39,7 @@ public struct ThreadStatusLoader: Sendable {
 
     public init(
         loadRecords: @escaping @Sendable (Int) throws -> [ThreadRecord],
+        loadIncludedRecords: @escaping @Sendable (Set<String>) throws -> [ThreadRecord] = { _ in [] },
         loadSubagentRecords: @escaping @Sendable (Set<String>) throws -> [String: [SubagentRecord]] = { _ in [:] },
         loadIncidents: @escaping @Sendable (Set<String>) throws -> [String: ServiceIncident] = { _ in [:] },
         loadTitleOverrides: @escaping @Sendable () throws -> [String: String] = { [:] },
@@ -46,6 +49,7 @@ public struct ThreadStatusLoader: Sendable {
         runningFreshness: TimeInterval = 120
     ) {
         self.loadRecords = loadRecords
+        self.loadIncludedRecords = loadIncludedRecords
         self.loadSubagentRecords = loadSubagentRecords
         self.loadIncidents = loadIncidents
         self.loadTitleOverrides = loadTitleOverrides
@@ -56,11 +60,25 @@ public struct ThreadStatusLoader: Sendable {
     }
 
     public func load(limit: Int) async throws -> [ThreadSnapshot] {
-        try await load(limit: limit, expandedThreadIDs: [])
+        try await load(limit: limit, includedThreadIDs: [], expandedThreadIDs: [])
     }
 
     public func load(limit: Int, expandedThreadIDs: Set<String>) async throws -> [ThreadSnapshot] {
-        let records = try loadRecords(limit)
+        try await load(limit: limit, includedThreadIDs: [], expandedThreadIDs: expandedThreadIDs)
+    }
+
+    public func load(
+        limit: Int,
+        includedThreadIDs: Set<String>,
+        expandedThreadIDs: Set<String>
+    ) async throws -> [ThreadSnapshot] {
+        let recentRecords = try loadRecords(limit)
+        let includedRecords = includedThreadIDs.isEmpty ? [] : try loadIncludedRecords(includedThreadIDs)
+        var recordsByID = Dictionary(uniqueKeysWithValues: recentRecords.map { ($0.id, $0) })
+        for record in includedRecords {
+            recordsByID[record.id] = record
+        }
+        let records = Array(recordsByID.values)
         let titleOverrides = (try? loadTitleOverrides()) ?? [:]
         let currentDate = now()
         let visibleThreadIDs = Set(records.map(\.id))
@@ -105,6 +123,7 @@ public struct ThreadStatusLoader: Sendable {
                 statusChangedAt: incident?.occurredAt ?? state.changedAt,
                 updatedAt: record.updatedAt,
                 latestEventAt: observation.latestEventAt,
+                latestTaskStartedAt: observation.latestTaskStartedAt,
                 completionEventAt: incident == nil ? observation.completionEventAt : nil,
                 tokenUsage: tokenUsage,
                 subagentCount: record.subagentCount,

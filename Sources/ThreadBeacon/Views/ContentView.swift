@@ -6,6 +6,7 @@ struct ContentView: View {
     @AppStorage("windowPinned") private var isWindowPinned = false
     @State private var monitoringMode = MonitoringMode.active
     @State private var isShowingSoundSettings = false
+    @State private var isShowingIgnoredTasks = false
     let previewSound: (CompletionSound) -> Void
 
     var body: some View {
@@ -57,6 +58,21 @@ struct ContentView: View {
             .buttonStyle(.borderless)
             .help(isWindowPinned ? "取消钉住" : "钉在最前面")
             .accessibilityLabel(isWindowPinned ? "取消钉住" : "钉在最前面")
+
+            if !store.ignoredThreadIDs.isEmpty {
+                Button {
+                    isShowingIgnoredTasks.toggle()
+                } label: {
+                    Image(systemName: "eye.slash")
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.borderless)
+                .help("管理已忽略任务")
+                .accessibilityLabel("管理已忽略任务，共 \(store.ignoredThreadIDs.count) 个")
+                .popover(isPresented: $isShowingIgnoredTasks) {
+                    IgnoredThreadsView(store: store)
+                }
+            }
 
             Button {
                 isShowingSoundSettings.toggle()
@@ -116,12 +132,33 @@ struct ContentView: View {
                         VStack(spacing: 0) {
                             ThreadRowView(
                                 snapshot: snapshot,
+                                isPinned: store.isPinned(snapshot.id),
                                 isSubagentExpanded: isExpanded,
                                 toggleSubagents: {
                                     store.toggleExpansion(for: snapshot.id)
                                     Task { await store.refresh(notificationPolicy: .baseline) }
                                 }
                             )
+                            .contextMenu {
+                                Button {
+                                    store.togglePin(for: snapshot.id)
+                                    Task { await store.refresh(notificationPolicy: .baseline) }
+                                } label: {
+                                    Label(
+                                        store.isPinned(snapshot.id) ? "取消置顶" : "置顶任务",
+                                        systemImage: store.isPinned(snapshot.id) ? "pin.slash" : "pin"
+                                    )
+                                }
+
+                                Divider()
+
+                                Button(role: .destructive) {
+                                    store.ignore(snapshot.id)
+                                    Task { await store.refresh(notificationPolicy: .baseline) }
+                                } label: {
+                                    Label("忽略此任务", systemImage: "eye.slash")
+                                }
+                            }
 
                             if isExpanded {
                                 Divider().padding(.leading, 42)

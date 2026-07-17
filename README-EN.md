@@ -107,6 +107,10 @@ notification can use any of the six sounds. Regenerate and verify them with:
 - The toolbar can pause or resume automatic monitoring. Manual refresh remains
   available while paused, and monitoring resumes by default after relaunch.
 - The pin button keeps the window above other apps and persists the selection across launches.
+- Right-click a primary task to pin or ignore it. Status priority remains above pinning, while
+  pinned tasks lead within the same status. A normal ignore rule clears automatically when a
+  newer turn starts.
+- When ignored tasks exist, an `eye.slash` toolbar button can restore one task or all tasks.
 - The speaker button opens sound settings. Completion and 429/503 incident sounds can be
   disabled independently and selected from six built-in sounds. Startup, manual refresh, and
   resumed monitoring do not replay historical events.
