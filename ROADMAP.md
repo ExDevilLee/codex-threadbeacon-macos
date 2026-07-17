@@ -70,7 +70,12 @@
 - `状态颜色`：保留现有红黄绿灯的主语义，补充 `needsAction`、`error`、`unknown` 时避免只依赖颜色表达。
 - `Subagent 展开详情与实时状态`：总数标记只表达历史直接子任务数量；展开详情、活动
   数量、状态颜色和任务树 Token 聚合继续保留为后续候选。可行性边界见
-  [`docs/subagent-count-feasibility.md`](docs/subagent-count-feasibility.md)。
+  [`docs/subagent-count-feasibility.md`](docs/subagent-count-feasibility.md)。下一阶段建议先实现
+  直接 Subagent 的行内展开，只显示状态、标题、最近活动和自身累计 Token；详细调研见
+  [`docs/subagent-expansion-and-compaction-feasibility.md`](docs/subagent-expansion-and-compaction-feasibility.md)。
+- `压缩可观测性`：rollout 可显示历史压缩次数和最近完成时间，但不能判断实时压缩状态或
+  百分比进度；共享 app-server 或可选 `PreCompact` / `PostCompact` Hook 可提供开始、完成和
+  耗时，但仍只能使用不确定进度动画。作为独立 POC 评估，不与 Subagent 展开首版绑定。
 - `Token 后续增强`：候选包括费用估算、历史趋势和任务树聚合；需要先验证真实使用
   价值及模型价格、数据持久化和父子任务口径。
 - 所有新增列默认可隐藏，避免破坏小窗口和未来小屏场景。
