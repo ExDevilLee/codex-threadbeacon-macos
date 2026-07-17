@@ -8,6 +8,7 @@ enum TestRunner {
             + rolloutTailParserTests
             + soundNotificationTests
             + sqliteThreadRepositoryTests
+            + subagentCountFormatterTests
             + sessionIndexTitleRepositoryTests
             + threadStatusLoaderTests
             + threadStatusStoreTests

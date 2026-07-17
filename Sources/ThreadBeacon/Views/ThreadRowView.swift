@@ -16,6 +16,10 @@ struct ThreadRowView: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
+                    if let label = SubagentCountFormatter.label(for: snapshot.subagentCount) {
+                        SubagentCountBadge(label: label)
+                    }
+
                     if let tokenUsage = snapshot.tokenUsage {
                         Text(TokenCountFormatter.string(for: tokenUsage.totalTokens))
                             .font(.caption.monospacedDigit())
