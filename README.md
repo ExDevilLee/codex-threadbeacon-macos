@@ -44,6 +44,8 @@ dist/ThreadBeacon.app
 
 ## App 图标
 
+<img src="Resources/AppIcon-1024.png" alt="ThreadBeacon App 图标" width="256">
+
 图标采用 `B1 Graphite / Code Beacon`：石墨黑圆角底板、白色代码括号和纵向红黄绿三灯。资源位置：
 
 - `Resources/AppIcon-1024.png`：1024px PNG 母版。
