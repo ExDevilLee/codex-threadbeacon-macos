@@ -39,9 +39,11 @@ struct ContentView: View {
         HStack(spacing: 12) {
             Text("Codex 任务")
                 .font(.headline)
-            Text("\(store.snapshots.count)")
+            Text(taskCountLabel.displayText)
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
+                .help(taskCountLabel.explanation)
+                .accessibilityLabel(taskCountLabel.explanation)
 
             Spacer(minLength: 8)
 
@@ -92,6 +94,10 @@ struct ContentView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 48)
+    }
+
+    private var taskCountLabel: ThreadCountLabel {
+        ThreadCountFormatter.label(for: store.snapshots.map(\.status))
     }
 
     @ViewBuilder
