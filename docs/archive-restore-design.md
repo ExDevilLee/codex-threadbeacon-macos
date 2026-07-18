@@ -6,13 +6,26 @@ ThreadBeacon 已能收藏主任务，并在任务被 Codex 归档后继续以只
 收藏闭环：用户可以从 ThreadBeacon 请求 Codex 将已归档收藏恢复为激活状态。
 
 本功能只调用 Codex 官方 CLI，不直接修改 `~/.codex/state_5.sqlite`。恢复成功后继续保留
-ThreadBeacon 收藏状态，不自动打开 Codex 会话，也不改变置顶和忽略规则。
+ThreadBeacon 收藏状态，不改变置顶和忽略规则。当前不自动打开 Codex 会话，因为真实验证
+确认恢复后的旧会话可能无法通过 Codex App 深链加载。
+
+## 当前产品状态
+
+底层 POC 已验证 `codex unarchive` 可以取消归档，但这不足以完成用户所需的“恢复后回到
+Codex App 侧边栏并打开任务”。当前 Codex App 不会可靠更新侧边栏排序，任务深链也可能
+提示找不到会话，因此 ThreadBeacon 已通过 `ArchiveRestoreAvailability` 暂时隐藏右键
+恢复入口。
+
+保留 CLI 解析、恢复服务、Store 编排和测试，作为后续重新启用基础。重新启用的验收条件是
+Codex App 提供可靠的公开接口，能够同时恢复侧边栏可见性并打开任务。ThreadBeacon 不直接
+修改 `recency_at_ms`，也不调用 Codex App 私有 IPC。
 
 ## 范围
 
-首版包含：
+已完成的底层 POC 包含：
 
-- 仅为“已归档且已收藏”的主任务显示`恢复为激活状态`右键操作。
+- 仅为“已归档且已收藏”的主任务设计`恢复为激活状态`右键操作；当前受可用性开关控制，
+  入口不显示。
 - 执行前显示确认对话框，明确本操作会调用本机 Codex CLI 修改归档状态。
 - 异步执行 `codex unarchive <SESSION_ID>`，避免阻塞窗口和自动刷新。
 - 执行期间防止同一任务重复提交恢复操作。
@@ -41,7 +54,9 @@ CLI 解析顺序：
 3. `~/.nvm/versions/node/*/bin/codex` 中可执行的候选，优先选择版本号最高的 Node 目录。
 
 解析结果必须是本机存在且可执行的文件。恢复时使用 `Foundation.Process`，将
-`unarchive` 和任务 UUID 作为独立参数传入，不拼接 Shell 命令。
+`unarchive` 和任务 UUID 作为独立参数传入，不拼接 Shell 命令。启动子进程时把 Codex
+可执行文件所在目录放到子进程 `PATH` 首位，确保 NVM 安装的 Codex 脚本能通过
+`/usr/bin/env node` 找到同目录 Node，同时不修改 ThreadBeacon 自身环境。
 
 ## 组件边界
 
@@ -113,3 +128,14 @@ SQLite 真实状态展示。
 本功能新增一次本机进程调用，但不新增网络请求、遥测、后台服务或持久化内容。任务 UUID 会
 作为本机 Codex CLI 参数传递，不离开本机。公开文档需要同步说明该功能会改变 Codex 的本地
 归档状态，并继续明确 ThreadBeacon 不直接写入 Codex 数据库。
+
+## Codex App 打开限制
+
+2026-07-18 使用真实旧会话验证后确认：`codex unarchive` 会更新 `archived`、`archived_at`
+与 `updated_at`，但不会更新 Codex App 侧边栏近期排序依赖的 `recency_at_ms`。恢复后的会话
+仍可由 App 内部索引读取，但不一定重新出现在侧边栏；`codex://threads/<thread-id>` 在
+Codex App `26.715.21425` 上还可能提示找不到会话。外部 CLI `0.144.1` 与 Codex App 内置
+CLI `0.145.0-alpha.18` 的对照结果一致。
+
+ThreadBeacon 不直接修改 `recency_at_ms`，也不调用 Codex App 私有 IPC。待 OpenAI 提供可以
+可靠恢复并打开旧会话的公开接口后，再重新评估自动打开能力。

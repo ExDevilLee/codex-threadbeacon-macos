@@ -208,6 +208,111 @@ let threadStatusStoreTests = [
         let remainsFavorite = await MainActor.run { store.isFavorite("temporarily-missing") }
         try expect(remainsFavorite, "missing favorite should survive temporary data-source gaps")
     },
+    TestCase(name: "store restores archived favorite without unsupported Codex navigation") {
+        let archived = storeListSnapshot(
+            id: "archived",
+            status: .idle,
+            eventSecond: 10,
+            isArchived: true
+        )
+        let active = storeListSnapshot(id: "archived", status: .idle, eventSecond: 20)
+        let sequence = SnapshotSequence(values: [[archived], [active]])
+        let restoredIDs = StringHistoryBox()
+        let preferences = ThreadListPreferences(favoriteThreadIDs: ["archived"])
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in await sequence.next() },
+                restoreArchive: { threadID in restoredIDs.append(threadID) },
+                initialPreferences: preferences
+            )
+        }
+
+        await store.refresh()
+        await store.restoreArchivedFavorite("archived")
+
+        let result = await MainActor.run {
+            (
+                store.isFavorite("archived"),
+                store.archiveRestoreFeedback,
+                store.restoringThreadIDs,
+                store.snapshots.first?.isArchived
+            )
+        }
+        try expect(restoredIDs.values == ["archived"], "store should invoke restore exactly once")
+        try expect(result.0, "successful restore must retain favorite")
+        try expect(result.1 == .success(threadID: "archived"), "success feedback should publish")
+        try expect(result.2.isEmpty, "restoring state should clear after success")
+        try expect(result.3 == false, "successful restore should refresh the SQLite-backed snapshot")
+    },
+    TestCase(name: "store restore failure preserves list preferences") {
+        let archived = storeListSnapshot(
+            id: "archived",
+            status: .idle,
+            eventSecond: 10,
+            isArchived: true
+        )
+        let preferences = ThreadListPreferences(
+            pinnedThreadIDs: ["archived"],
+            favoriteThreadIDs: ["archived"],
+            ignoredRules: [
+                "other": IgnoredThreadRule(
+                    threadID: "other",
+                    ignoredAt: Date(timeIntervalSince1970: 5),
+                    mode: .untilNextTurn
+                )
+            ]
+        )
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in [archived] },
+                restoreArchive: { _ in throw ArchiveRestoreError.executionFailed("failed") },
+                initialPreferences: preferences
+            )
+        }
+
+        await store.refresh()
+        let beforeRestore = await MainActor.run { store.preferences }
+        await store.restoreArchivedFavorite("archived")
+        let result = await MainActor.run {
+            (store.preferences, store.archiveRestoreFeedback, store.restoringThreadIDs)
+        }
+
+        try expect(result.0 == beforeRestore, "failed restore must not change list preferences")
+        try expect(
+            result.1 == .failure(threadID: "archived", message: "恢复失败：failed"),
+            "failure feedback should expose the stable localized error"
+        )
+        try expect(result.2.isEmpty, "restoring state should clear after failure")
+    },
+    TestCase(name: "store prevents duplicate archive restore") {
+        let archived = storeListSnapshot(
+            id: "archived",
+            status: .idle,
+            eventSecond: 10,
+            isArchived: true
+        )
+        let gate = ArchiveRestoreGate()
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in [archived] },
+                restoreArchive: { threadID in try await gate.restore(threadID) },
+                initialPreferences: ThreadListPreferences(favoriteThreadIDs: ["archived"])
+            )
+        }
+
+        await store.refresh()
+        let firstRestore = Task { await store.restoreArchivedFavorite("archived") }
+        await gate.waitUntilStarted()
+        await store.restoreArchivedFavorite("archived")
+
+        let isRestoring = await MainActor.run { store.isRestoringArchive("archived") }
+        let restoredThreadIDs = await gate.threadIDs
+        try expect(isRestoring, "first restore should remain visible while command is running")
+        try expect(restoredThreadIDs == ["archived"], "duplicate restore should not invoke CLI twice")
+
+        await gate.release()
+        await firstRestore.value
+    },
     TestCase(name: "store ignores task immediately and suppresses its notification") {
         let initial = storeListSnapshot(id: "hidden", status: .idle, eventSecond: 10)
         let completed = completedStoreSnapshot(id: "hidden", second: 20)
@@ -359,6 +464,48 @@ private final class PreferenceHistoryBox: @unchecked Sendable {
     }
 }
 
+private final class StringHistoryBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [String] = []
+
+    var values: [String] {
+        lock.withLock { storage }
+    }
+
+    func append(_ value: String) {
+        lock.withLock { storage.append(value) }
+    }
+}
+
+private actor ArchiveRestoreGate {
+    private(set) var threadIDs: [String] = []
+    private var started = false
+    private var startContinuation: CheckedContinuation<Void, Never>?
+    private var releaseContinuation: CheckedContinuation<Void, Never>?
+
+    func restore(_ threadID: String) async throws {
+        threadIDs.append(threadID)
+        started = true
+        startContinuation?.resume()
+        startContinuation = nil
+        await withCheckedContinuation { continuation in
+            releaseContinuation = continuation
+        }
+    }
+
+    func waitUntilStarted() async {
+        guard !started else { return }
+        await withCheckedContinuation { continuation in
+            startContinuation = continuation
+        }
+    }
+
+    func release() {
+        releaseContinuation?.resume()
+        releaseContinuation = nil
+    }
+}
+
 private actor RefreshLoadGate {
     private(set) var requests: [Set<String>] = []
     private var firstLoadStarted = false
@@ -411,7 +558,8 @@ private func storeListSnapshot(
     id: String,
     status: ThreadDisplayStatus,
     eventSecond: TimeInterval,
-    taskStartedSecond: TimeInterval? = nil
+    taskStartedSecond: TimeInterval? = nil,
+    isArchived: Bool = false
 ) -> ThreadSnapshot {
     let date = Date(timeIntervalSince1970: eventSecond)
     return ThreadSnapshot(
@@ -421,6 +569,7 @@ private func storeListSnapshot(
         statusChangedAt: date,
         updatedAt: date,
         latestEventAt: date,
-        latestTaskStartedAt: taskStartedSecond.map(Date.init(timeIntervalSince1970:))
+        latestTaskStartedAt: taskStartedSecond.map(Date.init(timeIntervalSince1970:)),
+        isArchived: isArchived
     )
 }

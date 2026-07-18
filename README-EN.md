@@ -112,6 +112,12 @@ notification can use any of the six sounds. Regenerate and verify them with:
   and persists that filter across launches.
 - Archived favorites use a neutral `Archived` state while retaining available renamed titles and
   Token data. They never appear as running or trigger completion or incident sounds.
+- The `Restore to Active` context-menu action for archived favorites is temporarily hidden. The
+  underlying POC confirms that the official `codex unarchive <SESSION_ID>` command can clear the
+  archive state, but the current Codex app does not reliably return an older task to the sidebar,
+  and its task deep link may report that the task cannot be found. The action will be reconsidered
+  when Codex provides a public interface that can reliably restore sidebar access and open the
+  task. ThreadBeacon does not modify SQLite recency fields or call private Codex app IPC.
 - Status priority remains above pinning, while pinned tasks lead within the same status. A normal
   ignore rule clears automatically when a newer turn starts.
 - When ignored tasks exist, an `eye.slash` toolbar button can restore one task or all tasks.
@@ -142,8 +148,9 @@ The app reads only local data:
 
 The app does not read `codex_http_client::transport` or extract reasoning summaries,
 conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
-service, upload data, modify Codex data, or request Accessibility permission. See
-[`PRIVACY.md`](PRIVACY.md) for the full privacy statement.
+service, upload data, or request Accessibility permission. The current public UI does not modify
+Codex data. The validated archive-restore POC has no user-accessible entry point and never writes
+SQLite directly. See [`PRIVACY.md`](PRIVACY.md) for the full privacy statement.
 
 ## POC Limitations
 

@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var monitoringMode = MonitoringMode.active
     @State private var isShowingSoundSettings = false
     @State private var isShowingIgnoredTasks = false
+    @State private var pendingArchiveRestore: ThreadSnapshot?
     let previewSound: (CompletionSound) -> Void
 
     var body: some View {
@@ -33,6 +34,32 @@ struct ContentView: View {
                 }
                 await store.refresh(notificationPolicy: .notify)
             }
+        }
+        .confirmationDialog(
+            "恢复为激活状态？",
+            isPresented: archiveRestoreConfirmationIsPresented,
+            titleVisibility: .visible,
+            presenting: pendingArchiveRestore
+        ) { snapshot in
+            Button("恢复") {
+                pendingArchiveRestore = nil
+                Task { await store.restoreArchivedFavorite(snapshot.id) }
+            }
+            Button("取消", role: .cancel) {
+                pendingArchiveRestore = nil
+            }
+        } message: { snapshot in
+            Text("将调用本机 Codex CLI 恢复“\(snapshot.title.isEmpty ? "未命名任务" : snapshot.title)”。恢复后继续保留收藏；旧会话可能不会重新出现在 Codex App 侧边栏。")
+        }
+        .alert(
+            archiveRestoreFeedbackTitle,
+            isPresented: archiveRestoreFeedbackIsPresented
+        ) {
+            Button("好") {
+                store.dismissArchiveRestoreFeedback()
+            }
+        } message: {
+            Text(archiveRestoreFeedbackMessage)
         }
     }
 
@@ -141,11 +168,13 @@ struct ContentView: View {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(store.snapshots.enumerated()), id: \.element.id) { index, snapshot in
                         let isExpanded = store.expandedThreadIDs.contains(snapshot.id)
+                        let isRestoringArchive = store.isRestoringArchive(snapshot.id)
                         VStack(spacing: 0) {
                             ThreadRowView(
                                 snapshot: snapshot,
                                 isPinned: store.isPinned(snapshot.id),
                                 isFavorite: store.isFavorite(snapshot.id),
+                                isRestoringArchive: isRestoringArchive,
                                 isSubagentExpanded: isExpanded,
                                 toggleSubagents: {
                                     store.toggleExpansion(for: snapshot.id)
@@ -153,6 +182,22 @@ struct ContentView: View {
                                 }
                             )
                             .contextMenu {
+                                if ArchiveRestoreAvailability.current.isEnabled,
+                                   snapshot.isArchived,
+                                   store.isFavorite(snapshot.id) {
+                                    Button {
+                                        pendingArchiveRestore = snapshot
+                                    } label: {
+                                        Label(
+                                            isRestoringArchive ? "正在恢复" : "恢复为激活状态",
+                                            systemImage: "arrow.uturn.backward.circle"
+                                        )
+                                    }
+                                    .disabled(isRestoringArchive)
+
+                                    Divider()
+                                }
+
                                 Button {
                                     store.toggleFavorite(for: snapshot.id)
                                     Task { await store.refresh(notificationPolicy: .baseline) }
@@ -162,6 +207,7 @@ struct ContentView: View {
                                         systemImage: store.isFavorite(snapshot.id) ? "star.slash" : "star"
                                     )
                                 }
+                                .disabled(isRestoringArchive)
 
                                 Button {
                                     store.togglePin(for: snapshot.id)
@@ -172,6 +218,7 @@ struct ContentView: View {
                                         systemImage: store.isPinned(snapshot.id) ? "pin.slash" : "pin"
                                     )
                                 }
+                                .disabled(isRestoringArchive)
 
                                 Divider()
 
@@ -181,6 +228,7 @@ struct ContentView: View {
                                 } label: {
                                     Label("忽略此任务", systemImage: "eye.slash")
                                 }
+                                .disabled(isRestoringArchive)
                             }
 
                             if isExpanded {
@@ -239,5 +287,49 @@ struct ContentView: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 14)
         .frame(height: 32)
+    }
+
+    private var archiveRestoreConfirmationIsPresented: Binding<Bool> {
+        Binding(
+            get: { pendingArchiveRestore != nil },
+            set: { isPresented in
+                if !isPresented {
+                    pendingArchiveRestore = nil
+                }
+            }
+        )
+    }
+
+    private var archiveRestoreFeedbackIsPresented: Binding<Bool> {
+        Binding(
+            get: { store.archiveRestoreFeedback != nil },
+            set: { isPresented in
+                if !isPresented {
+                    store.dismissArchiveRestoreFeedback()
+                }
+            }
+        )
+    }
+
+    private var archiveRestoreFeedbackTitle: String {
+        switch store.archiveRestoreFeedback {
+        case .success:
+            "恢复请求已完成"
+        case .failure:
+            "恢复失败"
+        case nil:
+            ""
+        }
+    }
+
+    private var archiveRestoreFeedbackMessage: String {
+        switch store.archiveRestoreFeedback {
+        case .success:
+            "任务已恢复，收藏状态保持不变。当前 Codex App 可能不会把旧会话重新加入侧边栏。"
+        case let .failure(_, message):
+            message
+        case nil:
+            ""
+        }
     }
 }

@@ -28,10 +28,13 @@ public final class ThreadStatusStore: ObservableObject {
     @Published public private(set) var errorMessage: String?
     @Published public private(set) var isRefreshing = false
     @Published public private(set) var expandedThreadIDs: Set<String> = []
+    @Published public private(set) var restoringThreadIDs: Set<String> = []
+    @Published public private(set) var archiveRestoreFeedback: ArchiveRestoreFeedback?
 
     public private(set) var preferences: ThreadListPreferences
 
     private let load: @Sendable (ThreadLoadRequest) async throws -> [ThreadSnapshot]
+    private let restoreArchive: @Sendable (String) async throws -> Void
     private let now: @Sendable () -> Date
     private let visibleLimit: Int
     private var candidateSnapshots: [ThreadSnapshot] = []
@@ -43,6 +46,9 @@ public final class ThreadStatusStore: ObservableObject {
 
     public init(
         load: @escaping @Sendable (ThreadLoadRequest) async throws -> [ThreadSnapshot],
+        restoreArchive: @escaping @Sendable (String) async throws -> Void = { _ in
+            throw ArchiveRestoreError.cliNotFound
+        },
         now: @escaping @Sendable () -> Date = Date.init,
         initialPreferences: ThreadListPreferences = .empty,
         visibleLimit: Int = 8,
@@ -52,6 +58,7 @@ public final class ThreadStatusStore: ObservableObject {
         onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
     ) {
         self.load = load
+        self.restoreArchive = restoreArchive
         self.now = now
         self.preferences = initialPreferences
         self.visibleLimit = max(1, visibleLimit)
@@ -75,6 +82,10 @@ public final class ThreadStatusStore: ObservableObject {
 
     public var showsFavoritesOnly: Bool {
         preferences.showsFavoritesOnly
+    }
+
+    public func isRestoringArchive(_ threadID: String) -> Bool {
+        restoringThreadIDs.contains(threadID)
     }
 
     public func ignoredTitle(for threadID: String) -> String? {
@@ -113,6 +124,33 @@ public final class ThreadStatusStore: ObservableObject {
         updatePreferences { preferences in
             preferences.showsFavoritesOnly.toggle()
         }
+    }
+
+    public func restoreArchivedFavorite(_ threadID: String) async {
+        guard !restoringThreadIDs.contains(threadID),
+              preferences.favoriteThreadIDs.contains(threadID),
+              candidateSnapshots.first(where: { $0.id == threadID })?.isArchived == true else {
+            return
+        }
+
+        restoringThreadIDs.insert(threadID)
+        archiveRestoreFeedback = nil
+        defer { restoringThreadIDs.remove(threadID) }
+
+        do {
+            try await restoreArchive(threadID)
+            archiveRestoreFeedback = .success(threadID: threadID)
+            await refresh(notificationPolicy: .baseline)
+        } catch {
+            archiveRestoreFeedback = .failure(
+                threadID: threadID,
+                message: error.localizedDescription
+            )
+        }
+    }
+
+    public func dismissArchiveRestoreFeedback() {
+        archiveRestoreFeedback = nil
     }
 
     public func ignore(_ threadID: String) {

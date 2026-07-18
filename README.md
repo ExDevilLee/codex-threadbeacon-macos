@@ -103,6 +103,11 @@ Alert；两类通知都可自由选择六种声音。可重复生成并验证：
   星标按钮可在全部任务与仅收藏之间切换，筛选状态会在重启后保留。
 - 已归档收藏显示灰色`已归档`状态，保留可读取的 rename 标题和 Token，不显示为运行中，
   也不触发完成或异常提示音。
+- 已归档收藏的`恢复为激活状态`右键入口暂时隐藏。底层 POC 已验证官方
+  `codex unarchive <SESSION_ID>` 可以取消归档，但当前 Codex App 不会可靠地把恢复后的
+  旧会话重新加入侧边栏，任务深链也可能提示找不到会话。待 Codex App 提供能够可靠恢复
+  侧边栏并打开任务的公开接口后，再重新启用该入口；ThreadBeacon 不直接修改 SQLite
+  排序字段，也不调用 Codex App 私有 IPC。
 - 状态优先级始终高于置顶，同一状态内置顶任务优先；普通忽略会在该任务出现新 turn 时
   自动恢复。
 - 存在已忽略任务时，标题栏显示 `eye.slash` 管理按钮，可逐项恢复或全部恢复。
@@ -128,8 +133,9 @@ App 只在本机读取：
   target，从结构化日志中提取 turn ID、HTTP 429/503、重试次数和最终失败时间。
 
 App 不读取 `codex_http_client::transport`，不提取 reasoning summary、会话正文、完整请求、
-供应商 URL 或 request ID；不启动网络服务、不上传数据、不修改 Codex 数据，也不使用
-Accessibility 权限。完整说明见 [`PRIVACY.md`](PRIVACY.md)。
+供应商 URL 或 request ID；不启动网络服务、不上传数据，也不使用 Accessibility 权限。
+当前公开 UI 不修改 Codex 数据；已验证的归档恢复底层 POC 暂无可触发入口，也不直接写入
+SQLite。完整说明见 [`PRIVACY.md`](PRIVACY.md)。
 
 ## POC 边界
 

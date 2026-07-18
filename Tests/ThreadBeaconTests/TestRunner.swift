@@ -4,6 +4,9 @@ import Foundation
 enum TestRunner {
     static func main() async {
         let tests = threadStatusTests
+            + archiveRestoreAvailabilityTests
+            + codexArchiveRestoreServiceTests
+            + codexCLIResolverTests
             + threadCountFormatterTests
             + monitoringModeTests
             + threadListPolicyTests

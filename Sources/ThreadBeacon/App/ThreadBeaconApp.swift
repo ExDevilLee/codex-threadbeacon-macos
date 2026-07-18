@@ -22,6 +22,7 @@ struct ThreadBeaconApp: App {
     init() {
         let repository = SQLiteThreadRepository(databaseURL: CodexPaths.stateDatabaseURL)
         let loader = ThreadStatusLoader(repository: repository)
+        let archiveRestoreService = CodexArchiveRestoreService()
         let history = SoundNotificationHistory()
         let preferenceRepository = ThreadListPreferenceRepository()
         let player = SoundPlaybackService()
@@ -34,6 +35,9 @@ struct ThreadBeaconApp: App {
                     favoriteThreadIDs: request.favoriteThreadIDs,
                     expandedThreadIDs: request.expandedThreadIDs
                 )
+            },
+            restoreArchive: { threadID in
+                try await archiveRestoreService.restore(threadID: threadID)
             },
             initialPreferences: preferenceRepository.load(),
             notificationTracker: SoundNotificationTracker(initialSeenEventIDs: history.load()),

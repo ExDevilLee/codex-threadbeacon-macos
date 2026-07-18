@@ -5,6 +5,7 @@ struct ThreadRowView: View {
     let snapshot: ThreadSnapshot
     let isPinned: Bool
     let isFavorite: Bool
+    let isRestoringArchive: Bool
     let isSubagentExpanded: Bool
     let toggleSubagents: () -> Void
 
@@ -37,6 +38,13 @@ struct ThreadRowView: View {
                             .foregroundStyle(.secondary)
                             .help("已归档")
                             .accessibilityLabel("已归档")
+                    }
+
+                    if isRestoringArchive {
+                        ProgressView()
+                            .controlSize(.mini)
+                            .help("正在恢复")
+                            .accessibilityLabel("正在恢复")
                     }
 
                     Text(snapshot.title.isEmpty ? "未命名任务" : snapshot.title)
@@ -98,6 +106,9 @@ struct ThreadRowView: View {
     }
 
     private var primaryStatusText: String {
+        if isRestoringArchive {
+            return "正在恢复"
+        }
         if snapshot.isArchived {
             return "已归档"
         }
