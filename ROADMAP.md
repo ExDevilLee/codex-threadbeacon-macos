@@ -110,10 +110,12 @@
   支持 `4 / 8 / 12 / 20`，默认 `8`。修改后立即生效并持久化，暂停监听时仍可手动刷新。
 - **已完成（阶段一）**：完成提示音和服务异常提示音已整合进 Settings；两类声音仍可
   分别关闭、试听和选择。
-- **已完成（登录启动 MVP）**：使用官方 `SMAppService.mainApp` 注册或注销主 App，开关
-  直接反映 macOS 系统状态；`requiresApproval` 保持开启并提供系统登录项设置入口，失败
-  会给出明确反馈。当前 ad hoc 签名的 `dist` 开发包实测返回 `notFound`，正式可用性仍需在
-  固定安装位置和 Developer ID 签名构建上完成端到端验证。
+- **已完成实现，等待签名条件复验（登录启动 MVP）**：使用官方 `SMAppService.mainApp`
+  注册或注销主 App，开关直接反映 macOS 系统状态；`requiresApproval` 保持开启并提供
+  系统登录项设置入口，失败会给出明确反馈。正式 Xcode App target、Apple Development
+  签名和 `/Applications` 安装均已验证，但当前免费 Personal Team 仍返回 `notFound`。
+  该功能暂不继续推进，等获得 Developer ID Application 签名后再做注册、审批、重启登录
+  和注销的端到端复验。
 - 管理已忽略任务，并支持恢复。
 - 配置界面语言；默认跟随系统，也可由用户明确指定。
 - 配置主题颜色；支持 `System`、`Light` 和 `Dark`，默认跟随系统。
@@ -172,6 +174,27 @@
 - 状态推导逻辑尽量复用，窗口管理、提示音和打包使用平台实现。
 - macOS 版本形成稳定使用习惯和数据契约前，不启动完整移植。
 
+## 公开分享前检查
+
+当前版本适合公开源码和邀请技术用户自行构建，但还不适合直接面向普通用户发布安装包。
+公开分享前按下面优先级收口：
+
+- `P0`：准备固定安装包流程，使用 Developer ID Application 签名并完成公证；同时复验
+  登录启动功能。当前免费 Personal Team 的 `Apple Development` 结果已记录为
+  `notFound`，不能把它当作已支持。
+- `P0`：检查公开仓库中不包含 Team ID、邮箱、钥匙串导出、真实任务标题、SQLite/rollout
+  数据、日志和本机路径；示例配置只使用占位符。
+- `P1`：补充真实 App 截图或演示 GIF，至少覆盖主列表、状态灯、Subagent 展开、Token
+  详情、Settings 和异常提示音设置；截图中的任务名需要使用脱敏数据。
+- `P1`：完成简体中文和英文界面国际化，默认跟随系统语言，并在 Settings 中提供覆盖；
+  README 保持中文主文档与英文入口同步。
+- `P1`：完善安装、升级、卸载和权限说明，解释 App 读取 `~/.codex` 的范围、非官方关系、
+  Codex 数据格式兼容风险，以及为什么当前版本没有 App Sandbox。
+- `P2`：补充 GitHub Releases、变更日志、问题反馈模板、贡献指南和安全问题报告入口；
+  再考虑 Homebrew Cask 或其他分发渠道。
+
+详细检查表见 [`docs/public-sharing-readiness.md`](docs/public-sharing-readiness.md)。
+
 ## 待验证问题
 
 - “状态优先、同状态内置顶优先”是否既能保留异常可见性，又能帮助用户稳定找到重点任务？
@@ -187,9 +210,10 @@
 
 ## 建议顺序
 
-1. 在固定安装位置和 Developer ID 签名构建上完成登录启动端到端验证，再评估菜单栏聚合。
-2. 真实副屏恢复复验，并根据反馈决定是否增加显式显示器选择器。
-3. 国际化、`System` / `Light` / `Dark` 与色盲安全设计。
-4. Codex CLI 长生命周期、归档、resume 与跨版本兼容性验证。
-5. 扩展状态、压缩历史、Token 与 Subagent 后续增强可行性验证。
-6. 外接小屏和 Windows 版本扩展。
+1. 获得 Developer ID Application 后完成登录启动端到端验证；在此之前保持入口禁用。
+2. 国际化、`System` / `Light` / `Dark` 与色盲安全设计。
+3. 补齐脱敏宣传截图、安装说明和第一版 GitHub Release，再邀请更多技术用户试用。
+4. 真实副屏恢复复验，并根据反馈决定是否增加显式显示器选择器。
+5. Codex CLI 长生命周期、归档、resume 与跨版本兼容性验证。
+6. 扩展状态、压缩历史、Token 与 Subagent 后续增强可行性验证。
+7. 外接小屏和 Windows 版本扩展。

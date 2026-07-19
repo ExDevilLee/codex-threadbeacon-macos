@@ -46,6 +46,20 @@ The script builds and launches:
 dist/ThreadBeacon.app
 ```
 
+The script uses the repository's `ThreadBeacon.xcodeproj` to build a real macOS
+application target. `Package.swift` remains the Core test and command-line probe path.
+The default build is ad hoc signed. If an Apple Development identity is available,
+provide the local Team ID temporarily:
+
+```bash
+THREADBEACON_DEVELOPMENT_TEAM=<YOUR_TEAM_ID> \
+  ./script/build_and_run.sh --verify
+```
+
+The Team ID is not stored in project files or Git history. Apple Development is for
+local development builds and does not replace the Developer ID Application signature
+and notarization required for public distribution.
+
 Additional verification commands:
 
 ```bash
@@ -68,7 +82,7 @@ The icon is rendered deterministically with AppKit and can be regenerated locall
 ./script/generate_app_icon.sh
 ```
 
-`build_and_run.sh` copies the `.icns` file into the app bundle and writes `CFBundleIconFile`. Verify it separately with:
+The Xcode application target copies the `.icns` file into the app bundle and writes `CFBundleIconFile`. Verify it separately with:
 
 ```bash
 ./script/verify_app_icon.sh
@@ -185,12 +199,13 @@ privacy statement.
   conversation text. Current error and warning states require allowlisted 429/503 log evidence;
   approval status is not implemented.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
-- The POC is not sandboxed because it reads `~/.codex`. It is not signed, notarized, or automatically updated.
-- Launch at login requires macOS to recognize the current app bundle. The development
-  `dist/ThreadBeacon.app` is ad hoc signed and runs from a development directory; the current
-  machine reports `notFound`, so the toggle is disabled. Before release, place a stable build in
-  a fixed location, sign it with a valid Developer ID, and verify registration, approval, login,
-  and unregistration end to end.
+- The POC is not sandboxed because it reads `~/.codex`. It is not distribution-signed,
+  notarized, or automatically updated.
+- Launch at login requires macOS to recognize the current app bundle. The project now has a real
+  Xcode macOS application target, but a build signed with this machine's free Personal Team
+  Apple Development identity and installed in `/Applications` still made `SMAppService.mainApp`
+  return `notFound`, so the toggle remains disabled. A stable Developer ID Application-signed
+  build is still needed before registration, approval, login, and unregistration can be verified.
 - The current machine has a SwiftPM Manifest/Test runtime mismatch in Command Line Tools. Project scripts work around it with a temporary, untracked `.build/swiftpm-libs/` copy. Use the provided scripts instead of relying on `swift test` directly.
 
 ## Uninstall
