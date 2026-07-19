@@ -12,8 +12,10 @@ final class SoundPlaybackService {
             SoundPreferenceKeys.notificationsEnabled: true,
             SoundPreferenceKeys.doneEnabled: true,
             SoundPreferenceKeys.selectedDoneSound: CompletionSound.chime.rawValue,
+            SoundPreferenceKeys.customDoneSoundURL: "",
             SoundPreferenceKeys.warningEnabled: true,
-            SoundPreferenceKeys.selectedWarningSound: CompletionSound.alert.rawValue
+            SoundPreferenceKeys.selectedWarningSound: CompletionSound.alert.rawValue,
+            SoundPreferenceKeys.customWarningSoundURL: ""
         ])
     }
 
@@ -25,23 +27,47 @@ final class SoundPlaybackService {
         case .done:
             guard defaults.bool(forKey: SoundPreferenceKeys.doneEnabled) else { return }
             let raw = defaults.string(forKey: SoundPreferenceKeys.selectedDoneSound)
-            play(CompletionSound(rawValue: raw ?? "") ?? .chime)
+            play(preferredSource(
+                customKey: SoundPreferenceKeys.customDoneSoundURL,
+                fallback: .builtIn(CompletionSound(rawValue: raw ?? "") ?? .chime)
+            ))
         case .warning, .failure:
             guard defaults.bool(forKey: SoundPreferenceKeys.warningEnabled) else { return }
             let raw = defaults.string(forKey: SoundPreferenceKeys.selectedWarningSound)
-            play(CompletionSound(rawValue: raw ?? "") ?? .alert)
+            play(preferredSource(
+                customKey: SoundPreferenceKeys.customWarningSoundURL,
+                fallback: .builtIn(CompletionSound(rawValue: raw ?? "") ?? .alert)
+            ))
         case .attention, .interrupted:
             return
         }
     }
 
-    func preview(_ sound: CompletionSound) {
-        play(sound)
+    func preview(_ source: SoundSource) {
+        play(source)
     }
 
-    private func play(_ sound: CompletionSound) {
-        guard let base = Bundle.main.resourceURL else { return }
-        let url = base.appendingPathComponent("Sounds/\(sound.fileName).wav")
+    private func preferredSource(customKey: String, fallback: SoundSource) -> SoundSource {
+        guard let path = defaults.string(forKey: customKey), !path.isEmpty else {
+            return fallback
+        }
+        let url = URL(fileURLWithPath: path)
+        guard FileManager.default.isReadableFile(atPath: url.path),
+              NSSound(contentsOf: url, byReference: false) != nil else {
+            return fallback
+        }
+        return .custom(url)
+    }
+
+    private func play(_ source: SoundSource) {
+        let url: URL
+        switch source {
+        case .builtIn(let sound):
+            guard let base = Bundle.main.resourceURL else { return }
+            url = base.appendingPathComponent("Sounds/\(sound.fileName).wav")
+        case .custom(let customURL):
+            url = customURL
+        }
         activeSound?.stop()
         activeSound = NSSound(contentsOf: url, byReference: false)
         activeSound?.play()

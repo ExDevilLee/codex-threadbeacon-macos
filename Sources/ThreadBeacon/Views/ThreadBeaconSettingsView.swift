@@ -4,7 +4,7 @@ import SwiftUI
 struct ThreadBeaconSettingsView: View {
     @ObservedObject var languageStore: AppLanguageStore
     @ObservedObject var launchAtLoginStore: LaunchAtLoginStore
-    let previewSound: (CompletionSound) -> Void
+    let previewSound: (SoundSource) -> Void
 
     var body: some View {
         TabView {
@@ -18,7 +18,7 @@ struct ThreadBeaconSettingsView: View {
                     Label("提示音", systemImage: "speaker.wave.2")
                 }
         }
-        .frame(width: 440, height: 320)
+        .frame(width: 460, height: 400)
         .scenePadding()
     }
 }

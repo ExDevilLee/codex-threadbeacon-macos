@@ -86,8 +86,9 @@
 - **已完成（阶段一）**：主任务收到新的 `task_complete` 事件时播放一次 `done` 提示音。
 - **已完成（阶段一）**：默认避免重复播放；App 重启、手动刷新、暂停和恢复监听不会把
   旧任务误判为新完成。
-- **已完成（阶段一）**：提示音设置支持总开关、完成开关、六个内置声音和试听；完成
-  默认使用 Chime，服务异常默认使用 Alert，两类通知可分别选择。
+- **已完成（阶段一）**：提示音设置支持总开关、完成开关、八个内置声音和试听；默认
+  完成音为 Chime，服务异常音为 Alert。Fupicat Notification 和 Bassguitar
+  Notification 是仓库内提供的 CC0 可选素材，不作为默认声音；已有用户保存的声音选择保持不变。
 - **POC 已完成（阶段二）**：独立 app-server 能列出 Desktop 任务 ID，但所有状态均为
   `notLoaded`，无法看到 Desktop 已加载线程或接收其实时事件；详见
   [`docs/app-server-integration-poc.md`](docs/app-server-integration-poc.md)。
@@ -99,8 +100,10 @@
   [`docs/service-incident-monitoring.md`](docs/service-incident-monitoring.md)。
 - **仍受阻**：`attention` / 授权等待没有可靠只读数据源；等待共享 daemon、只读订阅
   接口或稳定 hook 后再验证，不从会话正文猜测。
-- 支持用户选择自定义提示音作为后续候选；实现前先确认音频格式、文件权限、文件被
-  移动或删除后的回退行为，以及是否会增加 App Sandbox 和发布复杂度。
+- **已完成（自定义提示音 MVP）**：完成与服务异常可分别选择本地音频、试听和清除；
+  自定义文件优先，文件被移动、删除或格式不受支持时自动回退各自选定的内置声音。
+  当前 App 未启用 Sandbox，因此只在本机偏好中保存所选文件路径，不申请额外权限；
+  后续若启用 App Sandbox，需要改用安全书签或复制到 App 管理目录。
 
 ### 最小 Settings
 

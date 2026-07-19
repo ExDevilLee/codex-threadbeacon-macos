@@ -90,10 +90,12 @@ The Xcode application target copies the `.icns` file into the app bundle and wri
 
 ## Sound Assets
 
-Beacon, Chime, Pulse, Alert, Resolve, and Knock are short sounds generated deterministically
-by project scripts; they do not come from a third-party sound pack. Completion defaults to
-Chime, while 429/503 incidents default to the descending Alert sound. Either
-notification can use any of the six sounds. Regenerate and verify them with:
+Eight sounds are built in. Beacon, Chime, Pulse, Alert, Resolve, and Knock are generated
+deterministically by project scripts. The other two are CC0 sounds from Freesound and are
+optional custom choices, not defaults. Completion defaults to Chime, while 429/503 incidents
+default to Alert. Either notification can use any of the eight sounds or a separate local audio file. See
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for sources and licenses. Regenerate the
+project-created sounds and verify all assets with:
 
 ```bash
 ./script/generate_sound_assets.sh
@@ -152,7 +154,9 @@ notification can use any of the six sounds. Regenerate and verify them with:
   429/503 incident sounds. Launch at login uses Apple's `SMAppService.mainApp` and reflects the
   current macOS status rather than a simulated preference. If approval is required, the toggle
   remains on and Settings provides a shortcut to Login Items. Both sound categories can be
-  disabled independently and selected from six built-in sounds. Settings persist across
+  disabled independently and selected from eight built-in sounds, or assigned separate local audio
+  files. Missing, moved, or unsupported custom files fall back to the selected built-in sound.
+  Settings persist across
   launches. Startup, manual refresh, and resumed monitoring do not replay historical events.
 - Retryable 429/503 incidents appear as yellow `warning`; exhausted retries appear as red
   `error`. One incident episode plays at most one warning sound, and failures suppress a
