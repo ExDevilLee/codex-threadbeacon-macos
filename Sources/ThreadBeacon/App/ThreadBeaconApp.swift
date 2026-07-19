@@ -19,6 +19,8 @@ struct ThreadBeaconApp: App {
     @StateObject private var appLanguageStore: AppLanguageStore
     @StateObject private var store: ThreadStatusStore
     @StateObject private var launchAtLoginStore: LaunchAtLoginStore
+    @AppStorage(DisplayPreferenceKeys.appTheme)
+    private var appThemeRawValue = AppTheme.defaultValue.rawValue
     private let soundPlayer: SoundPlaybackService
 
     init() {
@@ -69,6 +71,7 @@ struct ThreadBeaconApp: App {
                 .frame(minWidth: 360, minHeight: 240)
                 .environment(\.locale, appLanguageStore.locale)
                 .environmentObject(appLanguageStore)
+                .preferredColorScheme(selectedTheme.colorScheme)
         }
         .defaultSize(width: 420, height: 360)
         .windowResizability(.contentMinSize)
@@ -81,7 +84,12 @@ struct ThreadBeaconApp: App {
             )
             .environment(\.locale, appLanguageStore.locale)
             .environmentObject(appLanguageStore)
+            .preferredColorScheme(selectedTheme.colorScheme)
         }
+    }
+
+    private var selectedTheme: AppTheme {
+        AppTheme(rawValue: appThemeRawValue) ?? .defaultValue
     }
 
 }

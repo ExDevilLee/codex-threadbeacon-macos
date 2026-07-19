@@ -4,6 +4,7 @@ public enum DisplayPreferenceKeys {
     public static let refreshIntervalSeconds = "displayRefreshIntervalSeconds"
     public static let maximumTaskCount = "displayMaximumTaskCount"
     public static let appLanguage = "displayAppLanguage"
+    public static let appTheme = "displayAppTheme"
 }
 
 public struct DisplaySettingsRepository {

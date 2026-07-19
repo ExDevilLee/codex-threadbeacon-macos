@@ -148,7 +148,7 @@ notification can use any of the six sounds. Regenerate and verify them with:
   ignore rule clears automatically when a newer turn starts.
 - When ignored tasks exist, an `eye.slash` toolbar button can restore one task or all tasks.
 - The gear button opens the native macOS Settings window. The General tab configures the
-  refresh interval, task limit, and launch at login; the Sounds tab manages completion and
+  language, theme, refresh interval, task limit, and launch at login; the Sounds tab manages completion and
   429/503 incident sounds. Launch at login uses Apple's `SMAppService.mainApp` and reflects the
   current macOS status rather than a simulated preference. If approval is required, the toggle
   remains on and Settings provides a shortcut to Login Items. Both sound categories can be

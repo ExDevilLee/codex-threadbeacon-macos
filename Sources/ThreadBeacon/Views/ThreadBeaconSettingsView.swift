@@ -30,6 +30,8 @@ private struct GeneralSettingsView: View {
     private var refreshIntervalSeconds = DisplaySettings.defaultRefreshIntervalSeconds
     @AppStorage(DisplayPreferenceKeys.maximumTaskCount)
     private var maximumTaskCount = DisplaySettings.defaultMaximumTaskCount
+    @AppStorage(DisplayPreferenceKeys.appTheme)
+    private var appThemeRawValue = AppTheme.defaultValue.rawValue
     @ObservedObject var languageStore: AppLanguageStore
     @ObservedObject var launchAtLoginStore: LaunchAtLoginStore
 
@@ -47,6 +49,14 @@ private struct GeneralSettingsView: View {
                 Text("系统语言不是中文或英文时，默认使用 English。")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            Section("外观") {
+                Picker("主题", selection: $appThemeRawValue) {
+                    Text("跟随系统").tag(AppTheme.system.rawValue)
+                    Text("浅色").tag(AppTheme.light.rawValue)
+                    Text("深色").tag(AppTheme.dark.rawValue)
+                }
             }
 
             Section("任务监听") {
