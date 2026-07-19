@@ -12,7 +12,14 @@ struct SubagentCountBadge: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 9, weight: .semibold))
                     .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                Image(systemName: "arrow.triangle.branch")
+                Image(systemName: "character.cursor.ibeam")
+                    .font(.system(size: 9, weight: .medium))
+                    .frame(width: 14, height: 14)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 2)
+                            .stroke(.secondary.opacity(0.72), lineWidth: 1)
+                    }
+                    .accessibilityHidden(true)
                 Text(label.countText)
                     .monospacedDigit()
             }
