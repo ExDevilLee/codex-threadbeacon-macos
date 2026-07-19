@@ -15,6 +15,7 @@ enum TestRunner {
             + threadListPreferenceRepositoryTests
             + logEventParserTests
             + logEventRepositoryTests
+            + launchAtLoginTests
             + relativeActivityFormatterTests
             + rolloutTailParserTests
             + soundNotificationTests

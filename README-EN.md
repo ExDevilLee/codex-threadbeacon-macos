@@ -132,10 +132,12 @@ notification can use any of the six sounds. Regenerate and verify them with:
   ignore rule clears automatically when a newer turn starts.
 - When ignored tasks exist, an `eye.slash` toolbar button can restore one task or all tasks.
 - The gear button opens the native macOS Settings window. The General tab configures the
-  refresh interval and task limit; the Sounds tab manages completion and 429/503 incident
-  sounds. Both sound categories can be disabled independently and selected from six built-in
-  sounds. Settings persist across launches. Startup, manual refresh, and resumed monitoring do
-  not replay historical events.
+  refresh interval, task limit, and launch at login; the Sounds tab manages completion and
+  429/503 incident sounds. Launch at login uses Apple's `SMAppService.mainApp` and reflects the
+  current macOS status rather than a simulated preference. If approval is required, the toggle
+  remains on and Settings provides a shortcut to Login Items. Both sound categories can be
+  disabled independently and selected from six built-in sounds. Settings persist across
+  launches. Startup, manual refresh, and resumed monitoring do not replay historical events.
 - Retryable 429/503 incidents appear as yellow `warning`; exhausted retries appear as red
   `error`. One incident episode plays at most one warning sound, and failures suppress a
   misleading completion sound.
@@ -184,6 +186,11 @@ privacy statement.
   approval status is not implemented.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
 - The POC is not sandboxed because it reads `~/.codex`. It is not signed, notarized, or automatically updated.
+- Launch at login requires macOS to recognize the current app bundle. The development
+  `dist/ThreadBeacon.app` is ad hoc signed and runs from a development directory; the current
+  machine reports `notFound`, so the toggle is disabled. Before release, place a stable build in
+  a fixed location, sign it with a valid Developer ID, and verify registration, approval, login,
+  and unregistration end to end.
 - The current machine has a SwiftPM Manifest/Test runtime mismatch in Command Line Tools. Project scripts work around it with a temporary, untracked `.build/swiftpm-libs/` copy. Use the provided scripts instead of relying on `swift test` directly.
 
 ## Uninstall
@@ -195,7 +202,9 @@ pkill -x ThreadBeacon 2>/dev/null || true
 rm -rf dist .build
 ```
 
-The POC does not install a system service, login item, or global configuration.
+If launch at login was previously enabled successfully, disable it in the app first or remove it
+from macOS System Settings > General > Login Items & Extensions before deleting the app. The POC
+does not install a separate system service or modify global configuration.
 
 ## License And Security
 

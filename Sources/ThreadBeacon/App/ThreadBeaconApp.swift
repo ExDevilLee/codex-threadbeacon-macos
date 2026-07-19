@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct ThreadBeaconApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var store: ThreadStatusStore
+    @StateObject private var launchAtLoginStore: LaunchAtLoginStore
     private let soundPlayer: SoundPlaybackService
 
     init() {
@@ -30,6 +31,9 @@ struct ThreadBeaconApp: App {
         let preferenceRepository = ThreadListPreferenceRepository()
         let player = SoundPlaybackService()
         soundPlayer = player
+        _launchAtLoginStore = StateObject(wrappedValue: LaunchAtLoginStore(
+            manager: SystemLaunchAtLoginManager()
+        ))
         _store = StateObject(wrappedValue: ThreadStatusStore(
             loadResult: { request in
                 try await loader.loadResult(
@@ -66,7 +70,10 @@ struct ThreadBeaconApp: App {
         .windowResizability(.contentMinSize)
 
         Settings {
-            ThreadBeaconSettingsView(previewSound: soundPlayer.preview)
+            ThreadBeaconSettingsView(
+                launchAtLoginStore: launchAtLoginStore,
+                previewSound: soundPlayer.preview
+            )
         }
     }
 }
