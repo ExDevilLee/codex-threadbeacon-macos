@@ -20,6 +20,9 @@ struct ThreadBeaconApp: App {
     private let soundPlayer: SoundPlaybackService
 
     init() {
+        let displaySettingsRepository = DisplaySettingsRepository()
+        let displaySettings = displaySettingsRepository.load()
+        displaySettingsRepository.save(displaySettings)
         let repository = SQLiteThreadRepository(databaseURL: CodexPaths.stateDatabaseURL)
         let loader = ThreadStatusLoader(repository: repository)
         let archiveRestoreService = CodexArchiveRestoreService()
@@ -40,6 +43,7 @@ struct ThreadBeaconApp: App {
                 try await archiveRestoreService.restore(threadID: threadID)
             },
             initialPreferences: preferenceRepository.load(),
+            visibleLimit: displaySettings.maximumTaskCount,
             notificationTracker: SoundNotificationTracker(initialSeenEventIDs: history.load()),
             onNotification: { event in
                 player.play(event)
@@ -55,10 +59,14 @@ struct ThreadBeaconApp: App {
 
     var body: some Scene {
         WindowGroup("ThreadBeacon") {
-            ContentView(store: store, previewSound: soundPlayer.preview)
+            ContentView(store: store)
                 .frame(minWidth: 360, minHeight: 240)
         }
         .defaultSize(width: 420, height: 360)
         .windowResizability(.contentMinSize)
+
+        Settings {
+            ThreadBeaconSettingsView(previewSound: soundPlayer.preview)
+        }
     }
 }

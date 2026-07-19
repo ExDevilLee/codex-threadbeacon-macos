@@ -13,36 +13,40 @@ struct SoundSettingsView: View {
 
     var body: some View {
         Form {
-            Toggle("启用提示音", isOn: $enabled)
-            Toggle("任务完成", isOn: $doneEnabled)
-                .disabled(!enabled)
-            Picker("完成声音", selection: $selectedDone) {
-                ForEach(CompletionSound.allCases) { sound in
-                    Text(sound.displayName).tag(sound.rawValue)
-                }
+            Section("全局") {
+                Toggle("启用提示音", isOn: $enabled)
             }
-            .disabled(!enabled || !doneEnabled)
-            Button("试听完成声音") {
-                preview(CompletionSound(rawValue: selectedDone) ?? .chime)
-            }
-            .disabled(!enabled || !doneEnabled)
 
-            Divider()
-
-            Toggle("429/503 服务异常", isOn: $warningEnabled)
-                .disabled(!enabled)
-            Picker("异常声音", selection: $selectedWarning) {
-                ForEach(CompletionSound.allCases) { sound in
-                    Text(sound.displayName).tag(sound.rawValue)
+            Section("任务完成") {
+                Toggle("播放完成提示音", isOn: $doneEnabled)
+                    .disabled(!enabled)
+                Picker("完成声音", selection: $selectedDone) {
+                    ForEach(CompletionSound.allCases) { sound in
+                        Text(sound.displayName).tag(sound.rawValue)
+                    }
                 }
+                .disabled(!enabled || !doneEnabled)
+                Button("试听完成声音") {
+                    preview(CompletionSound(rawValue: selectedDone) ?? .chime)
+                }
+                .disabled(!enabled || !doneEnabled)
             }
-            .disabled(!enabled || !warningEnabled)
-            Button("试听异常声音") {
-                preview(CompletionSound(rawValue: selectedWarning) ?? .alert)
+
+            Section("服务异常") {
+                Toggle("播放 429/503 提示音", isOn: $warningEnabled)
+                    .disabled(!enabled)
+                Picker("异常声音", selection: $selectedWarning) {
+                    ForEach(CompletionSound.allCases) { sound in
+                        Text(sound.displayName).tag(sound.rawValue)
+                    }
+                }
+                .disabled(!enabled || !warningEnabled)
+                Button("试听异常声音") {
+                    preview(CompletionSound(rawValue: selectedWarning) ?? .alert)
+                }
+                .disabled(!enabled || !warningEnabled)
             }
-            .disabled(!enabled || !warningEnabled)
         }
-        .padding(16)
-        .frame(width: 280)
+        .formStyle(.grouped)
     }
 }

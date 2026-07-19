@@ -4,11 +4,13 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var store: ThreadStatusStore
     @AppStorage("windowPinned") private var isWindowPinned = false
+    @AppStorage(DisplayPreferenceKeys.refreshIntervalSeconds)
+    private var refreshIntervalSeconds = DisplaySettings.defaultRefreshIntervalSeconds
+    @AppStorage(DisplayPreferenceKeys.maximumTaskCount)
+    private var maximumTaskCount = DisplaySettings.defaultMaximumTaskCount
     @State private var monitoringMode = MonitoringMode.active
-    @State private var isShowingSoundSettings = false
     @State private var isShowingIgnoredTasks = false
     @State private var pendingArchiveRestore: ThreadSnapshot?
-    let previewSound: (CompletionSound) -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,17 +25,25 @@ struct ContentView: View {
             WindowLevelBridge(mode: WindowPinMode(isPinned: isWindowPinned))
                 .frame(width: 0, height: 0)
         }
-        .task(id: monitoringMode) {
-            guard monitoringMode.shouldAutoRefresh else { return }
+        .task(id: monitoringSchedule) {
+            guard monitoringSchedule.mode.shouldAutoRefresh else { return }
             await store.refresh(notificationPolicy: .baseline)
             while !Task.isCancelled {
                 do {
-                    try await Task.sleep(for: .seconds(2))
+                    try await Task.sleep(for: .seconds(monitoringSchedule.refreshIntervalSeconds))
                 } catch {
                     return
                 }
                 await store.refresh(notificationPolicy: .notify)
             }
+        }
+        .onChange(of: maximumTaskCount) { _, newValue in
+            let settings = DisplaySettings(
+                refreshIntervalSeconds: refreshIntervalSeconds,
+                maximumTaskCount: newValue
+            )
+            store.updateVisibleLimit(settings.maximumTaskCount)
+            Task { await store.refresh(notificationPolicy: .baseline) }
         }
         .confirmationDialog(
             "恢复为激活状态？",
@@ -113,18 +123,13 @@ struct ContentView: View {
                 }
             }
 
-            Button {
-                isShowingSoundSettings.toggle()
-            } label: {
-                Image(systemName: "speaker.wave.2")
+            SettingsLink {
+                Image(systemName: "gearshape")
                     .frame(width: 18, height: 18)
             }
             .buttonStyle(.borderless)
-            .help("提示音设置")
-            .accessibilityLabel("提示音设置")
-            .popover(isPresented: $isShowingSoundSettings) {
-                SoundSettingsView(preview: previewSound)
-            }
+            .help("设置")
+            .accessibilityLabel("打开设置")
 
             Button {
                 monitoringMode.toggle()
@@ -153,6 +158,17 @@ struct ContentView: View {
 
     private var taskCountLabel: ThreadCountLabel {
         ThreadCountFormatter.label(for: store.snapshots.map(\.status))
+    }
+
+    private var monitoringSchedule: MonitoringSchedule {
+        let settings = DisplaySettings(
+            refreshIntervalSeconds: refreshIntervalSeconds,
+            maximumTaskCount: maximumTaskCount
+        )
+        return MonitoringSchedule(
+            mode: monitoringMode,
+            refreshIntervalSeconds: settings.refreshIntervalSeconds
+        )
     }
 
     @ViewBuilder
@@ -336,4 +352,9 @@ struct ContentView: View {
             ""
         }
     }
+}
+
+private struct MonitoringSchedule: Equatable {
+    let mode: MonitoringMode
+    let refreshIntervalSeconds: Int
 }

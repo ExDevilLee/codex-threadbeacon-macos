@@ -2,6 +2,29 @@ import ThreadBeaconCore
 import Foundation
 
 let threadStatusStoreTests = [
+    TestCase(name: "store applies a new visible limit immediately and to the next load") {
+        let requests = LoadRequestBox()
+        let candidates = Array(1...6).map { index in
+            storeListSnapshot(id: "task-\(index)", status: .idle, eventSecond: Double(index))
+        }
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { request in
+                    requests.append(request)
+                    return candidates
+                },
+                visibleLimit: 4
+            )
+        }
+
+        await store.refresh()
+        await MainActor.run { store.updateVisibleLimit(6) }
+        let expandedCount = await MainActor.run { store.snapshots.count }
+        await store.refresh()
+
+        try expect(expandedCount == 6, "changing the limit should immediately re-evaluate loaded tasks")
+        try expect(requests.values.last?.recentLimit == 6, "the next refresh should request the new limit")
+    },
     TestCase(name: "store refresh publishes snapshots and timestamp") {
         let snapshot = ThreadSnapshot(
             id: "running",

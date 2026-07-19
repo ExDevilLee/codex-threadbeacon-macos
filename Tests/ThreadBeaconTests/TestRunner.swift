@@ -8,6 +8,7 @@ enum TestRunner {
             + codexArchiveRestoreServiceTests
             + codexCLIResolverTests
             + dataSourceHealthTests
+            + displaySettingsTests
             + threadCountFormatterTests
             + monitoringModeTests
             + threadListPolicyTests

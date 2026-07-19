@@ -37,7 +37,7 @@ public final class ThreadStatusStore: ObservableObject {
     private let loadResult: @Sendable (ThreadLoadRequest) async throws -> ThreadStatusLoadResult
     private let restoreArchive: @Sendable (String) async throws -> Void
     private let now: @Sendable () -> Date
-    private let visibleLimit: Int
+    private var visibleLimit: Int
     private var candidateSnapshots: [ThreadSnapshot] = []
     private var notificationTracker: SoundNotificationTracker
     private var pendingRefreshPolicy: RefreshNotificationPolicy?
@@ -138,6 +138,13 @@ public final class ThreadStatusStore: ObservableObject {
         } else {
             expandedThreadIDs.insert(threadID)
         }
+    }
+
+    public func updateVisibleLimit(_ limit: Int) {
+        let nextLimit = max(1, limit)
+        guard nextLimit != visibleLimit else { return }
+        visibleLimit = nextLimit
+        applyCurrentPreferences()
     }
 
     public func togglePin(for threadID: String) {
@@ -298,6 +305,11 @@ public final class ThreadStatusStore: ObservableObject {
     ) {
         let previousPreferences = preferences
         update(&preferences)
+        applyCurrentPreferences(previousPreferences: previousPreferences)
+    }
+
+    private func applyCurrentPreferences(previousPreferences: ThreadListPreferences? = nil) {
+        let previousPreferences = previousPreferences ?? preferences
         let result = ThreadListPolicy.evaluate(
             candidates: candidateSnapshots,
             preferences: preferences,

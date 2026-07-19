@@ -89,7 +89,8 @@ notification can use any of the six sounds. Regenerate and verify them with:
 ## Interface
 
 - Shows the 8 most recent unarchived primary Codex Desktop and Codex CLI tasks by
-  default; subagent threads are excluded. Archived favorites remain available in the favorites filter.
+  default; Settings can change the limit to `4 / 8 / 12 / 20`. Subagent threads are
+  excluded, while archived favorites remain available in the favorites filter.
 - Each row shows a status light, localized status label, task title, and status duration.
 - A primary task that created Subagents shows its direct Subagent count beside the title. This is
   a historical relationship count, not a live running count.
@@ -103,7 +104,8 @@ notification can use any of the six sounds. Regenerate and verify them with:
   ratio, and update time; click the icon to keep the details open.
 - Task titles prefer the latest renamed value in `session_index.jsonl`, with `threads.title` as fallback.
 - The current version does not read or display conversation summaries or message bodies.
-- Refreshes automatically every 2 seconds and also supports manual refresh.
+- Refreshes every 2 seconds by default. Settings can select `1 / 2 / 5 / 10 seconds`,
+  with changes applied immediately; manual refresh remains available.
 - The toolbar can pause or resume automatic monitoring. Manual refresh remains
   available while paused, and monitoring resumes by default after relaunch.
 - A compact data-source health control appears at the bottom right. Healthy operation stays
@@ -125,9 +127,11 @@ notification can use any of the six sounds. Regenerate and verify them with:
 - Status priority remains above pinning, while pinned tasks lead within the same status. A normal
   ignore rule clears automatically when a newer turn starts.
 - When ignored tasks exist, an `eye.slash` toolbar button can restore one task or all tasks.
-- The speaker button opens sound settings. Completion and 429/503 incident sounds can be
-  disabled independently and selected from six built-in sounds. Startup, manual refresh, and
-  resumed monitoring do not replay historical events.
+- The gear button opens the native macOS Settings window. The General tab configures the
+  refresh interval and task limit; the Sounds tab manages completion and 429/503 incident
+  sounds. Both sound categories can be disabled independently and selected from six built-in
+  sounds. Settings persist across launches. Startup, manual refresh, and resumed monitoring do
+  not replay historical events.
 - Retryable 429/503 incidents appear as yellow `warning`; exhausted retries appear as red
   `error`. One incident episode plays at most one warning sound, and failures suppress a
   misleading completion sound.
