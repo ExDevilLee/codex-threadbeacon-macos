@@ -282,6 +282,10 @@ struct ContentView: View {
             }
 
             Spacer()
+
+            if let dataSourceHealth = store.dataSourceHealth {
+                DataSourceHealthButton(report: dataSourceHealth)
+            }
         }
         .font(.caption)
         .foregroundStyle(.secondary)

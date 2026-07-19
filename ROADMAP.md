@@ -39,6 +39,10 @@
 - **POC 已验证**：Codex CLI 创建并 rename 的真实任务可进入现有列表；状态、rename 后
   标题、rollout 事件和 Token 数据均可由当前只读数据链路获取。验证边界见
   [`docs/codex-cli-compatibility.md`](docs/codex-cli-compatibility.md)。
+- **已完成**：底部提供状态数据源健康入口，区分`正常`、`部分降级`和`不可用`；详情按需
+  展示任务数据库、Rename 索引、Rollout、服务日志、最后成功刷新时间和 Rollout 读取计数。
+  诊断只使用稳定类别和数量，不显示原始错误、路径或任务身份。设计见
+  [`docs/data-source-health-diagnostics-design.md`](docs/data-source-health-diagnostics-design.md)。
 
 ## 近期：日常操作闭环
 
@@ -165,9 +169,9 @@
 
 ## 建议顺序
 
-1. 使用一个真实已归档收藏完成 `codex unarchive` 恢复验收。
-2. 状态数据源健康诊断和最小 Settings 收口。
-3. 扩展状态与 Subagent 后续增强可行性验证。
-4. Codex CLI 长生命周期与跨版本兼容性验证。
-5. 国际化与主题设置。
-6. Windows 版本评估与移植。
+1. 最小 Settings：先收口刷新间隔和最大显示任务数。
+2. 多显示器选择与窗口位置记忆，为副屏和小屏场景补齐基础。
+3. 国际化、`System` / `Light` / `Dark` 与色盲安全设计。
+4. Codex CLI 长生命周期、归档、resume 与跨版本兼容性验证。
+5. 扩展状态、压缩历史、Token 与 Subagent 后续增强可行性验证。
+6. 登录启动、菜单栏聚合、外接小屏和 Windows 版本扩展。

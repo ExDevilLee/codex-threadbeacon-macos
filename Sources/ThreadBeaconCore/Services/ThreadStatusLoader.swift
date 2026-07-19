@@ -97,9 +97,31 @@ public struct ThreadStatusLoader: Sendable {
         favoriteThreadIDs: Set<String>,
         expandedThreadIDs: Set<String>
     ) async throws -> [ThreadSnapshot] {
-        let recentRecords = try loadRecords(limit)
-        let includedRecords = includedThreadIDs.isEmpty ? [] : try loadIncludedRecords(includedThreadIDs)
-        let favoriteRecords = favoriteThreadIDs.isEmpty ? [] : try loadFavoriteRecords(favoriteThreadIDs)
+        try await loadResult(
+            limit: limit,
+            includedThreadIDs: includedThreadIDs,
+            favoriteThreadIDs: favoriteThreadIDs,
+            expandedThreadIDs: expandedThreadIDs
+        ).snapshots
+    }
+
+    public func loadResult(
+        limit: Int,
+        includedThreadIDs: Set<String>,
+        favoriteThreadIDs: Set<String>,
+        expandedThreadIDs: Set<String>
+    ) async throws -> ThreadStatusLoadResult {
+        let recentRecords: [ThreadRecord]
+        let includedRecords: [ThreadRecord]
+        let favoriteRecords: [ThreadRecord]
+        do {
+            recentRecords = try loadRecords(limit)
+            includedRecords = includedThreadIDs.isEmpty ? [] : try loadIncludedRecords(includedThreadIDs)
+            favoriteRecords = favoriteThreadIDs.isEmpty ? [] : try loadFavoriteRecords(favoriteThreadIDs)
+        } catch {
+            throw taskDatabaseFailure()
+        }
+
         var recordsByID = Dictionary(uniqueKeysWithValues: recentRecords.map { ($0.id, $0) })
         for record in includedRecords {
             recordsByID[record.id] = record
@@ -108,23 +130,64 @@ public struct ThreadStatusLoader: Sendable {
             recordsByID[record.id] = record
         }
         let records = Array(recordsByID.values)
-        let titleOverrides = (try? loadTitleOverrides()) ?? [:]
         let currentDate = now()
         let visibleThreadIDs = Set(records.map(\.id))
         let activeThreadIDs = Set(records.filter { !$0.isArchived }.map(\.id))
-        let incidentsByThread = (try? loadIncidents(activeThreadIDs)) ?? [:]
         let requestedParentIDs = expandedThreadIDs.intersection(visibleThreadIDs)
-        let subagentRecordsByParent = requestedParentIDs.isEmpty
-            ? [:]
-            : try loadSubagentRecords(requestedParentIDs)
+        let subagentRecordsByParent: [String: [SubagentRecord]]
+        do {
+            subagentRecordsByParent = requestedParentIDs.isEmpty
+                ? [:]
+                : try loadSubagentRecords(requestedParentIDs)
+        } catch {
+            throw taskDatabaseFailure()
+        }
 
-        return records.map { record in
-            let observation: RolloutObservation
+        let titleOverrides: [String: String]
+        let renameHealth: DataSourceHealthStatus
+        if records.isEmpty {
+            titleOverrides = [:]
+            renameHealth = .notUsed
+        } else {
             do {
-                observation = try observe(URL(fileURLWithPath: record.rolloutPath))
+                titleOverrides = try loadTitleOverrides()
+                renameHealth = .healthy
             } catch {
-                observation = RolloutObservation()
+                titleOverrides = [:]
+                renameHealth = .degraded("Rename 索引不可用，已回退原始标题")
             }
+        }
+
+        let incidentsByThread: [String: ServiceIncident]
+        let serviceLogsHealth: DataSourceHealthStatus
+        if activeThreadIDs.isEmpty {
+            incidentsByThread = [:]
+            serviceLogsHealth = .notUsed
+        } else {
+            do {
+                incidentsByThread = try loadIncidents(activeThreadIDs)
+                serviceLogsHealth = .healthy
+            } catch {
+                incidentsByThread = [:]
+                serviceLogsHealth = .degraded("服务异常日志不可用，429/503 状态可能缺失")
+            }
+        }
+
+        var rolloutSuccessCount = 0
+        var rolloutFailureCount = 0
+        func readObservation(at path: String) -> RolloutObservation {
+            do {
+                let observation = try observe(URL(fileURLWithPath: path))
+                rolloutSuccessCount += 1
+                return observation
+            } catch {
+                rolloutFailureCount += 1
+                return RolloutObservation()
+            }
+        }
+
+        let snapshots = records.map { record in
+            let observation = readObservation(at: record.rolloutPath)
 
             let state = displayState(
                 for: observation,
@@ -140,6 +203,7 @@ public struct ThreadStatusLoader: Sendable {
                 .map { subagent in
                     makeSubagentSnapshot(
                         from: subagent,
+                        observation: readObservation(at: subagent.rolloutPath),
                         titleOverrides: titleOverrides,
                         currentDate: currentDate
                     )
@@ -163,6 +227,28 @@ public struct ThreadStatusLoader: Sendable {
             )
         }
         .sorted(by: snapshotPrecedes)
+
+        let rolloutHealth: DataSourceHealthStatus
+        if rolloutSuccessCount + rolloutFailureCount == 0 {
+            rolloutHealth = .notUsed
+        } else if rolloutFailureCount > 0 {
+            rolloutHealth = .degraded("\(rolloutFailureCount) 个任务的 Rollout 不可用，状态可能回退")
+        } else {
+            rolloutHealth = .healthy
+        }
+
+        return ThreadStatusLoadResult(
+            snapshots: snapshots,
+            health: DataSourceHealthReport(
+                taskDatabase: .healthy,
+                renameIndex: renameHealth,
+                rollout: rolloutHealth,
+                serviceLogs: serviceLogsHealth,
+                rolloutSuccessCount: rolloutSuccessCount,
+                rolloutFailureCount: rolloutFailureCount,
+                lastSuccessfulRefreshAt: nil
+            )
+        )
     }
 
     private func activeIncident(
@@ -194,15 +280,10 @@ public struct ThreadStatusLoader: Sendable {
 
     private func makeSubagentSnapshot(
         from record: SubagentRecord,
+        observation: RolloutObservation,
         titleOverrides: [String: String],
         currentDate: Date
     ) -> SubagentSnapshot {
-        let observation: RolloutObservation
-        do {
-            observation = try observe(URL(fileURLWithPath: record.rolloutPath))
-        } catch {
-            observation = RolloutObservation()
-        }
         let state = displayState(
             for: observation,
             fallbackDate: record.updatedAt,
@@ -222,6 +303,20 @@ public struct ThreadStatusLoader: Sendable {
             agentRole: record.agentRole,
             model: record.model,
             reasoningEffort: record.reasoningEffort
+        )
+    }
+
+    private func taskDatabaseFailure() -> ThreadStatusLoadFailure {
+        ThreadStatusLoadFailure(
+            health: DataSourceHealthReport(
+                taskDatabase: .unavailable("任务数据库不可用"),
+                renameIndex: .notUsed,
+                rollout: .notUsed,
+                serviceLogs: .notUsed,
+                rolloutSuccessCount: 0,
+                rolloutFailureCount: 0,
+                lastSuccessfulRefreshAt: nil
+            )
         )
     }
 

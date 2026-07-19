@@ -468,6 +468,98 @@ let threadStatusLoaderTests = [
 
         try expect(snapshot?.status == .running, "new task_started should restore rollout status")
         try expect(snapshot?.serviceIncident == nil, "old incident details should be cleared")
+    },
+    TestCase(name: "loader reports optional data source degradation without dropping tasks") {
+        let now = Date(timeIntervalSince1970: 11_000)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "visible",
+                    title: "Original title",
+                    rolloutPath: "/tmp/visible",
+                    updatedAt: now
+                )]
+            },
+            loadIncidents: { _ in
+                throw TestFailure(description: "logs unavailable")
+            },
+            loadTitleOverrides: {
+                throw TestFailure(description: "index unavailable")
+            },
+            observe: { _ in RolloutObservation(status: .idle, statusChangedAt: now) },
+            now: { now }
+        )
+
+        let result = try await loader.loadResult(
+            limit: 8,
+            includedThreadIDs: [],
+            favoriteThreadIDs: [],
+            expandedThreadIDs: []
+        )
+
+        try expect(result.snapshots.first?.title == "Original title", "rename failure should use fallback title")
+        try expect(
+            result.health.renameIndex == .degraded("Rename 索引不可用，已回退原始标题"),
+            "rename failure should be visible"
+        )
+        try expect(
+            result.health.serviceLogs == .degraded("服务异常日志不可用，429/503 状态可能缺失"),
+            "log failure should be visible"
+        )
+        try expect(result.health.overallStatus == .degraded, "optional failures should degrade health")
+    },
+    TestCase(name: "loader counts successful and failed rollout reads") {
+        let now = Date(timeIntervalSince1970: 12_000)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [
+                    ThreadRecord(id: "ok", title: "OK", rolloutPath: "/tmp/ok", updatedAt: now),
+                    ThreadRecord(id: "failed", title: "Failed", rolloutPath: "/tmp/failed", updatedAt: now)
+                ]
+            },
+            observe: { url in
+                guard url.path == "/tmp/ok" else {
+                    throw TestFailure(description: "rollout unavailable")
+                }
+                return RolloutObservation(status: .idle, statusChangedAt: now)
+            },
+            now: { now }
+        )
+
+        let result = try await loader.loadResult(
+            limit: 8,
+            includedThreadIDs: [],
+            favoriteThreadIDs: [],
+            expandedThreadIDs: []
+        )
+
+        try expect(result.snapshots.count == 2, "rollout failure should not remove the task")
+        try expect(result.health.rolloutSuccessCount == 1, "successful rollout reads should be counted")
+        try expect(result.health.rolloutFailureCount == 1, "failed rollout reads should be counted")
+        try expect(
+            result.health.rollout == .degraded("1 个任务的 Rollout 不可用，状态可能回退"),
+            "partial rollout failure should degrade health"
+        )
+    },
+    TestCase(name: "loader reports task database failure as unavailable") {
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in throw TestFailure(description: "database unavailable") },
+            observe: { _ in RolloutObservation() }
+        )
+
+        do {
+            _ = try await loader.loadResult(
+                limit: 8,
+                includedThreadIDs: [],
+                favoriteThreadIDs: [],
+                expandedThreadIDs: []
+            )
+            throw TestFailure(description: "expected task database failure")
+        } catch let error as ThreadStatusLoadFailure {
+            try expect(error.health.overallStatus == .unavailable, "core failure should be unavailable")
+            try expect(error.health.renameIndex == .notUsed, "later sources should remain not used")
+            try expect(error.localizedDescription == "Codex 任务数据库不可用", "error should be sanitized")
+        }
     }
 ]
 

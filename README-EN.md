@@ -106,6 +106,10 @@ notification can use any of the six sounds. Regenerate and verify them with:
 - Refreshes automatically every 2 seconds and also supports manual refresh.
 - The toolbar can pause or resume automatic monitoring. Manual refresh remains
   available while paused, and monitoring resumes by default after relaunch.
+- A compact data-source health control appears at the bottom right. Healthy operation stays
+  unobtrusive, while degraded or unavailable sources use distinct icons, text, and color. Click it
+  to inspect the task database, Rename index, Rollout, and service-log status, the latest successful
+  refresh, and Rollout read success/failure counts.
 - The pin button keeps the window above other apps and persists the selection across launches.
 - Right-click a primary task to favorite, pin, or ignore it. Favorites form a durable watchlist
   without changing sort order. The toolbar star switches between all tasks and favorites only,
@@ -150,7 +154,10 @@ The app does not read `codex_http_client::transport` or extract reasoning summar
 conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
 service, upload data, or request Accessibility permission. The current public UI does not modify
 Codex data. The validated archive-restore POC has no user-accessible entry point and never writes
-SQLite directly. See [`PRIVACY.md`](PRIVACY.md) for the full privacy statement.
+SQLite directly. Data-source health reports remain in memory and contain only stable categories,
+counts, and the last successful refresh time. They do not retain raw errors, local paths, or task
+identities and do not expand the app's read scope. See [`PRIVACY.md`](PRIVACY.md) for the full
+privacy statement.
 
 ## POC Limitations
 

@@ -24,6 +24,48 @@ let threadStatusStoreTests = [
         try expect(result.1 != nil, "refresh should publish timestamp")
         try expect(result.2 == nil, "successful refresh should clear error")
     },
+    TestCase(name: "store publishes health and preserves snapshots after a core failure") {
+        let refreshedAt = Date(timeIntervalSince1970: 100)
+        let snapshot = storeListSnapshot(id: "visible", status: .idle, eventSecond: 90)
+        let healthy = storeHealthReport(taskDatabase: .healthy)
+        let unavailable = storeHealthReport(
+            taskDatabase: .unavailable("任务数据库不可用"),
+            renameIndex: .notUsed,
+            rollout: .notUsed,
+            serviceLogs: .notUsed
+        )
+        let sequence = HealthLoadSequence(
+            success: ThreadStatusLoadResult(snapshots: [snapshot], health: healthy),
+            failure: ThreadStatusLoadFailure(health: unavailable)
+        )
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                loadResult: { _ in try await sequence.next() },
+                now: { refreshedAt }
+            )
+        }
+
+        await store.refresh()
+        let afterSuccess = await MainActor.run {
+            (store.snapshots, store.dataSourceHealth, store.lastRefreshedAt)
+        }
+        await store.refresh()
+        let afterFailure = await MainActor.run {
+            (store.snapshots, store.dataSourceHealth, store.lastRefreshedAt, store.errorMessage)
+        }
+
+        try expect(afterSuccess.0.map(\.id) == ["visible"], "successful refresh should publish snapshots")
+        try expect(afterSuccess.1?.overallStatus == .healthy, "successful refresh should publish health")
+        try expect(afterSuccess.1?.lastSuccessfulRefreshAt == refreshedAt, "health should record success time")
+        try expect(afterFailure.0.map(\.id) == ["visible"], "core failure should preserve prior snapshots")
+        try expect(afterFailure.1?.overallStatus == .unavailable, "core failure should publish health")
+        try expect(
+            afterFailure.1?.lastSuccessfulRefreshAt == refreshedAt,
+            "failed refresh should retain the last successful time"
+        )
+        try expect(afterFailure.2 == refreshedAt, "store should retain its last successful timestamp")
+        try expect(afterFailure.3 == "Codex 任务数据库不可用", "store should publish sanitized error")
+    },
     TestCase(name: "store emits only new automatic completion") {
         let first = completedStoreSnapshot(id: "thread-a", second: 10)
         let second = completedStoreSnapshot(id: "thread-a", second: 20)
@@ -409,6 +451,25 @@ private actor SnapshotSequence {
     }
 }
 
+private actor HealthLoadSequence {
+    private let success: ThreadStatusLoadResult
+    private let failure: ThreadStatusLoadFailure
+    private var hasReturnedSuccess = false
+
+    init(success: ThreadStatusLoadResult, failure: ThreadStatusLoadFailure) {
+        self.success = success
+        self.failure = failure
+    }
+
+    func next() throws -> ThreadStatusLoadResult {
+        guard hasReturnedSuccess else {
+            hasReturnedSuccess = true
+            return success
+        }
+        throw failure
+    }
+}
+
 private final class EventBox: @unchecked Sendable {
     var values: [SoundNotificationEvent] = []
 
@@ -551,6 +612,23 @@ private func completedStoreSnapshot(id: String, second: TimeInterval) -> ThreadS
         updatedAt: date,
         latestEventAt: date,
         completionEventAt: date
+    )
+}
+
+private func storeHealthReport(
+    taskDatabase: DataSourceHealthStatus,
+    renameIndex: DataSourceHealthStatus = .healthy,
+    rollout: DataSourceHealthStatus = .healthy,
+    serviceLogs: DataSourceHealthStatus = .healthy
+) -> DataSourceHealthReport {
+    DataSourceHealthReport(
+        taskDatabase: taskDatabase,
+        renameIndex: renameIndex,
+        rollout: rollout,
+        serviceLogs: serviceLogs,
+        rolloutSuccessCount: 1,
+        rolloutFailureCount: 0,
+        lastSuccessfulRefreshAt: nil
     )
 }
 

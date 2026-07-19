@@ -26,6 +26,7 @@ public final class ThreadStatusStore: ObservableObject {
     @Published public private(set) var ignoredSnapshots: [ThreadSnapshot] = []
     @Published public private(set) var lastRefreshedAt: Date?
     @Published public private(set) var errorMessage: String?
+    @Published public private(set) var dataSourceHealth: DataSourceHealthReport?
     @Published public private(set) var isRefreshing = false
     @Published public private(set) var expandedThreadIDs: Set<String> = []
     @Published public private(set) var restoringThreadIDs: Set<String> = []
@@ -33,7 +34,7 @@ public final class ThreadStatusStore: ObservableObject {
 
     public private(set) var preferences: ThreadListPreferences
 
-    private let load: @Sendable (ThreadLoadRequest) async throws -> [ThreadSnapshot]
+    private let loadResult: @Sendable (ThreadLoadRequest) async throws -> ThreadStatusLoadResult
     private let restoreArchive: @Sendable (String) async throws -> Void
     private let now: @Sendable () -> Date
     private let visibleLimit: Int
@@ -44,7 +45,7 @@ public final class ThreadStatusStore: ObservableObject {
     private let onNotificationHistoryChange: @MainActor ([String]) -> Void
     private let onPreferencesChange: @MainActor (ThreadListPreferences) -> Void
 
-    public init(
+    public convenience init(
         load: @escaping @Sendable (ThreadLoadRequest) async throws -> [ThreadSnapshot],
         restoreArchive: @escaping @Sendable (String) async throws -> Void = { _ in
             throw ArchiveRestoreError.cliNotFound
@@ -57,7 +58,46 @@ public final class ThreadStatusStore: ObservableObject {
         onNotificationHistoryChange: @escaping @MainActor ([String]) -> Void = { _ in },
         onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
     ) {
-        self.load = load
+        self.init(
+            loadResult: { request in
+                ThreadStatusLoadResult(
+                    snapshots: try await load(request),
+                    health: DataSourceHealthReport(
+                        taskDatabase: .healthy,
+                        renameIndex: .notUsed,
+                        rollout: .notUsed,
+                        serviceLogs: .notUsed,
+                        rolloutSuccessCount: 0,
+                        rolloutFailureCount: 0,
+                        lastSuccessfulRefreshAt: nil
+                    )
+                )
+            },
+            restoreArchive: restoreArchive,
+            now: now,
+            initialPreferences: initialPreferences,
+            visibleLimit: visibleLimit,
+            notificationTracker: notificationTracker,
+            onNotification: onNotification,
+            onNotificationHistoryChange: onNotificationHistoryChange,
+            onPreferencesChange: onPreferencesChange
+        )
+    }
+
+    public init(
+        loadResult: @escaping @Sendable (ThreadLoadRequest) async throws -> ThreadStatusLoadResult,
+        restoreArchive: @escaping @Sendable (String) async throws -> Void = { _ in
+            throw ArchiveRestoreError.cliNotFound
+        },
+        now: @escaping @Sendable () -> Date = Date.init,
+        initialPreferences: ThreadListPreferences = .empty,
+        visibleLimit: Int = 8,
+        notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
+        onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
+        onNotificationHistoryChange: @escaping @MainActor ([String]) -> Void = { _ in },
+        onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
+    ) {
+        self.loadResult = loadResult
         self.restoreArchive = restoreArchive
         self.now = now
         self.preferences = initialPreferences
@@ -186,14 +226,16 @@ public final class ThreadStatusStore: ObservableObject {
         var currentPolicy = notificationPolicy
 
         while true {
-            let operation = load
+            let operation = loadResult
             let request = loadRequest()
             do {
-                let nextSnapshots = try await Task.detached(priority: .utility) {
+                let nextResult = try await Task.detached(priority: .utility) {
                     try await operation(request)
                 }.value
-                applyCandidates(nextSnapshots)
-                lastRefreshedAt = now()
+                let refreshedAt = now()
+                applyCandidates(nextResult.snapshots)
+                lastRefreshedAt = refreshedAt
+                dataSourceHealth = nextResult.health.recordingSuccessfulRefresh(at: refreshedAt)
                 errorMessage = nil
 
                 let previousHistory = notificationTracker.seenEventIDs
@@ -202,6 +244,13 @@ public final class ThreadStatusStore: ObservableObject {
                     onNotificationHistoryChange(notificationTracker.seenEventIDs)
                 }
                 events.forEach(onNotification)
+            } catch let error as ThreadStatusLoadFailure {
+                if let lastRefreshedAt {
+                    dataSourceHealth = error.health.recordingSuccessfulRefresh(at: lastRefreshedAt)
+                } else {
+                    dataSourceHealth = error.health
+                }
+                errorMessage = error.localizedDescription
             } catch {
                 errorMessage = error.localizedDescription
             }

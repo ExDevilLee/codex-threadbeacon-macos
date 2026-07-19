@@ -28,8 +28,8 @@ struct ThreadBeaconApp: App {
         let player = SoundPlaybackService()
         soundPlayer = player
         _store = StateObject(wrappedValue: ThreadStatusStore(
-            load: { request in
-                try await loader.load(
+            loadResult: { request in
+                try await loader.loadResult(
                     limit: request.recentLimit,
                     includedThreadIDs: request.includedThreadIDs,
                     favoriteThreadIDs: request.favoriteThreadIDs,
