@@ -6,13 +6,19 @@ public struct DisplaySettings: Equatable, Sendable {
 
     public let refreshIntervalSeconds: Int
     public let maximumTaskCount: Int
+    public let appLanguage: AppLanguage
 
-    public init(refreshIntervalSeconds: Int, maximumTaskCount: Int) {
+    public init(
+        refreshIntervalSeconds: Int,
+        maximumTaskCount: Int,
+        appLanguage: AppLanguage = .defaultValue
+    ) {
         self.refreshIntervalSeconds = Self.supportedRefreshIntervalSeconds.contains(refreshIntervalSeconds)
             ? refreshIntervalSeconds
             : Self.defaultRefreshIntervalSeconds
         self.maximumTaskCount = Self.supportedMaximumTaskCounts.contains(maximumTaskCount)
             ? maximumTaskCount
             : Self.defaultMaximumTaskCount
+        self.appLanguage = appLanguage
     }
 }

@@ -2,6 +2,7 @@ import ThreadBeaconCore
 import SwiftUI
 
 struct SubagentDetailPopoverView: View {
+    @Environment(\.locale) private var locale
     let snapshot: SubagentSnapshot
 
     var body: some View {
@@ -9,12 +10,14 @@ struct SubagentDetailPopoverView: View {
             Text("Subagent 详情")
                 .font(.headline)
 
-            Text(snapshot.title.isEmpty ? "未命名 Subagent" : snapshot.title)
+            Text(snapshot.title.isEmpty
+                ? AppLocalization.string("未命名 Subagent", locale: locale)
+                : snapshot.title)
                 .font(.subheadline.weight(.medium))
                 .lineLimit(2)
 
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 6) {
-                detailRow("状态", value: snapshot.status.displayName)
+                detailRow("状态", value: AppLocalization.string(snapshot.status.displayName, locale: locale))
                 detailRow("Agent", value: snapshot.agentNickname ?? "—")
                 detailRow("角色", value: snapshot.agentRole ?? "—")
                 detailRow("模型", value: snapshot.model ?? "—")
@@ -50,7 +53,7 @@ struct SubagentDetailPopoverView: View {
     @ViewBuilder
     private func detailRow(_ label: String, value: String) -> some View {
         GridRow {
-            Text(label)
+            Text(AppLocalization.string(label, locale: locale))
                 .foregroundStyle(.secondary)
             Text(value)
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -74,6 +77,8 @@ struct SubagentDetailPopoverView: View {
 
     private var activityText: String {
         let date = snapshot.latestEventAt ?? snapshot.updatedAt
-        return date.formatted(date: .abbreviated, time: .standard)
+        return date.formatted(
+            Date.FormatStyle(date: .abbreviated, time: .standard).locale(locale)
+        )
     }
 }

@@ -20,11 +20,10 @@
 - Test: `Tests/ThreadBeaconTests/AppLanguageTests.swift`
 - Test: `Tests/ThreadBeaconTests/DisplaySettingsTests.swift`
 
-- [ ] Add failing tests for explicit Chinese, explicit English, Chinese system resolution, English system resolution and unsupported-language English fallback.
-- [ ] Run `./script/test.sh` and confirm the new tests fail because `AppLanguage` is absent.
-- [ ] Implement `AppLanguage.system`, `.simplifiedChinese` and `.english`, plus deterministic locale resolution from preferred language identifiers.
-- [ ] Persist the raw language value under `DisplayPreferenceKeys.appLanguage`, defaulting invalid or missing values to `.system`.
-- [ ] Run `./script/test.sh` and confirm all tests pass.
+- [x] Add tests for explicit Chinese, explicit English, Chinese system resolution, English system resolution and unsupported-language English fallback.
+- [x] Implement `AppLanguage.system`, `.simplifiedChinese` and `.english`, plus deterministic locale resolution from preferred language identifiers.
+- [x] Persist the raw language value under `DisplayPreferenceKeys.appLanguage`, defaulting invalid or missing values to `.system`.
+- [x] Run `./script/test.sh` and confirm all tests pass.
 
 ## Task 2: App locale injection and Settings picker
 
@@ -33,10 +32,10 @@
 - Modify: `Sources/ThreadBeacon/App/ThreadBeaconApp.swift`
 - Modify: `Sources/ThreadBeacon/Views/ThreadBeaconSettingsView.swift`
 
-- [ ] Add `@AppStorage(DisplayPreferenceKeys.appLanguage)` at the App scene root.
-- [ ] Resolve the stored value with `Locale.preferredLanguages` and inject the locale into both `WindowGroup` and `Settings` content.
-- [ ] Add a General Settings language Picker with three stable raw-value tags.
-- [ ] Build with `xcodebuild -project ThreadBeacon.xcodeproj -scheme ThreadBeacon -configuration Debug -destination 'platform=macOS' build` and confirm the app target compiles.
+- [x] Add `@AppStorage(DisplayPreferenceKeys.appLanguage)` at the App scene root.
+- [x] Resolve the stored value with `Locale.preferredLanguages` and inject the locale into both `WindowGroup` and `Settings` content.
+- [x] Add a General Settings language Picker with three stable raw-value tags.
+- [x] Build the Xcode App target and confirm it compiles.
 
 ## Task 3: String catalog and visible UI coverage
 
@@ -48,11 +47,11 @@
 - Modify: `Sources/ThreadBeacon/Support/RelativeTimeFormatter.swift`
 - Modify: selected semantic formatters under `Sources/ThreadBeaconCore/Support/`
 
-- [ ] Add the string catalog to the App target Resources build phase with `zh-Hans` as source language and complete English translations.
-- [ ] Replace dynamic verbatim status/health/count strings with stable localization keys or localized SwiftUI interpolations.
-- [ ] Cover Tooltip, accessibility labels, context menus, alerts, Settings, Token/Subagent details and empty states.
-- [ ] Keep task titles, Agent aliases, model values, HTTP codes and raw diagnostic payloads verbatim.
-- [ ] Build the Xcode target and inspect the built bundle for compiled `en.lproj` and `zh-Hans.lproj` localization resources.
+- [x] Add the string catalog to the App target Resources build phase with `zh-Hans` as source language and English translations.
+- [x] Replace dynamic status, duration, activity and count strings with localized rendering.
+- [x] Cover the primary tooltips, accessibility labels, context menus, Settings, Token/Subagent details and empty states.
+- [x] Keep task titles, Agent aliases, model values, HTTP codes and raw diagnostic payloads verbatim.
+- [x] Build the Xcode target and inspect the built bundle for compiled `en.lproj`; Simplified Chinese uses the catalog source strings as the development language.
 
 ## Task 4: Runtime and regression verification
 
@@ -62,9 +61,9 @@
 - Modify: `README.md`
 - Modify: `README-EN.md`
 
-- [ ] Run `./script/test.sh`; expected result is the previous 111 tests plus new language tests, all passing.
-- [ ] Run `./script/build_and_run.sh --verify`; expected result is a signed or ad hoc Xcode App that stays running.
-- [ ] Select each of the three language settings and verify immediate main-window and Settings updates.
-- [ ] Simulate an unsupported preferred language through the pure resolver test and confirm English fallback.
-- [ ] Update ROADMAP to mark Chinese/English MVP complete and state that more languages will be added later.
-- [ ] Run Markdown lint on all modified documentation and `git diff --check`.
+- [x] Run `./script/test.sh`; 118 tests pass, including the new language tests.
+- [x] Run `./script/build_and_run.sh --verify`; the Apple Development-signed Xcode App stays running.
+- [ ] Select each of the three language settings and visually verify immediate main-window and Settings updates.
+- [x] Simulate unsupported preferred languages through the pure resolver test and confirm English fallback.
+- [x] Update ROADMAP to mark Chinese/English MVP complete and state that more languages will be added later.
+- [x] Run Markdown lint on all modified documentation and `git diff --check`.

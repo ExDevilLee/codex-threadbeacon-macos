@@ -2,6 +2,7 @@ import ThreadBeaconCore
 import SwiftUI
 
 struct DataSourceHealthButton: View {
+    @Environment(\.locale) private var locale
     let report: DataSourceHealthReport
     @State private var isShowingDetails = false
 
@@ -14,10 +15,11 @@ struct DataSourceHealthButton: View {
                 .frame(width: 18, height: 18)
         }
         .buttonStyle(.borderless)
-        .help(report.summary)
-        .accessibilityLabel("数据源健康：\(report.summary)")
+        .help(localizedSummary)
+        .accessibilityLabel(AppLocalization.formatted("数据源健康：%@", locale: locale, localizedSummary))
         .popover(isPresented: $isShowingDetails) {
             DataSourceHealthPopoverView(report: report)
+                .environment(\.locale, locale)
         }
     }
 
@@ -30,6 +32,10 @@ struct DataSourceHealthButton: View {
         case .unavailable:
             "xmark.octagon.fill"
         }
+    }
+
+    private var localizedSummary: String {
+        AppLocalization.string(report.summary, locale: locale)
     }
 
     private var iconColor: Color {
@@ -45,6 +51,7 @@ struct DataSourceHealthButton: View {
 }
 
 struct DataSourceHealthPopoverView: View {
+    @Environment(\.locale) private var locale
     let report: DataSourceHealthReport
 
     var body: some View {
@@ -54,13 +61,19 @@ struct DataSourceHealthPopoverView: View {
                 Text("数据源健康")
                     .font(.headline)
                 Spacer()
-                Text(report.summary)
+                Text(AppLocalization.string(report.summary, locale: locale))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             if let refreshedAt = report.lastSuccessfulRefreshAt {
-                Text("最后成功刷新：\(refreshedAt.formatted(date: .omitted, time: .standard))")
+                Text(AppLocalization.formatted(
+                    "最后成功刷新：%@",
+                    locale: locale,
+                    refreshedAt.formatted(
+                        Date.FormatStyle(date: .omitted, time: .standard).locale(locale)
+                    )
+                ))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
@@ -96,11 +109,17 @@ struct DataSourceHealthPopoverView: View {
     private var rolloutCounts: String? {
         let total = report.rolloutSuccessCount + report.rolloutFailureCount
         guard total > 0 else { return nil }
-        return "成功 \(report.rolloutSuccessCount) ｜ 失败 \(report.rolloutFailureCount)"
+        return AppLocalization.formatted(
+            "成功 %lld ｜ 失败 %lld",
+            locale: locale,
+            report.rolloutSuccessCount,
+            report.rolloutFailureCount
+        )
     }
 }
 
 private struct DataSourceHealthRow: View {
+    @Environment(\.locale) private var locale
     let title: String
     let status: DataSourceHealthStatus
     var supplementalText: String? = nil
@@ -113,15 +132,15 @@ private struct DataSourceHealthRow: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
-                    Text(title)
+                    Text(AppLocalization.string(title, locale: locale))
                     Spacer()
-                    Text(status.displayText)
+                    Text(AppLocalization.string(status.displayText, locale: locale))
                         .foregroundStyle(statusTextColor)
                 }
                 .font(.caption)
 
                 if let detailText = status.detailText {
-                    Text(detailText)
+                    Text(AppLocalization.userFacing(detailText, locale: locale))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

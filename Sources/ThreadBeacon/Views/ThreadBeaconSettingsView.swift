@@ -2,12 +2,13 @@ import ThreadBeaconCore
 import SwiftUI
 
 struct ThreadBeaconSettingsView: View {
+    @ObservedObject var languageStore: AppLanguageStore
     @ObservedObject var launchAtLoginStore: LaunchAtLoginStore
     let previewSound: (CompletionSound) -> Void
 
     var body: some View {
         TabView {
-            GeneralSettingsView(launchAtLoginStore: launchAtLoginStore)
+            GeneralSettingsView(languageStore: languageStore, launchAtLoginStore: launchAtLoginStore)
                 .tabItem {
                     Label("通用", systemImage: "gearshape")
                 }
@@ -24,24 +25,40 @@ struct ThreadBeaconSettingsView: View {
 
 private struct GeneralSettingsView: View {
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.locale) private var locale
     @AppStorage(DisplayPreferenceKeys.refreshIntervalSeconds)
     private var refreshIntervalSeconds = DisplaySettings.defaultRefreshIntervalSeconds
     @AppStorage(DisplayPreferenceKeys.maximumTaskCount)
     private var maximumTaskCount = DisplaySettings.defaultMaximumTaskCount
+    @ObservedObject var languageStore: AppLanguageStore
     @ObservedObject var launchAtLoginStore: LaunchAtLoginStore
 
     var body: some View {
         Form {
+            Section("语言") {
+                Picker("App 语言", selection: languageBinding) {
+                    Text("跟随系统").tag(AppLanguage.system.rawValue)
+                    // Language names use their native spelling so the choice stays recognizable
+                    // even when the surrounding Settings UI is displayed in English.
+                    Text(verbatim: "简体中文").tag(AppLanguage.simplifiedChinese.rawValue)
+                    Text("English").tag(AppLanguage.english.rawValue)
+                }
+
+                Text("系统语言不是中文或英文时，默认使用 English。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("任务监听") {
                 Picker("刷新间隔", selection: $refreshIntervalSeconds) {
                     ForEach(DisplaySettings.supportedRefreshIntervalSeconds, id: \.self) { seconds in
-                        Text("\(seconds) 秒").tag(seconds)
+                        Text(AppLocalization.formatted("%lld 秒", locale: locale, seconds)).tag(seconds)
                     }
                 }
 
                 Picker("最大显示任务数", selection: $maximumTaskCount) {
                     ForEach(DisplaySettings.supportedMaximumTaskCounts, id: \.self) { count in
-                        Text("\(count) 个").tag(count)
+                        Text(AppLocalization.formatted("%lld 个", locale: locale, count)).tag(count)
                     }
                 }
             }
@@ -71,7 +88,10 @@ private struct GeneralSettingsView: View {
                 launchAtLoginStore.dismissError()
             }
         } message: {
-            Text(launchAtLoginStore.errorMessage ?? "未知错误")
+            Text(AppLocalization.userFacing(
+                launchAtLoginStore.errorMessage ?? "未知错误",
+                locale: locale
+            ))
         }
     }
 
@@ -79,6 +99,15 @@ private struct GeneralSettingsView: View {
         Binding(
             get: { launchAtLoginStore.status.isRegistered },
             set: { launchAtLoginStore.setEnabled($0) }
+        )
+    }
+
+    private var languageBinding: Binding<String> {
+        Binding(
+            get: { languageStore.rawValue },
+            set: { rawValue in
+                languageStore.setLanguage(AppLanguage(rawValue: rawValue) ?? .system)
+            }
         )
     }
 

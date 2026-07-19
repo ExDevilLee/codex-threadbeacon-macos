@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var store: ThreadStatusStore
+    @Environment(\.locale) private var locale
     @AppStorage("windowPinned") private var isWindowPinned = false
     @AppStorage(DisplayPreferenceKeys.refreshIntervalSeconds)
     private var refreshIntervalSeconds = DisplaySettings.defaultRefreshIntervalSeconds
@@ -62,7 +63,11 @@ struct ContentView: View {
                 pendingArchiveRestore = nil
             }
         } message: { snapshot in
-            Text("将调用本机 Codex CLI 恢复“\(snapshot.title.isEmpty ? "未命名任务" : snapshot.title)”。恢复后继续保留收藏；旧会话可能不会重新出现在 Codex App 侧边栏。")
+            Text(AppLocalization.formatted(
+                "将调用本机 Codex CLI 恢复“%@”。恢复后继续保留收藏；旧会话可能不会重新出现在 Codex App 侧边栏。",
+                locale: locale,
+                snapshot.title.isEmpty ? localized("未命名任务") : snapshot.title
+            ))
         }
         .alert(
             archiveRestoreFeedbackTitle,
@@ -97,8 +102,8 @@ struct ContentView: View {
                     .frame(width: 18, height: 18)
             }
             .buttonStyle(.borderless)
-            .help(store.showsFavoritesOnly ? "显示全部任务" : "仅显示收藏")
-            .accessibilityLabel(store.showsFavoritesOnly ? "显示全部任务" : "仅显示收藏")
+            .help(localized(store.showsFavoritesOnly ? "显示全部任务" : "仅显示收藏"))
+            .accessibilityLabel(localized(store.showsFavoritesOnly ? "显示全部任务" : "仅显示收藏"))
 
             Button {
                 isWindowPinned.toggle()
@@ -108,8 +113,8 @@ struct ContentView: View {
                     .frame(width: 18, height: 18)
             }
             .buttonStyle(.borderless)
-            .help(isWindowPinned ? "取消钉住" : "钉在最前面")
-            .accessibilityLabel(isWindowPinned ? "取消钉住" : "钉在最前面")
+            .help(localized(isWindowPinned ? "取消钉住" : "钉在最前面"))
+            .accessibilityLabel(localized(isWindowPinned ? "取消钉住" : "钉在最前面"))
 
             if !store.ignoredThreadIDs.isEmpty {
                 Button {
@@ -120,9 +125,14 @@ struct ContentView: View {
                 }
                 .buttonStyle(.borderless)
                 .help("管理已忽略任务")
-                .accessibilityLabel("管理已忽略任务，共 \(store.ignoredThreadIDs.count) 个")
+                .accessibilityLabel(AppLocalization.formatted(
+                    "管理已忽略任务，共 %lld 个",
+                    locale: locale,
+                    store.ignoredThreadIDs.count
+                ))
                 .popover(isPresented: $isShowingIgnoredTasks) {
                     IgnoredThreadsView(store: store)
+                        .environment(\.locale, locale)
                 }
             }
 
@@ -142,8 +152,8 @@ struct ContentView: View {
                     .frame(width: 18, height: 18)
             }
             .buttonStyle(.borderless)
-            .help(monitoringMode == .active ? "暂停监听" : "恢复监听")
-            .accessibilityLabel(monitoringMode == .active ? "暂停监听" : "恢复监听")
+            .help(localized(monitoringMode == .active ? "暂停监听" : "恢复监听"))
+            .accessibilityLabel(localized(monitoringMode == .active ? "暂停监听" : "恢复监听"))
 
             Button {
                 Task { await store.refresh(notificationPolicy: .baseline) }
@@ -160,7 +170,27 @@ struct ContentView: View {
     }
 
     private var taskCountLabel: ThreadCountLabel {
-        ThreadCountFormatter.label(for: store.snapshots.map(\.status))
+        let label = ThreadCountFormatter.label(for: store.snapshots.map(\.status))
+        let runningCount = store.snapshots.count(where: { $0.status == .running })
+        let explanation: String
+        if runningCount == 1 {
+            explanation = AppLocalization.formatted(
+                "1 个任务正在运行，共显示 %lld 个任务",
+                locale: locale,
+                store.snapshots.count
+            )
+        } else {
+            explanation = AppLocalization.formatted(
+                "%lld 个任务正在运行，共显示 %lld 个任务",
+                locale: locale,
+                runningCount,
+                store.snapshots.count
+            )
+        }
+        return ThreadCountLabel(
+            displayText: label.displayText,
+            explanation: explanation
+        )
     }
 
     private var monitoringSchedule: MonitoringSchedule {
@@ -178,7 +208,7 @@ struct ContentView: View {
     private var content: some View {
         if store.snapshots.isEmpty {
             ContentUnavailableView(
-                store.showsFavoritesOnly ? "暂无收藏任务" : "暂无 Codex 任务",
+                localized(store.showsFavoritesOnly ? "暂无收藏任务" : "暂无 Codex 任务"),
                 systemImage: store.showsFavoritesOnly ? "star" : "list.bullet.rectangle"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -207,8 +237,8 @@ struct ContentView: View {
                                     Button {
                                         pendingArchiveRestore = snapshot
                                     } label: {
-                                        Label(
-                                            isRestoringArchive ? "正在恢复" : "恢复为激活状态",
+                                    Label(
+                                            localized(isRestoringArchive ? "正在恢复" : "恢复为激活状态"),
                                             systemImage: "arrow.uturn.backward.circle"
                                         )
                                     }
@@ -222,7 +252,7 @@ struct ContentView: View {
                                     Task { await store.refresh(notificationPolicy: .baseline) }
                                 } label: {
                                     Label(
-                                        store.isFavorite(snapshot.id) ? "取消收藏" : "收藏会话",
+                                        localized(store.isFavorite(snapshot.id) ? "取消收藏" : "收藏会话"),
                                         systemImage: store.isFavorite(snapshot.id) ? "star.slash" : "star"
                                     )
                                 }
@@ -233,7 +263,7 @@ struct ContentView: View {
                                     Task { await store.refresh(notificationPolicy: .baseline) }
                                 } label: {
                                     Label(
-                                        store.isPinned(snapshot.id) ? "取消置顶" : "置顶任务",
+                                        localized(store.isPinned(snapshot.id) ? "取消置顶" : "置顶任务"),
                                         systemImage: store.isPinned(snapshot.id) ? "pin.slash" : "pin"
                                     )
                                 }
@@ -281,19 +311,31 @@ struct ContentView: View {
             if let errorMessage = store.errorMessage {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(.red)
-                Text(errorMessage)
+                Text(AppLocalization.userFacing(errorMessage, locale: locale))
                     .lineLimit(1)
-                    .help(errorMessage)
+                    .help(AppLocalization.userFacing(errorMessage, locale: locale))
             } else if monitoringMode == .paused {
                 Image(systemName: "pause.circle.fill")
                 if let refreshedAt = store.lastRefreshedAt {
-                    Text("监听已暂停 · 上次更新 \(refreshedAt.formatted(date: .omitted, time: .standard))")
+                    Text(AppLocalization.formatted(
+                        "监听已暂停 · 上次更新 %@",
+                        locale: locale,
+                        refreshedAt.formatted(
+                            Date.FormatStyle(date: .omitted, time: .standard).locale(locale)
+                        )
+                    ))
                 } else {
                     Text("监听已暂停 · 尚未更新")
                 }
             } else if let refreshedAt = store.lastRefreshedAt {
                 Image(systemName: store.isRefreshing ? "arrow.triangle.2.circlepath" : "checkmark.circle")
-                Text("更新于 \(refreshedAt.formatted(date: .omitted, time: .standard))")
+                Text(AppLocalization.formatted(
+                    "更新于 %@",
+                    locale: locale,
+                    refreshedAt.formatted(
+                        Date.FormatStyle(date: .omitted, time: .standard).locale(locale)
+                    )
+                ))
             } else {
                 ProgressView()
                     .controlSize(.mini)
@@ -337,9 +379,9 @@ struct ContentView: View {
     private var archiveRestoreFeedbackTitle: String {
         switch store.archiveRestoreFeedback {
         case .success:
-            "恢复请求已完成"
+            localized("恢复请求已完成")
         case .failure:
-            "恢复失败"
+            localized("恢复失败")
         case nil:
             ""
         }
@@ -348,12 +390,16 @@ struct ContentView: View {
     private var archiveRestoreFeedbackMessage: String {
         switch store.archiveRestoreFeedback {
         case .success:
-            "任务已恢复，收藏状态保持不变。当前 Codex App 可能不会把旧会话重新加入侧边栏。"
+            localized("任务已恢复，收藏状态保持不变。当前 Codex App 可能不会把旧会话重新加入侧边栏。")
         case let .failure(_, message):
-            message
+            AppLocalization.userFacing(message, locale: locale)
         case nil:
             ""
         }
+    }
+
+    private func localized(_ source: String) -> String {
+        AppLocalization.string(source, locale: locale)
     }
 }
 

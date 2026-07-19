@@ -16,11 +16,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct ThreadBeaconApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @StateObject private var appLanguageStore: AppLanguageStore
     @StateObject private var store: ThreadStatusStore
     @StateObject private var launchAtLoginStore: LaunchAtLoginStore
     private let soundPlayer: SoundPlaybackService
 
     init() {
+        _appLanguageStore = StateObject(wrappedValue: AppLanguageStore())
         let displaySettingsRepository = DisplaySettingsRepository()
         let displaySettings = displaySettingsRepository.load()
         displaySettingsRepository.save(displaySettings)
@@ -65,15 +67,21 @@ struct ThreadBeaconApp: App {
         WindowGroup("ThreadBeacon") {
             ContentView(store: store)
                 .frame(minWidth: 360, minHeight: 240)
+                .environment(\.locale, appLanguageStore.locale)
+                .environmentObject(appLanguageStore)
         }
         .defaultSize(width: 420, height: 360)
         .windowResizability(.contentMinSize)
 
         Settings {
             ThreadBeaconSettingsView(
+                languageStore: appLanguageStore,
                 launchAtLoginStore: launchAtLoginStore,
                 previewSound: soundPlayer.preview
             )
+            .environment(\.locale, appLanguageStore.locale)
+            .environmentObject(appLanguageStore)
         }
     }
+
 }

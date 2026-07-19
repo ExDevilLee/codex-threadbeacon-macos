@@ -18,7 +18,8 @@ let package = Package(
         ),
         .executableTarget(
             name: "ThreadBeacon",
-            dependencies: ["ThreadBeaconCore"]
+            dependencies: ["ThreadBeaconCore"],
+            resources: [.process("../../Resources/Localizable.xcstrings")]
         ),
         .executableTarget(
             name: "ThreadBeaconTests",

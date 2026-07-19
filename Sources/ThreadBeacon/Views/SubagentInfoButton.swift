@@ -2,6 +2,7 @@ import ThreadBeaconCore
 import SwiftUI
 
 struct SubagentInfoButton: View {
+    @Environment(\.locale) private var locale
     let snapshot: SubagentSnapshot
 
     @State private var isHoverPresented = false
@@ -26,6 +27,7 @@ struct SubagentInfoButton: View {
         .onHover(perform: handleTriggerHover)
         .popover(isPresented: presentationBinding, arrowEdge: .trailing) {
             SubagentDetailPopoverView(snapshot: snapshot)
+                .environment(\.locale, locale)
                 .onHover(perform: handlePopoverHover)
         }
         .onDisappear(perform: cancelScheduledTasks)

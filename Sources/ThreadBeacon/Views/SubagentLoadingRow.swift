@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SubagentLoadingRow: View {
+    @Environment(\.locale) private var locale
     let isRefreshing: Bool
     let hasError: Bool
 
@@ -15,7 +16,7 @@ struct SubagentLoadingRow: View {
                 Image(systemName: "clock")
             }
 
-            Text(message)
+            Text(AppLocalization.string(message, locale: locale))
             Spacer()
         }
         .font(.caption)

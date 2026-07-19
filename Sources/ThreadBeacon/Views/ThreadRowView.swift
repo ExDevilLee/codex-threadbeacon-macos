@@ -2,6 +2,7 @@ import ThreadBeaconCore
 import SwiftUI
 
 struct ThreadRowView: View {
+    @Environment(\.locale) private var locale
     let snapshot: ThreadSnapshot
     let isPinned: Bool
     let isFavorite: Bool
@@ -47,7 +48,9 @@ struct ThreadRowView: View {
                             .accessibilityLabel("正在恢复")
                     }
 
-                    Text(snapshot.title.isEmpty ? "未命名任务" : snapshot.title)
+                    Text(snapshot.title.isEmpty
+                        ? AppLocalization.string("未命名任务", locale: locale)
+                        : snapshot.title)
                         .font(.system(size: 13, weight: .medium))
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -88,11 +91,16 @@ struct ThreadRowView: View {
                            let attempt = incident.retryAttempt,
                            let limit = incident.retryLimit {
                             Text("·")
-                            Text("重试 \(attempt)/\(limit)")
+                            Text(AppLocalization.formatted(
+                                "重试 %lld/%lld",
+                                locale: locale,
+                                attempt,
+                                limit
+                            ))
                         }
                     }
                     Text("·")
-                    Text(RelativeTimeFormatter.statusDuration(since: snapshot.statusChangedAt))
+                    Text(RelativeTimeFormatter.statusDuration(since: snapshot.statusChangedAt, locale: locale))
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -107,12 +115,14 @@ struct ThreadRowView: View {
 
     private var primaryStatusText: String {
         if isRestoringArchive {
-            return "正在恢复"
+            return AppLocalization.string("正在恢复", locale: locale)
         }
         if snapshot.isArchived {
-            return "已归档"
+            return AppLocalization.string("已归档", locale: locale)
         }
-        return snapshot.serviceIncident?.phase == .failed ? "服务失败" : snapshot.status.displayName
+        return snapshot.serviceIncident?.phase == .failed
+            ? AppLocalization.string("服务失败", locale: locale)
+            : AppLocalization.string(snapshot.status.displayName, locale: locale)
     }
 }
 

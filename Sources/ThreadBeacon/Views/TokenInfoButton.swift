@@ -2,6 +2,7 @@ import ThreadBeaconCore
 import SwiftUI
 
 struct TokenInfoButton: View {
+    @Environment(\.locale) private var locale
     let snapshot: TokenUsageSnapshot
 
     @State private var isHoverPresented = false
@@ -26,6 +27,7 @@ struct TokenInfoButton: View {
         .onHover(perform: handleTriggerHover)
         .popover(isPresented: presentationBinding, arrowEdge: .trailing) {
             TokenDetailPopoverView(snapshot: snapshot)
+                .environment(\.locale, locale)
                 .onHover(perform: handlePopoverHover)
         }
         .onDisappear(perform: cancelScheduledTasks)

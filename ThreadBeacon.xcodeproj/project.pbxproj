@@ -11,6 +11,7 @@
 		100000000000000000000002 /* ThreadBeaconCore.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 100000000000000000000011 /* ThreadBeaconCore.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		100000000000000000000003 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* AppIcon.icns */; };
 		100000000000000000000004 /* Sounds in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* Sounds */; };
+		100000000000000000000005 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000014 /* Localizable.xcstrings */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,7 +43,8 @@
 		100000000000000000000011 /* ThreadBeaconCore.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = ThreadBeaconCore.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		100000000000000000000012 /* AppIcon.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = AppIcon.icns; sourceTree = "<group>"; };
 		100000000000000000000013 /* Sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Sounds; sourceTree = "<group>"; };
-		100000000000000000000014 /* ThreadBeacon-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ThreadBeacon-Info.plist"; sourceTree = "<group>"; };
+		100000000000000000000014 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		100000000000000000000015 /* ThreadBeacon-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ThreadBeacon-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -93,6 +95,7 @@
 			children = (
 				100000000000000000000012 /* AppIcon.icns */,
 				100000000000000000000013 /* Sounds */,
+				100000000000000000000014 /* Localizable.xcstrings */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -100,7 +103,7 @@
 		100000000000000000000072 /* Config */ = {
 			isa = PBXGroup;
 			children = (
-				100000000000000000000014 /* ThreadBeacon-Info.plist */,
+				100000000000000000000015 /* ThreadBeacon-Info.plist */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -182,9 +185,10 @@
 				};
 			};
 			buildConfigurationList = 100000000000000000000082 /* Build configuration list for PBXProject "ThreadBeacon" */;
-			developmentRegion = en;
+			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				"zh-Hans",
 				en,
 				Base,
 			);
@@ -218,6 +222,7 @@
 			files = (
 				100000000000000000000003 /* AppIcon.icns in Resources */,
 				100000000000000000000004 /* Sounds in Resources */,
+				100000000000000000000005 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

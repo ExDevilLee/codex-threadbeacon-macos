@@ -2,6 +2,7 @@ import ThreadBeaconCore
 import SwiftUI
 
 struct TokenDetailPopoverView: View {
+    @Environment(\.locale) private var locale
     let snapshot: TokenUsageSnapshot
 
     var body: some View {
@@ -35,7 +36,7 @@ struct TokenDetailPopoverView: View {
     @ViewBuilder
     private func metricRow(_ label: String, value: String) -> some View {
         GridRow {
-            Text(label)
+            Text(AppLocalization.string(label, locale: locale))
                 .foregroundStyle(.secondary)
             Text(value)
                 .monospacedDigit()
@@ -59,6 +60,8 @@ struct TokenDetailPopoverView: View {
     }
 
     private var updatedAtText: String {
-        snapshot.updatedAt?.formatted(date: .omitted, time: .standard) ?? "—"
+        snapshot.updatedAt?.formatted(
+            Date.FormatStyle(date: .omitted, time: .standard).locale(locale)
+        ) ?? "—"
     }
 }

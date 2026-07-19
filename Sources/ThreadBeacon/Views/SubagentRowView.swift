@@ -2,6 +2,7 @@ import ThreadBeaconCore
 import SwiftUI
 
 struct SubagentRowView: View {
+    @Environment(\.locale) private var locale
     let snapshot: SubagentSnapshot
 
     var body: some View {
@@ -33,7 +34,9 @@ struct SubagentRowView: View {
                                 .foregroundStyle(.tertiary)
                         }
 
-                        Text(snapshot.title.isEmpty ? "未命名 Subagent" : snapshot.title)
+                        Text(snapshot.title.isEmpty
+                            ? AppLocalization.string("未命名 Subagent", locale: locale)
+                            : snapshot.title)
                             .font(.system(size: 12, weight: .medium))
                             .lineLimit(1)
                             .layoutPriority(1)
@@ -51,12 +54,14 @@ struct SubagentRowView: View {
                 }
 
                 HStack(spacing: 6) {
-                    Text(snapshot.status.displayName)
+                    Text(AppLocalization.string(snapshot.status.displayName, locale: locale))
                         .fontWeight(.medium)
                         .foregroundStyle(snapshot.status.color)
                     Text("·")
-                    Text(RelativeActivityFormatter.string(since: activityDate))
-                        .help(activityDate.formatted(date: .abbreviated, time: .standard))
+                    Text(AppLocalization.relativeActivity(since: activityDate, locale: locale))
+                        .help(activityDate.formatted(
+                            Date.FormatStyle(date: .abbreviated, time: .standard).locale(locale)
+                        ))
                 }
                 .font(.caption2)
                 .foregroundStyle(.secondary)

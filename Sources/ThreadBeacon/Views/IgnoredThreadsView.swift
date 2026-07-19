@@ -4,6 +4,7 @@ import SwiftUI
 struct IgnoredThreadsView: View {
     @ObservedObject var store: ThreadStatusStore
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -28,7 +29,11 @@ struct IgnoredThreadsView: View {
                     }
                     .buttonStyle(.borderless)
                     .help("恢复任务")
-                    .accessibilityLabel("恢复 \(displayTitle(for: threadID))")
+                    .accessibilityLabel(AppLocalization.formatted(
+                        "恢复 %@",
+                        locale: locale,
+                        displayTitle(for: threadID)
+                    ))
                 }
             }
 
@@ -54,6 +59,6 @@ struct IgnoredThreadsView: View {
         if let title, !title.isEmpty {
             return title
         }
-        return "任务 \(threadID.prefix(8))"
+        return AppLocalization.formatted("任务 %@", locale: locale, String(threadID.prefix(8)))
     }
 }
