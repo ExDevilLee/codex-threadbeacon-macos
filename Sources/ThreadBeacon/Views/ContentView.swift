@@ -22,7 +22,10 @@ struct ContentView: View {
         }
         .background(Color(nsColor: .windowBackgroundColor))
         .background {
-            WindowLevelBridge(mode: WindowPinMode(isPinned: isWindowPinned))
+            ZStack {
+                WindowLevelBridge(mode: WindowPinMode(isPinned: isWindowPinned))
+                WindowPlacementBridge()
+            }
                 .frame(width: 0, height: 0)
         }
         .task(id: monitoringSchedule) {

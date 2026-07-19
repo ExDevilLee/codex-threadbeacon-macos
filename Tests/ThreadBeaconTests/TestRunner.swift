@@ -25,6 +25,7 @@ enum TestRunner {
             + threadStatusLoaderTests
             + threadStatusStoreTests
             + tokenCountFormatterTests
+            + windowPlacementTests
             + windowPinModeTests
         var failures = 0
 

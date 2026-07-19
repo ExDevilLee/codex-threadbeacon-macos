@@ -113,6 +113,10 @@ notification can use any of the six sounds. Regenerate and verify them with:
   to inspect the task database, Rename index, Rollout, and service-log status, the latest successful
   refresh, and Rollout read success/failure counts.
 - The pin button keeps the window above other apps and persists the selection across launches.
+- The main window remembers its latest display, position, and size across launches. If the saved
+  display is unavailable or the saved frame exceeds the current visible area, the window safely
+  falls back and remains visible on the main display. Runtime display hot-plug handling and an
+  explicit display selector are outside this version.
 - Right-click a primary task to favorite, pin, or ignore it. Favorites form a durable watchlist
   without changing sort order. The toolbar star switches between all tasks and favorites only,
   and persists that filter across launches.
