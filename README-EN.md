@@ -14,6 +14,16 @@ data source.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
+## Interface Preview
+
+| Primary task status | Inline Subagent expansion |
+| :---: | :---: |
+| ![ThreadBeacon primary task status](docs/assets/readme/en/threadbeacon-main.png) | ![ThreadBeacon inline Subagent expansion](docs/assets/readme/en/threadbeacon-subagents.png) |
+
+| Token usage details | General Settings |
+| :---: | :---: |
+| ![ThreadBeacon Token usage details](docs/assets/readme/en/threadbeacon-token-details.png) | ![ThreadBeacon General Settings](docs/assets/readme/en/threadbeacon-settings.png) |
+
 See [`ROADMAP.md`](ROADMAP.md) for planned features and their proposed validation order.
 
 See the Chinese
