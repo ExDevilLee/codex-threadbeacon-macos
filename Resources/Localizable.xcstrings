@@ -1,6 +1,18 @@
 {
   "sourceLanguage" : "zh-Hans",
   "strings" : {
+    "关于 ThreadBeacon" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "About ThreadBeacon" } } } },
+    "版本 %@（构建 %@）" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Version %@ (Build %@)" } } } },
+    "版本 %@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Version %@" } } } },
+    "构建 %@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Build %@" } } } },
+    "版本未知" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Version unknown" } } } },
+    "用于快速查看 Codex App 与 Codex CLI 任务状态的本地 macOS 工具。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "A local macOS utility for checking Codex App and Codex CLI task status at a glance." } } } },
+    "独立开源项目，与 OpenAI 无隶属或官方认可关系。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "An independent open-source project, not affiliated with or endorsed by OpenAI." } } } },
+    "版本记录" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Releases" } } } },
+    "隐私" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy" } } } },
+    "支持项目" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Support the Project" } } } },
+    "无法打开链接" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Could Not Open Link" } } } },
+    "请检查默认浏览器或稍后重试。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check your default browser or try again later." } } } },
     "通用" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "General" } } } },
     "提示音" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Sounds" } } } },
     "语言" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Language" } } } },

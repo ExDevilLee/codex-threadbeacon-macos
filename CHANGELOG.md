@@ -9,6 +9,10 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ### Added
 
+- 原生 About 窗口展示 App 图标、运行时版本与构建号、项目说明，以及 GitHub、Releases、
+  隐私、License 和外部项目支持入口；支持简体中文和英文。
+- 新增中英双语 `SPONSOR.md`，第一版只提供 Star、分享、Issue 和贡献方式，不在 App 内
+  嵌入支付渠道、付款二维码或功能解锁。
 - 中英文 README 增加 macOS 14+ 系统要求、Release 徽章和 30 秒快速开始。
 - 中英文故障排查覆盖首次打开、空列表、状态、提示音、升级、回滚、卸载和安全诊断范围。
 - GitHub Bug/Feature Issue Forms、Pull Request 模板和贡献指南，反馈入口明确禁止上传 Codex

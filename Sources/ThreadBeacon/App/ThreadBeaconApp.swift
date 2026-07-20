@@ -75,6 +75,20 @@ struct ThreadBeaconApp: App {
         }
         .defaultSize(width: 420, height: 360)
         .windowResizability(.contentMinSize)
+        .commands {
+            ThreadBeaconAboutCommands(locale: appLanguageStore.locale)
+        }
+
+        Window(
+            AppLocalization.string("关于 ThreadBeacon", locale: appLanguageStore.locale),
+            id: "about"
+        ) {
+            ThreadBeaconAboutView()
+                .environment(\.locale, appLanguageStore.locale)
+                .environmentObject(appLanguageStore)
+                .preferredColorScheme(selectedTheme.colorScheme)
+        }
+        .windowResizability(.contentSize)
 
         Settings {
             ThreadBeaconSettingsView(
@@ -92,4 +106,17 @@ struct ThreadBeaconApp: App {
         AppTheme(rawValue: appThemeRawValue) ?? .defaultValue
     }
 
+}
+
+private struct ThreadBeaconAboutCommands: Commands {
+    @Environment(\.openWindow) private var openWindow
+    let locale: Locale
+
+    var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button(AppLocalization.string("关于 ThreadBeacon", locale: locale)) {
+                openWindow(id: "about")
+            }
+        }
+    }
 }
