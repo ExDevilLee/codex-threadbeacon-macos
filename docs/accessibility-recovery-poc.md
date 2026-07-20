@@ -30,9 +30,9 @@
 它默认只检查标题匹配、可操作任务行和输入框数量；只有同时提供 `--select` 与
 `--confirm-select` 才允许切换唯一匹配的任务，并且没有输入或发送消息的代码路径。
 
-这证明方案 A 已具备无固定坐标定位任务行与输入框的技术基础，但尚未验证正式 ThreadBeacon
-进程的独立授权、目标任务切换后二次身份确认、固定文本注入、发送动作和 rollout 回读。因此仍
-不能把自动点击或发送逻辑接入异常恢复主链路。
+这证明方案 A 已具备无固定坐标定位任务行与输入框的技术基础，但当时尚未验证正式
+ThreadBeacon 进程的独立授权、目标任务切换后二次身份确认、固定文本注入、发送动作和 rollout
+回读。因此仍不能把自动点击或发送逻辑接入异常恢复主链路。
 
 下一阶段 POC 增加独立的注入双确认：仅当目标任务按钮和输入框都唯一、输入框原本为空时，
 写入固定提示词并立即回读，随后清空并再次确认。该阶段仍不查找发送按钮、不模拟回车，也不
@@ -54,7 +54,7 @@
 - 验证前后 rollout 的 `user_message` 数量不变，确认没有发送消息或创建用户 turn。
 
 这证明“任务定位 → 二次身份确认 → 固定文本注入 → 回读 → 清理”链路可行。尚未验证的是正式
-ThreadBeacon App 自身的 Accessibility 授权、发送按钮或回车动作、发送后的新 `user_message` /
+ThreadBeacon App 自身的目标任务注入／清理、发送按钮或回车动作、发送后的新 `user_message` /
 `task_started` 回读，以及失败时是否能稳定恢复输入框。因此自动恢复仍保持禁用。
 
 正式 App 的下一层 POC 已增加到 Settings 的“自动恢复”页：页面只读取真实
@@ -62,6 +62,20 @@ ThreadBeacon App 自身的 Accessibility 授权、发送按钮或回车动作、
 `AXIsProcessTrustedWithOptions`。未授权时可显式打开 macOS 辅助功能设置。该入口不会自动请求
 权限，也不会启用恢复消息发送；授权后的当前用途仍只是继续验证 ThreadBeacon App 自身的 AX
 访问能力。
+
+2026-07-21 已完成正式 ThreadBeacon 进程的授权与只读访问验证：
+
+- 开发版使用现有 Apple Development 身份签名，`TeamIdentifier` 为 `2HKNYQQV3U`；
+- 用户明确授权后，Settings 正确显示“已授权”；
+- 用户主动执行“验证 Codex 只读访问”后，正式 App 读取到 1 个 Codex 窗口、1 个输入框，
+  共访问 1063 个 AX 节点；
+- 诊断结果只保留上述结构计数，不读取、显示或持久化元素标题、值与会话内容；
+- 该验证不切换任务、不写输入框、不发送消息。
+
+验证过程中确认，同一台机器若同时存在 `/Applications`、Xcode Debug 和 `dist` 三个同 bundle ID
+副本，ad-hoc 签名会让系统设置中的同名授权与当前运行副本错配。开发验证应对实际运行的
+`dist/ThreadBeacon.app` 使用稳定的 Apple Development 身份签名，再由该进程主动请求授权。
+公开分发仍需要 Developer ID Application 和公证；开发证书不能替代发布签名。
 
 ## 目标流程
 

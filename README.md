@@ -219,7 +219,8 @@ Xcode App target 会把 `.icns` 作为 App bundle 资源，并写入 `CFBundleIc
 - Settings 的“自动恢复”页记录会话 ID、异常 episode、记录时间、未发送／发送中／已发送／发送失败
   和脱敏结果；未发送的默认原因是“需要 macOS Accessibility 授权”。
 - “自动恢复”页显示当前 App 的真实 Accessibility 授权状态；只有用户点击“请求授权”时才调用
-  macOS 系统授权，也可显式打开辅助功能设置。当前授权入口仅用于 POC 验证，不会启用自动发送。
+  macOS 系统授权，也可显式打开辅助功能设置。授权后可手动执行 Codex 只读访问诊断；结果只包含
+  窗口、输入框和访问节点数量，不读取或显示任务标题与会话内容，也不会启用自动发送。
 - 如果希望恢复消息也出现在 Codex App 对应会话中，需要额外授予 ThreadBeacon macOS
   Accessibility（辅助功能）权限，并使用 Codex App 输入框注入消息；未授权时只能做只读监控
   ，不会使用用户不可见的外部 CLI 恢复。当前方案仍处于研究阶段。
@@ -242,8 +243,9 @@ App 只在本机读取：
   最终失败时间。
 
 App 不读取 `codex_http_client::transport`，不提取 reasoning summary、会话正文、完整请求、
-供应商 URL 或 request ID；不启动网络服务、不上传 Codex 数据，也不使用 Accessibility
-权限。App 启动后只向 `api.github.com` 请求公开 Release 元数据以检查更新；请求不包含
+供应商 URL 或 request ID；不启动网络服务、不上传 Codex 数据。Accessibility 只在用户主动
+授权并点击只读诊断后使用，结果仅包含结构计数。App 启动后只向 `api.github.com` 请求公开
+Release 元数据以检查更新；请求不包含
 Codex 数据、本机路径、用户设置或设备标识。
 当前公开 UI 不直接修改 Codex SQLite；HTTP 400 等异常当前只记录未发送的固定恢复提示，不调用
 外部 Codex CLI，也不读取或拼接会话正文。已验证的归档恢复底层 POC 暂无可触发入口，也不直接写入

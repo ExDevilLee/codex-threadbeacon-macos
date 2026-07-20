@@ -133,7 +133,48 @@ private struct AutoRecoveryLogView: View {
                         accessibilityPermissionStore.openSystemSettings()
                     }
                 }
+            } else {
+                HStack {
+                    Button(localized("验证 Codex 只读访问")) {
+                        accessibilityPermissionStore.runReadOnlyDiagnostic()
+                    }
+                    .disabled(accessibilityPermissionStore.isChecking)
+
+                    if accessibilityPermissionStore.isChecking {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
+
+                if let result = accessibilityPermissionStore.diagnosticResult {
+                    Label(
+                        diagnosticText(result),
+                        systemImage: result.isReady
+                            ? "checkmark.shield.fill"
+                            : "exclamationmark.triangle.fill"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(result.isReady ? .green : .secondary)
+                }
             }
+        }
+    }
+
+    private func diagnosticText(_ result: AccessibilityDiagnosticResult) -> String {
+        switch result {
+        case .notAuthorized:
+            localized("只读验证失败：尚未获得辅助功能权限。")
+        case .codexNotRunning:
+            localized("只读验证失败：Codex App 未运行。")
+        case .scanFailed:
+            localized("只读验证失败：无法读取 Codex App 的辅助功能结构。")
+        case let .ready(windowCount, textAreaCount, visitedNodeCount):
+            String(
+                format: localized("只读验证通过：%lld 个窗口，%lld 个输入框，访问 %lld 个节点。"),
+                Int64(windowCount),
+                Int64(textAreaCount),
+                Int64(visitedNodeCount)
+            )
         }
     }
 

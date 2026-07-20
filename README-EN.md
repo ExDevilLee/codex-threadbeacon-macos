@@ -244,7 +244,9 @@ project-created sounds and verify all assets with:
   reason is that macOS Accessibility permission is required.
 - Auto recovery shows the app's real Accessibility authorization state. It requests
   permission only after the user clicks Request Access and can explicitly open macOS
-  Accessibility Settings. This POC entry does not enable automatic sending.
+  Accessibility Settings. After authorization, users can run a read-only Codex access
+  diagnostic. It reports only window, text-area, and visited-node counts, reads no task
+  titles or conversation content, and does not enable automatic sending.
 - To make the recovery message visible in the corresponding Codex App conversation,
   ThreadBeacon must control the Codex App input field through macOS Accessibility.
   This requires a separate user-granted Accessibility permission. Without it,
@@ -271,7 +273,9 @@ The app reads only local data:
 
 The app does not read `codex_http_client::transport` or extract reasoning summaries,
 conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
-service, upload Codex data, or request Accessibility permission. After launch, it only requests
+service or upload Codex data. Accessibility is used only after the user explicitly grants
+permission and starts the read-only diagnostic; the result contains structural counts only.
+After launch, the app only requests
 public Release metadata from `api.github.com` to check for updates; the request contains no Codex
 data, local paths, user settings, or device identifier. The current public UI does not
 directly modify Codex SQLite. Non-503 HTTP incidents currently record a fixed recovery

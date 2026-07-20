@@ -163,7 +163,8 @@
   [`docs/accessibility-recovery-poc.md`](docs/accessibility-recovery-poc.md)。
 - **POC 进行中（Accessibility）**：已验证按唯一 rename 标题定位任务行、顶部标题二次确认、
   固定提示词写入／回读／清空，且未产生 `user_message`；Settings 已增加真实授权状态和用户触发
-  的授权入口。正式 App 授权后的 AX 访问、发送动作和 rollout 回读仍待人工验证，自动发送保持关闭。
+  的授权入口。正式 App 已完成授权后的 Codex AX 只读访问验证，只输出窗口、输入框和节点计数。
+  正式 App 的目标任务注入／清理、发送动作和 rollout 回读仍待验证，自动发送保持关闭。
 - 所有新增列默认可隐藏，避免破坏小窗口和未来小屏场景。
 
 ### Codex CLI 适配
