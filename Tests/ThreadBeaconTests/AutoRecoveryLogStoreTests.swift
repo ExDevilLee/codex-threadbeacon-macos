@@ -51,5 +51,28 @@ let autoRecoveryLogStoreTests = [
 
         try expect(entries.count == AutoRecoveryLogStore.maximumEntries, "log should be bounded")
         try? FileManager.default.removeItem(at: fileURL)
+    },
+    TestCase(name: "auto recovery log records skipped external recovery") {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("threadbeacon-auto-recovery-\(UUID().uuidString).json")
+        let store = await MainActor.run {
+            let store = AutoRecoveryLogStore(fileURL: fileURL)
+            _ = store.recordAttempt(
+                threadID: "thread-id",
+                episodeID: "turn-id",
+                incident: "HTTP 400",
+                prompt: "刚才中断了，请继续未完成的任务"
+            )
+            return store
+        }
+        await MainActor.run {
+            if let entryID = store.entries.first?.id {
+                store.recordSkipped(entryID)
+            }
+        }
+        let reloaded = await MainActor.run { AutoRecoveryLogStore(fileURL: fileURL).entries }
+        try expect(reloaded.first?.status == .skipped, "external recovery should be skipped")
+        try expect(reloaded.first?.detail == "需要 macOS Accessibility 授权", "skip detail should explain the permission boundary")
+        try? FileManager.default.removeItem(at: fileURL)
     }
 ]

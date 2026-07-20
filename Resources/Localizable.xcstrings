@@ -197,6 +197,8 @@
     "发送中" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Sending" } } } },
     "已发送" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Sent" } } } },
     "发送失败" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Send failed" } } } },
+    "未发送" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Not sent" } } } },
+    "需要 macOS Accessibility 授权" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "macOS Accessibility permission is required" } } } },
     "会话 %@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Session %@" } } } },
     "Codex CLI 已接受提示词（进程退出码 0）" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Codex CLI accepted the prompt (process exit code 0)" } } } },
     "发送恢复提示失败" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Recovery prompt failed to send" } } } },

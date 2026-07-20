@@ -151,11 +151,16 @@
 - `压缩可观测性`：rollout 可显示历史压缩次数和最近完成时间，但不能判断实时压缩状态或
   百分比进度；共享 app-server 或可选 `PreCompact` / `PostCompact` Hook 可提供开始、完成和
   耗时，但仍只能使用不确定进度动画。作为独立 POC 评估，不与 Subagent 展开首版绑定。
-- **MVP 已完成（异常自动续做）**：检测到新的主任务终止型 400、429 或模型容量异常 episode
-  后，ThreadBeacon 通过 `codex exec resume` 自动发送“刚才中断了，请继续未完成的任务”。
-  503 明确排除，避免在服务不可用时继续触发请求；启动时的历史异常只登记不发送，同一
-  episode 每次运行只尝试一次。后续再通过 Settings 配置状态到动作、重试次数、冷却时间和人工确认策略。发送链路和独立
-  app-server 的跨进程限制见 [`docs/app-server-integration-poc.md`](docs/app-server-integration-poc.md)。
+- **MVP 已完成（异常记录）**：检测到新的主任务终止型 400、429 或模型容量异常 episode 后，
+  ThreadBeacon 记录固定恢复提示，但当前版本禁用不可见的外部 `codex exec resume` 自动发送；
+  日志会明确记录“未发送：需要 macOS Accessibility 授权”。503 明确排除，启动时的历史异常只登记
+  不发送，同一 episode 每次运行只记录一次。后续再通过 Settings 配置状态到动作、重试次数、冷却时间
+  和人工确认策略。发送链路和独立 app-server 的跨进程限制见
+  [`docs/app-server-integration-poc.md`](docs/app-server-integration-poc.md)。
+- **研究（Codex App 内可见恢复）**：如果希望恢复消息真正出现在 Codex App 对应会话中，
+  需要通过 macOS Accessibility 控制 Codex App 输入框并发送；用户必须单独授予辅助功能权限。
+  未授权时只读监控并记录未发送，不使用外部 CLI 恢复。AX 树检查和安全约束见
+  [`docs/accessibility-recovery-poc.md`](docs/accessibility-recovery-poc.md)。
 - 所有新增列默认可隐藏，避免破坏小窗口和未来小屏场景。
 
 ### Codex CLI 适配

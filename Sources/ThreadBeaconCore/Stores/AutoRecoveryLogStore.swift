@@ -54,6 +54,14 @@ public final class AutoRecoveryLogStore: ObservableObject {
         }
     }
 
+    public func recordSkipped(_ id: UUID, detail: String = "需要 macOS Accessibility 授权") {
+        update(id) { entry in
+            entry.status = .skipped
+            entry.completedAt = now()
+            entry.detail = detail
+        }
+    }
+
     public func clear() {
         entries.removeAll()
         persist()

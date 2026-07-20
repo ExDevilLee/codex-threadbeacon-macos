@@ -33,7 +33,6 @@ struct ThreadBeaconApp: App {
         let repository = SQLiteThreadRepository(databaseURL: CodexPaths.stateDatabaseURL)
         let loader = ThreadStatusLoader(repository: repository)
         let archiveRestoreService = CodexArchiveRestoreService()
-        let messageSendService = CodexMessageSendService()
         let recoveryLogs = AutoRecoveryLogStore()
         _autoRecoveryLogStore = StateObject(wrappedValue: recoveryLogs)
         let history = SoundNotificationHistory()
@@ -74,15 +73,9 @@ struct ThreadBeaconApp: App {
                     incident: incident,
                     prompt: prompt
                 )
-                Task {
-                    do {
-                        try await messageSendService.send(threadID: threadID, message: prompt)
-                        recoveryLogs.recordSuccess(logID)
-                    } catch {
-                        let detail = (error as? CodexMessageSendError)?.logDescription ?? "发送恢复提示失败"
-                        recoveryLogs.recordFailure(logID, detail: detail)
-                    }
-                }
+                // External `codex exec resume` is intentionally disabled. Only the
+                // future Accessibility path may inject a message into Codex App.
+                recoveryLogs.recordSkipped(logID)
             },
             onNotificationHistoryChange: { eventIDs in
                 history.save(eventIDs)

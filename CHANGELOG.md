@@ -9,9 +9,11 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ### Added
 
-- 检测到新的主任务终止型 HTTP 4xx/5xx（HTTP 503 除外）或模型容量异常 episode 后，自动通过
-  `codex exec resume` 发送固定提示词“刚才中断了，请继续未完成的任务”；启动时历史异常只
-  登记不发送，同一 episode 每次运行只尝试一次。发送失败不会改变任务状态或阻塞监听。
+- 检测到新的主任务终止型 HTTP 4xx/5xx（HTTP 503 除外）或模型容量异常 episode 后，记录固定恢复
+  提示，但当前版本禁用不可见的外部 `codex exec resume` 自动发送；日志新增“未发送”状态，默认原因
+  为需要 macOS Accessibility 授权。方案 A 的 Codex App 输入框注入仍处于 POC 研究阶段。
+- 新增只读 `AccessibilityProbe`：可按任务 ID 匹配 rename 标题、唯一任务按钮和输入框；只有双确认
+  参数才允许切换任务，且工具不包含输入或发送消息的代码路径。
 
 ### Documentation
 

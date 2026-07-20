@@ -5,9 +5,10 @@
 ThreadBeacon 可以在不接管 Codex 任务、不读取会话正文的前提下，从本机只读日志中识别
 当前可见主任务的结构化 HTTP 4xx/5xx 异常、自动重试与最终失败，以及明确记录的所选模型容量错误。
 
-这个能力补充了 rollout 状态推导。检测到新的主任务终止型异常 episode 后，App 会通过 `codex exec resume` 自动发送固定提示词“刚才中断了，请继续未完成的任务”；
-HTTP 503 明确排除，其他结构化 HTTP 4xx/5xx 和模型容量异常均可触发。启动时已有的历史异常只登记不发送，同一
-episode 每次运行只尝试一次。授权等待目前也没有可靠数据源。
+这个能力补充了 rollout 状态推导。检测到新的主任务终止型异常 episode 后，App 会记录固定恢复提示，
+但当前版本禁用外部 `codex exec resume` 自动发送，并将记录标记为“未发送：需要 macOS Accessibility 授权”。
+HTTP 503 明确排除，其他结构化 HTTP 4xx/5xx 和模型容量异常均可记录。启动时已有的历史异常只登记不发送，同一
+episode 每次运行只记录一次。授权等待目前也没有可靠数据源。
 
 ## 真实验证记录
 
@@ -49,8 +50,17 @@ feedback tags、工具输出或其他日志 target。
 服务 incident 优先于 rollout 的 `task_complete`。这是因为失败 turn 也可能写入通用
 `task_complete`；若不覆盖，会把真实失败误报为完成并播放错误的完成音。
 
-自动续做只使用固定文本，不读取或拼接会话正文；CLI 不可用或发送失败时保留红色失败状态，
-不重试、不改变状态，也不阻塞后续刷新。
+恢复提示只使用固定文本，不读取或拼接会话正文；当前不会启动外部 CLI，不改变异常状态，
+也不阻塞后续刷新。Accessibility 方案 A 完成授权、定位和结果确认 POC 后，才会评估启用发送。
+
+### Codex App 内可见的恢复
+
+外部 `codex exec resume` 走的是独立 CLI 执行通道，不能保证 Codex App 当前窗口和侧边栏同步显示
+消息，因此当前版本不调用它。若要达到“Codex App 会话中可见并继续执行”的效果，需要通过 macOS
+Accessibility 控制 Codex App 的输入框和发送动作；这要求用户在系统设置中单独授权 ThreadBeacon。
+没有该授权时，App 只记录未发送，不伪装成已完成 Codex App 内恢复。
+
+方案 A 的研究记录见 [`accessibility-recovery-poc.md`](accessibility-recovery-poc.md)。
 
 ## 隐私边界
 
@@ -81,7 +91,7 @@ feedback tags、工具输出或其他日志 target。
 - `transport` target 即使包含 429 也被忽略。
 - incident 覆盖误导性的 `task_complete`。
 - 同 episode 只产生一次异常提示音。
-- 新的非 503 终止型 HTTP episode 和模型容量异常只尝试一次自动续做，启动时历史 episode 不发送；HTTP 503 不自动发送。
+- 新的非 503 终止型 HTTP episode 和模型容量异常只记录一次未发送恢复提示，启动时历史 episode 不发送；HTTP 503 不触发恢复提示。
 
 运行：
 

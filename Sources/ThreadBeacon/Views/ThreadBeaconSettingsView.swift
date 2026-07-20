@@ -95,6 +95,7 @@ private extension AutoRecoveryLogStatus {
         case .sending: "arrow.triangle.2.circlepath"
         case .succeeded: "checkmark.circle.fill"
         case .failed: "xmark.circle.fill"
+        case .skipped: "hand.raised.circle.fill"
         }
     }
 
@@ -103,6 +104,7 @@ private extension AutoRecoveryLogStatus {
         case .sending: .orange
         case .succeeded: .green
         case .failed: .red
+        case .skipped: .secondary
         }
     }
 
@@ -112,6 +114,7 @@ private extension AutoRecoveryLogStatus {
         case .sending: source = "发送中"
         case .succeeded: source = "已发送"
         case .failed: source = "发送失败"
+        case .skipped: source = "未发送"
         }
         return AppLocalization.string(source, locale: locale)
     }

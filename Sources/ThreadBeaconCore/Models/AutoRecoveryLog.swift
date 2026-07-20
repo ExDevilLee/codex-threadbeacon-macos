@@ -4,6 +4,7 @@ public enum AutoRecoveryLogStatus: String, Codable, Equatable, Sendable {
     case sending
     case succeeded
     case failed
+    case skipped
 }
 
 public struct AutoRecoveryLogEntry: Identifiable, Codable, Equatable, Sendable {

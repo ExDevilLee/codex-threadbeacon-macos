@@ -54,7 +54,8 @@ enum AppLocalization {
             "发送恢复提示失败",
             "未找到 Codex CLI",
             "Codex CLI 执行失败",
-            "无法启动 Codex CLI"
+            "无法启动 Codex CLI",
+            "需要 macOS Accessibility 授权"
         ]
         if catalogBackedMessages.contains(source) {
             return string(source, locale: locale)
