@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-14
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+
+      - name: Test
+        run: |
+          ./script/test_release_lib.sh
+          ./script/test.sh
+
+      - name: Package universal app
+        run: ./script/package_release.sh "$GITHUB_REF_NAME"
+
+      - name: Create GitHub prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/release/*.zip \
+            dist/release/*.sha256 \
+            --title "ThreadBeacon $GITHUB_REF_NAME" \
+            --notes-file dist/release/release-notes.md \
+            --prerelease \
+            --verify-tag
