@@ -23,6 +23,9 @@ enum TestRunner {
             + relativeActivityFormatterTests
             + rolloutTailParserTests
             + soundNotificationTests
+            + semanticVersionTests
+            + githubReleaseClientTests
+            + updateCheckStoreTests
             + sqliteThreadRepositoryTests
             + subagentCountFormatterTests
             + sessionIndexTitleRepositoryTests

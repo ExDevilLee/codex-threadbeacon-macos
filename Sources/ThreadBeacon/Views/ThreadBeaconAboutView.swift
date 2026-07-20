@@ -4,11 +4,16 @@ import ThreadBeaconCore
 
 struct ThreadBeaconAboutView: View {
     @Environment(\.locale) private var locale
+    @ObservedObject var updateCheckStore: UpdateCheckStore
     @State private var linkOpenFailed = false
 
     private let appInfo: AboutAppInfo
 
-    init(appInfo: AboutAppInfo = AboutAppInfo(infoDictionary: Bundle.main.infoDictionary)) {
+    init(
+        updateCheckStore: UpdateCheckStore,
+        appInfo: AboutAppInfo = AboutAppInfo(infoDictionary: Bundle.main.infoDictionary)
+    ) {
+        self.updateCheckStore = updateCheckStore
         self.appInfo = appInfo
     }
 
@@ -28,6 +33,8 @@ struct ThreadBeaconAboutView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+
+            updateCheckSection
 
             Text(localized("用于快速查看 Codex App 与 Codex CLI 任务状态的本地 macOS 工具。"))
                 .font(.body)
@@ -82,6 +89,62 @@ struct ThreadBeaconAboutView: View {
         case (nil, nil):
             localized("版本未知")
         }
+    }
+
+    @ViewBuilder
+    private var updateCheckSection: some View {
+        switch updateCheckStore.state {
+        case .idle:
+            checkForUpdatesButton(localized("检查更新"))
+        case .checking:
+            HStack(spacing: 6) {
+                ProgressView()
+                    .controlSize(.small)
+                Text(localized("正在检查更新…"))
+                    .foregroundStyle(.secondary)
+            }
+            .font(.callout)
+        case .upToDate:
+            HStack(spacing: 8) {
+                Label(localized("当前已是最新版本"), systemImage: "checkmark.circle.fill")
+                    .foregroundStyle(.secondary)
+                checkForUpdatesButton(localized("再次检查"))
+            }
+        case let .updateAvailable(update):
+            HStack(spacing: 8) {
+                Label(updateAvailableLabel(update), systemImage: "arrow.down.circle.fill")
+                    .foregroundStyle(Color.accentColor)
+                Button(localized("前往下载")) {
+                    open(update.releaseURL)
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        case .failed:
+            VStack(spacing: 6) {
+                Text(localized("暂时无法检查更新，请稍后重试。"))
+                    .foregroundStyle(.secondary)
+                checkForUpdatesButton(localized("重试"))
+            }
+        case .currentVersionUnavailable:
+            Text(localized("无法确定当前版本。"))
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func checkForUpdatesButton(_ title: String) -> some View {
+        Button(title) {
+            Task { await updateCheckStore.checkManually() }
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+    }
+
+    private func updateAvailableLabel(_ update: AvailableUpdate) -> String {
+        AppLocalization.formatted(
+            "发现新版本 v%@",
+            locale: locale,
+            update.version.description
+        )
     }
 
     private func projectLink(_ title: String, url: URL) -> some View {

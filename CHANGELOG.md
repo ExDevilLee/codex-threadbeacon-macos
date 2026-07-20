@@ -9,6 +9,9 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ### Added
 
+- 启动后静默检查最新非 Draft GitHub Release（技术预览阶段包含 prerelease）；发现新版本时
+  在主窗口底栏显示更新图标，About 支持手动检查、重试并打开对应下载页。该功能不自动
+  下载或安装，失败不影响 Codex 任务监听和数据源健康状态。
 - 原生 About 窗口展示 App 图标、运行时版本与构建号、项目说明，以及 GitHub、Releases、
   隐私、License 和外部项目支持入口；支持简体中文和英文。
 - 新增中英双语 `SPONSOR.md`，第一版只提供 Star、分享、Issue 和贡献方式，不在 App 内

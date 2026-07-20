@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var store: ThreadStatusStore
+    @ObservedObject var updateCheckStore: UpdateCheckStore
     @Environment(\.locale) private var locale
     @AppStorage("windowPinned") private var isWindowPinned = false
     @AppStorage(DisplayPreferenceKeys.refreshIntervalSeconds)
@@ -40,6 +41,14 @@ struct ContentView: View {
                 }
                 await store.refresh(notificationPolicy: .notify)
             }
+        }
+        .task {
+            do {
+                try await Task.sleep(for: .seconds(5))
+            } catch {
+                return
+            }
+            await updateCheckStore.checkAutomatically()
         }
         .onChange(of: maximumTaskCount) { _, newValue in
             let settings = DisplaySettings(
@@ -344,6 +353,22 @@ struct ContentView: View {
 
             Spacer()
 
+            if let update = updateCheckStore.availableUpdate {
+                Link(destination: update.releaseURL) {
+                    Image(systemName: "arrow.down.circle.fill")
+                        .foregroundStyle(Color.accentColor)
+                        .frame(width: 18, height: 18)
+                }
+                .buttonStyle(.borderless)
+                .help(updateAvailableLabel(update))
+                .accessibilityLabel(updateAvailableLabel(update))
+
+                if store.dataSourceHealth != nil {
+                    Divider()
+                        .frame(height: 14)
+                }
+            }
+
             if let dataSourceHealth = store.dataSourceHealth {
                 DataSourceHealthButton(report: dataSourceHealth)
             }
@@ -400,6 +425,14 @@ struct ContentView: View {
 
     private func localized(_ source: String) -> String {
         AppLocalization.string(source, locale: locale)
+    }
+
+    private func updateAvailableLabel(_ update: AvailableUpdate) -> String {
+        AppLocalization.formatted(
+            "发现新版本 v%@",
+            locale: locale,
+            update.version.description
+        )
     }
 }
 

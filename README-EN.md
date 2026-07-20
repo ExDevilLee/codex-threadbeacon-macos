@@ -191,6 +191,9 @@ project-created sounds and verify all assets with:
   unobtrusive, while degraded or unavailable sources use distinct icons, text, and color. Click it
   to inspect the task database, Rename index, Rollout, and service-log status, the latest successful
   refresh, and Rollout read success/failure counts.
+- The app silently checks GitHub Releases once after launch. When a newer version exists, a download
+  icon appears beside the footer health control and opens that specific Release page. About also
+  provides a manual check. ThreadBeacon never downloads, installs, replaces, or restarts the app.
 - The pin button keeps the window above other apps and persists the selection across launches.
 - The main window remembers its latest display, position, and size across launches. If the saved
   display is unavailable or the saved frame exceeds the current visible area, the window safely
@@ -243,7 +246,9 @@ The app reads only local data:
 
 The app does not read `codex_http_client::transport` or extract reasoning summaries,
 conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
-service, upload data, or request Accessibility permission. The current public UI does not modify
+service, upload Codex data, or request Accessibility permission. After launch, it only requests
+public Release metadata from `api.github.com` to check for updates; the request contains no Codex
+data, local paths, user settings, or device identifier. The current public UI does not modify
 Codex data. The validated archive-restore POC has no user-accessible entry point and never writes
 SQLite directly. Data-source health reports remain in memory and contain only stable categories,
 counts, and the last successful refresh time. They do not retain raw errors, local paths, or task
@@ -266,8 +271,8 @@ privacy statement.
   conversation text. Current error and warning states require allowlisted 429/503 log evidence;
   approval status is not implemented.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
-- The POC is not sandboxed because it reads `~/.codex`. It is not distribution-signed,
-  notarized, or automatically updated.
+- The POC is not sandboxed because it reads `~/.codex`. It is not distribution-signed or notarized,
+  and update reminders do not automatically install a release.
 - Launch at login requires macOS to recognize the current app bundle. The project now has a real
   Xcode macOS application target, but a build signed with this machine's free Personal Team
   Apple Development identity and installed in `/Applications` still made `SMAppService.mainApp`

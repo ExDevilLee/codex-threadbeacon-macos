@@ -80,8 +80,14 @@ signing is available.
 
 ## Upgrade, Roll Back, Or Uninstall
 
+ThreadBeacon silently checks GitHub Releases once after launch, and About provides a manual check.
+When a newer version is available, the footer shows an update icon that opens the matching Release
+page in the default browser. If a check fails, confirm that `api.github.com` is reachable or retry
+from About later. A failed update check does not affect task monitoring or Codex data-source health.
+
 To upgrade, quit ThreadBeacon, download the new version, and replace the old
-`/Applications/ThreadBeacon.app`. There is no in-app automatic updater yet.
+`/Applications/ThreadBeacon.app`. The app only provides a reminder; it does not download or install
+updates automatically.
 
 To roll back, download an older GitHub Release, quit the current app, and replace it. Preferences
 normally remain in the current macOS user account, but compatibility across every version is not

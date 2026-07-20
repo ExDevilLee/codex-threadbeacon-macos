@@ -178,7 +178,16 @@
     "恢复失败：%@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore failed: %@" } } } },
     "无法启动 Codex CLI：%@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not launch Codex CLI: %@" } } } },
     "%lld 个任务的 Rollout 不可用，状态可能回退" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld task rollouts unavailable; status may fall back" } } } },
-    "1 个任务的 Rollout 不可用，状态可能回退" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "1 task rollout unavailable; status may fall back" } } } }
+    "1 个任务的 Rollout 不可用，状态可能回退" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "1 task rollout unavailable; status may fall back" } } } },
+    "检查更新" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for Updates" } } } },
+    "正在检查更新…" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Checking for updates…" } } } },
+    "当前已是最新版本" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "You’re up to date" } } } },
+    "再次检查" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Check Again" } } } },
+    "发现新版本 v%@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Version v%@ is available" } } } },
+    "前往下载" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Download" } } } },
+    "暂时无法检查更新，请稍后重试。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t check for updates. Try again later." } } } },
+    "重试" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry" } } } },
+    "无法确定当前版本。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The current version couldn’t be determined." } } } }
   },
   "version" : "1.0"
 }

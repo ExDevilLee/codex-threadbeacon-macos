@@ -19,6 +19,7 @@ struct ThreadBeaconApp: App {
     @StateObject private var appLanguageStore: AppLanguageStore
     @StateObject private var store: ThreadStatusStore
     @StateObject private var launchAtLoginStore: LaunchAtLoginStore
+    @StateObject private var updateCheckStore: UpdateCheckStore
     @AppStorage(DisplayPreferenceKeys.appTheme)
     private var appThemeRawValue = AppTheme.defaultValue.rawValue
     private let soundPlayer: SoundPlaybackService
@@ -37,6 +38,12 @@ struct ThreadBeaconApp: App {
         soundPlayer = player
         _launchAtLoginStore = StateObject(wrappedValue: LaunchAtLoginStore(
             manager: SystemLaunchAtLoginManager()
+        ))
+        let releaseClient = GitHubReleaseClient()
+        let appVersion = AboutAppInfo(infoDictionary: Bundle.main.infoDictionary).version
+        _updateCheckStore = StateObject(wrappedValue: UpdateCheckStore(
+            currentVersion: appVersion,
+            checkOperation: releaseClient.check
         ))
         _store = StateObject(wrappedValue: ThreadStatusStore(
             loadResult: { request in
@@ -67,7 +74,7 @@ struct ThreadBeaconApp: App {
 
     var body: some Scene {
         WindowGroup("ThreadBeacon") {
-            ContentView(store: store)
+            ContentView(store: store, updateCheckStore: updateCheckStore)
                 .frame(minWidth: 360, minHeight: 240)
                 .environment(\.locale, appLanguageStore.locale)
                 .environmentObject(appLanguageStore)
@@ -83,7 +90,7 @@ struct ThreadBeaconApp: App {
             AppLocalization.string("关于 ThreadBeacon", locale: appLanguageStore.locale),
             id: "about"
         ) {
-            ThreadBeaconAboutView()
+            ThreadBeaconAboutView(updateCheckStore: updateCheckStore)
                 .environment(\.locale, appLanguageStore.locale)
                 .environmentObject(appLanguageStore)
                 .preferredColorScheme(selectedTheme.colorScheme)
