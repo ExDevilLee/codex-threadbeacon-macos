@@ -10,7 +10,7 @@ validate_release_tag() {
 
 version_from_tag() {
     local tag="$1"
-    validate_release_tag "$tag"
+    validate_release_tag "$tag" || return 1
     printf '%s\n' "${tag#v}"
 }
 
@@ -19,7 +19,7 @@ require_changelog_version() {
     local version="$2"
     local escaped_version="${version//./\.}"
 
-    rg -q "^## \\[$escaped_version\\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" "$changelog" || {
+    grep -Eq "^## \\[$escaped_version\\] - [0-9]{4}-[0-9]{2}-[0-9]{2}$" "$changelog" || {
         echo "CHANGELOG is missing version $version" >&2
         return 1
     }

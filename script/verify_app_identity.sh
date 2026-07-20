@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="$ROOT/dist/ThreadBeacon.app"
+APP="${1:-$ROOT/dist/ThreadBeacon.app}"
 PLIST="$APP/Contents/Info.plist"
 
 test -d "$APP"

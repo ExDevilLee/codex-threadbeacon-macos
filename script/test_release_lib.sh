@@ -33,6 +33,10 @@ if validate_release_tag "0.1.0" 2>/dev/null; then
     echo "Expected an invalid tag failure" >&2
     exit 1
 fi
+if invalid_version="$(version_from_tag "0.1.0" 2>/dev/null)"; then
+    echo "Expected invalid tag conversion to fail, got $invalid_version" >&2
+    exit 1
+fi
 assert_eq "$(version_from_tag "v0.1.0")" "0.1.0"
 require_changelog_version "$TMP/CHANGELOG.md" "0.1.0"
 if require_changelog_version "$TMP/CHANGELOG.md" "0.2.0" 2>/dev/null; then
@@ -40,9 +44,9 @@ if require_changelog_version "$TMP/CHANGELOG.md" "0.2.0" 2>/dev/null; then
     exit 1
 fi
 extract_changelog_version "$TMP/CHANGELOG.md" "0.1.0" > "$TMP/notes.md"
-rg -q '^## \[0\.1\.0\]' "$TMP/notes.md"
-rg -q 'First preview\.' "$TMP/notes.md"
-if rg -q '0\.0\.1' "$TMP/notes.md"; then
+grep -Eq '^## \[0\.1\.0\]' "$TMP/notes.md"
+grep -Eq 'First preview\.' "$TMP/notes.md"
+if grep -Eq '0\.0\.1' "$TMP/notes.md"; then
     echo "Release notes included the next version" >&2
     exit 1
 fi
