@@ -251,11 +251,14 @@ project-created sounds and verify all assets with:
   input field. Only a unique composer without a draft is temporarily populated with the
   fixed prompt, read back, and immediately cleared. The validation never finds a send
   button, simulates Return, or joins the automatic recovery path.
-- Users can also enter a target task ID to validate task switching. The app proceeds only
-  when the renamed title, Codex task row, and post-switch title-bar identity are unique.
-  This validation does not write to the input field or send a message.
-- Only task rows currently rendered in the Codex Accessibility tree can be switched. Older
-  or unloaded tasks fail closed, so this POC is not connected to unattended auto recovery.
+- Users can also enter a target task ID. The app opens `codex://threads/<thread-id>` and
+  verifies the renamed title in the Codex title bar. This validation does not write or send.
+- After explicit confirmation, the test action can send the fixed recovery prompt. Success
+  requires a matching new message and `task_started` in the rollout belonging to the exact
+  target ID. A live test with two identically named tasks succeeded before and after their
+  list positions were swapped; only the requested ID changed.
+- Codex Accessibility does not expose task IDs, and switching the visible task can interfere
+  with concurrent typing. Unattended automatic sending therefore remains disabled.
 - To make the recovery message visible in the corresponding Codex App conversation,
   ThreadBeacon must control the Codex App input field through macOS Accessibility.
   This requires a separate user-granted Accessibility permission. Without it,

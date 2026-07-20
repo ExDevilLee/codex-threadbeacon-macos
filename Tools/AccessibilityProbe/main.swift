@@ -173,6 +173,51 @@ private func appendUnique(_ element: AXUIElement, to elements: inout [AXUIElemen
     elements.append(element)
 }
 
+private func attributeNames(of element: AXUIElement) -> [String] {
+    var names: CFArray?
+    guard AXUIElementCopyAttributeNames(element, &names) == .success else { return [] }
+    return names as? [String] ?? []
+}
+
+private func reportsThreadID(_ value: CFTypeRef, threadID: String) -> Bool {
+    if let string = value as? String {
+        return string.contains(threadID)
+    }
+    if let url = value as? URL {
+        return url.absoluteString.contains(threadID)
+    }
+    if let strings = value as? [String] {
+        return strings.contains(where: { $0.contains(threadID) })
+    }
+    return false
+}
+
+private func inspectThreadIDEvidence(processID: pid_t, threadID: String) {
+    var stack = [AXUIElementCreateApplication(processID)]
+    var visited = 0
+    var matches: [(role: String, attribute: String)] = []
+
+    while let element = stack.popLast(), visited < 10_000 {
+        visited += 1
+        for attribute in attributeNames(of: element) {
+            guard let value = copyValue(element, attribute as CFString),
+                  reportsThreadID(value, threadID: threadID) else {
+                continue
+            }
+            matches.append((
+                role: stringValue(element, kAXRoleAttribute as CFString),
+                attribute: attribute
+            ))
+        }
+        stack.append(contentsOf: children(of: element))
+    }
+
+    print("thread-id-evidence=\(matches.count)")
+    for match in matches {
+        print("thread-id-match role=\(match.role) attribute=\(match.attribute)")
+    }
+}
+
 private func hasAncestorDOMClass(_ element: AXUIElement, className: String) -> Bool {
     var current: AXUIElement? = element
 
@@ -296,6 +341,27 @@ private func inspectSendControlContext(around composer: AXUIElement) {
     }
 }
 
+private func inspectTaskRowIdentity(_ row: AXUIElement) {
+    var stack: [(AXUIElement, Int)] = [(row, 0)]
+    var visited = 0
+
+    while let (element, depth) = stack.popLast(), visited < 100, depth < 6 {
+        visited += 1
+        let role = sanitizedAttribute(element, kAXRoleAttribute as CFString)
+        let identifier = sanitizedAttribute(element, kAXIdentifierAttribute as CFString)
+        let domIdentifier = sanitizedAttribute(element, "AXDOMIdentifier" as CFString)
+        let url = sanitizedAttribute(element, kAXURLAttribute as CFString)
+        let classes = copyValue(element, "AXDOMClassList" as CFString) as? [String] ?? []
+        let actions = actionNames(of: element).sorted()
+        print(
+            "task-row-node[\(visited)] depth=\(depth) role=\(role) identifier=\(identifier) "
+                + "dom-id=\(domIdentifier) url=\(url) classes=\(classes.joined(separator: ",")) "
+                + "actions=\(actions.joined(separator: ","))"
+        )
+        stack.append(contentsOf: children(of: element).reversed().map { ($0, depth + 1) })
+    }
+}
+
 private func verifyInjection(in composer: AXUIElement) throws {
     let fixedPrompt = "刚才中断了，请继续未完成的任务"
     guard isEmptyComposer(composer) else {
@@ -380,7 +446,7 @@ private func run() throws {
     }
 
     let identity = try threadIdentity(threadID: options.threadID)
-    guard identity.matchingThreadCount == 1 else {
+    guard !options.shouldSelect || identity.matchingThreadCount == 1 else {
         throw ProbeError.threadNameNotUnique(identity.matchingThreadCount)
     }
     let initial = snapshot(processID: app.processIdentifier, targetTitle: identity.title)
@@ -390,6 +456,7 @@ private func run() throws {
     print("actionable-task-rows=\(initial.actionableRows.count)")
     print("header-title-matches=\(initial.headerTitleMatchCount)")
     print("composer-textareas=\(initial.textAreas.count)")
+    inspectThreadIDEvidence(processID: app.processIdentifier, threadID: options.threadID)
 
     guard options.shouldSelect else {
         print("selection=not-requested")
@@ -400,6 +467,7 @@ private func run() throws {
     guard initial.actionableRows.count == 1 else {
         throw ProbeError.taskRowNotUnique(initial.actionableRows.count)
     }
+    inspectTaskRowIdentity(initial.actionableRows[0])
     let result = AXUIElementPerformAction(initial.actionableRows[0], kAXPressAction as CFString)
     guard result == .success else { throw ProbeError.selectionFailed(result) }
 

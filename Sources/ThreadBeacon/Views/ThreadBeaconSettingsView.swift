@@ -195,7 +195,7 @@ private struct AutoRecoveryLogView: View {
                             || targetThreadID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                     )
 
-                    Text(localized("只切换到唯一匹配的任务，并在 Codex 标题栏再次确认身份；不会写入或发送消息。"))
+                    Text(localized("使用任务 ID 打开目标任务，并在 Codex 标题栏核对 rename 名称；不会写入或发送消息。"))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
 
@@ -309,16 +309,6 @@ private struct AutoRecoveryLogView: View {
             localized("目标任务验证失败：无法读取 Codex 任务索引。")
         case .titleUnavailable:
             localized("目标任务验证失败：未找到该任务的 rename 标题。")
-        case let .titleNotUnique(count):
-            String(
-                format: localized("目标任务验证失败：rename 标题对应 %lld 个任务。"),
-                Int64(count)
-            )
-        case let .taskRowNotUnique(count):
-            String(
-                format: localized("目标任务验证失败：找到 %lld 个可操作任务行。"),
-                Int64(count)
-            )
         case .selectionFailed:
             localized("目标任务验证失败：无法切换 Codex 任务。")
         case let .targetHeaderNotUnique(count):
@@ -332,7 +322,7 @@ private struct AutoRecoveryLogView: View {
                 Int64(count)
             )
         case .selected:
-            localized("目标任务验证通过：已切换并确认任务身份，未发送消息。")
+            localized("目标任务验证通过：已按 ID 打开并确认 rename 名称，未发送消息。")
         }
     }
 

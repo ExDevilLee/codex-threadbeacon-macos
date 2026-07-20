@@ -161,16 +161,16 @@
   需要通过 macOS Accessibility 控制 Codex App 输入框并发送；用户必须单独授予辅助功能权限。
   未授权时只读监控并记录未发送，不使用外部 CLI 恢复。AX 树检查和安全约束见
   [`docs/accessibility-recovery-poc.md`](docs/accessibility-recovery-poc.md)。
-- **POC 进行中（Accessibility）**：已验证按唯一 rename 标题定位任务行、顶部标题二次确认、
-  固定提示词写入／回读／清空，且未产生 `user_message`；Settings 已增加真实授权状态和用户触发
+- **POC 进行中（Accessibility）**：已验证按任务 ID deep link 打开目标任务、顶部 rename 标题
+  二次确认、固定提示词写入／回读／清空；Settings 已增加真实授权状态和用户触发
   的授权入口。正式 App 已完成授权后的 Codex AX 只读访问验证，只输出窗口、输入框和节点计数。
-  正式 App 已完成当前任务输入框的固定提示词写入／回读／清理，以及按任务 ID 定位唯一 rename
-  标题、切换唯一任务行并通过顶部标题栏二次确认；两次验证均确认 rollout 没有新增
-  `user_message` 或 `task_started`。真实发送动作及发送后 rollout 回读仍须在独立测试任务中验证，
-  自动发送保持关闭。
-- **当前边界（Accessibility）**：任务存在于本地索引不代表其任务行已在 Codex AX 树中渲染；
-  较旧或未加载任务会返回 0 个可操作任务行并失败关闭。侧边栏虚拟化／滚动加载问题解决前，
-  不能把目标切换接入无人值守自动恢复。
+  正式 App 已完成当前任务输入框的固定提示词写入／回读／清理，以及用户确认后的真实发送。
+  两个同名活跃任务在交换列表位置前后各完成一次指定 ID 发送，只有目标 ID 的 rollout 新增严格
+  匹配的固定提示词、`task_started` 与 `task_complete`，另一个同名任务保持不变。
+- **当前边界（Accessibility）**：AX 树不暴露任务 ID；当前依赖版本敏感的
+  `codex://threads/<thread-id>` 按 ID 导航，再以 rename 标题和目标 rollout 回读确认。切换 Codex
+  当前任务可能干扰用户同时编辑的其他任务，因此无人值守自动发送仍保持关闭，下一阶段必须增加
+  前台输入冲突保护与安全停止策略。
 - 所有新增列默认可隐藏，避免破坏小窗口和未来小屏场景。
 
 ### Codex CLI 适配

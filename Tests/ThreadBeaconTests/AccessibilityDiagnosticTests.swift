@@ -92,7 +92,7 @@ let accessibilityDiagnosticTests = [
             "an unknown task ID must fail closed"
         )
     },
-    TestCase(name: "target identity rejects duplicate renamed titles") {
+    TestCase(name: "target identity keeps the requested ID when renamed titles are duplicated") {
         let result = AccessibilityTargetIdentityResolver.resolve(
             threadID: "target-id",
             latestTitles: [
@@ -101,8 +101,17 @@ let accessibilityDiagnosticTests = [
             ]
         )
         try expect(
-            result == .titleNotUnique(2),
-            "duplicate renamed titles must not be used for Accessibility selection"
+            result == .resolved(
+                AccessibilityTargetIdentity(threadID: "target-id", title: "Duplicate title")
+            ),
+            "the deep link should target the requested ID while the title confirms the destination"
+        )
+    },
+    TestCase(name: "target deep link preserves the normalized task ID") {
+        try expect(
+            AccessibilityThreadDeepLink.url(threadID: " target-id ")?.absoluteString
+                == "codex://threads/target-id",
+            "the deep link must route with the exact normalized task ID"
         )
     },
     TestCase(name: "target selection reports success only after identity confirmation") {

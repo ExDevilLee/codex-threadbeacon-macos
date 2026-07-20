@@ -13,7 +13,6 @@ public struct AccessibilityTargetIdentity: Equatable, Sendable {
 public enum AccessibilityTargetIdentityResolution: Equatable, Sendable {
     case invalidThreadID
     case titleUnavailable
-    case titleNotUnique(Int)
     case resolved(AccessibilityTargetIdentity)
 }
 
@@ -25,10 +24,19 @@ public enum AccessibilityTargetIdentityResolver {
         let normalizedID = threadID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedID.isEmpty else { return .invalidThreadID }
         guard let title = latestTitles[normalizedID] else { return .titleUnavailable }
-
-        let matchingCount = latestTitles.values.filter { $0 == title }.count
-        guard matchingCount == 1 else { return .titleNotUnique(matchingCount) }
         return .resolved(AccessibilityTargetIdentity(threadID: normalizedID, title: title))
+    }
+}
+
+public enum AccessibilityThreadDeepLink {
+    public static func url(threadID: String) -> URL? {
+        let normalizedID = threadID.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !normalizedID.isEmpty else { return nil }
+        var components = URLComponents()
+        components.scheme = "codex"
+        components.host = "threads"
+        components.path = "/\(normalizedID)"
+        return components.url
     }
 }
 
@@ -45,8 +53,6 @@ public enum AccessibilityTargetSelectionResult: Equatable, Sendable {
     case invalidThreadID
     case sessionIndexUnavailable
     case titleUnavailable
-    case titleNotUnique(Int)
-    case taskRowNotUnique(Int)
     case selectionFailed
     case targetHeaderNotUnique(Int)
     case composerNotUnique(Int)
