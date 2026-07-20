@@ -7,6 +7,16 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+### Added
+
+- 中英文 README 增加 macOS 14+ 系统要求、Release 徽章和 30 秒快速开始。
+- 中英文故障排查覆盖首次打开、空列表、状态、提示音、升级、回滚、卸载和安全诊断范围。
+- GitHub Bug/Feature Issue Forms、Pull Request 模板和贡献指南，反馈入口明确禁止上传 Codex
+  数据文件、会话内容、本机路径或凭据。
+- 启用 GitHub 私密漏洞报告，并为仓库添加 Codex、macOS、SwiftUI、开发工具和任务监控
+  Topics。
+- `v0.1.0` Release notes 增加英文功能摘要、系统要求、预览限制和英文上手入口。
+
 ## [0.1.0] - 2026-07-20
 
 ### Added
