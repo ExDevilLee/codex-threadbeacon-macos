@@ -2,8 +2,11 @@ import Foundation
 
 public struct RolloutRecoveryCheckpointParser: Sendable {
     public static let maximumBytes = 2 * 1024 * 1024
+    private let expectedUserMessage: String
 
-    public init() {}
+    public init(expectedUserMessage: String) {
+        self.expectedUserMessage = Self.normalize(expectedUserMessage)
+    }
 
     public func parse(fileURL: URL) throws -> RolloutRecoveryCheckpoint {
         let handle = try FileHandle(forReadingFrom: fileURL)
@@ -47,6 +50,10 @@ public struct RolloutRecoveryCheckpointParser: Sendable {
 
             switch event.payload.type {
             case "user_message":
+                guard let message = event.payload.message,
+                      Self.normalize(message) == expectedUserMessage else {
+                    continue
+                }
                 latestUserMessageAt = max(latestUserMessageAt ?? .distantPast, event.timestamp)
             case "task_started":
                 latestTaskStartedAt = max(latestTaskStartedAt ?? .distantPast, event.timestamp)
@@ -60,6 +67,10 @@ public struct RolloutRecoveryCheckpointParser: Sendable {
             latestTaskStartedAt: latestTaskStartedAt
         )
     }
+
+    private static func normalize(_ message: String) -> String {
+        message.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 private struct EventEnvelope: Decodable {
@@ -70,4 +81,5 @@ private struct EventEnvelope: Decodable {
 
 private struct EventPayload: Decodable {
     let type: String
+    let message: String?
 }

@@ -180,21 +180,25 @@ let rolloutTailParserTests = [
 
         try expect(result.tokenUsage?.currentTurn == nil, "backward totals must be rejected")
     },
-    TestCase(name: "recovery checkpoint requires a newer user message and task start") {
-        let parser = RolloutRecoveryCheckpointParser()
+    TestCase(name: "recovery checkpoint requires the expected prompt and a newer task start") {
+        let parser = RolloutRecoveryCheckpointParser(
+            expectedUserMessage: "fixed recovery prompt"
+        )
         let baseline = parser.parse(lines: [
             #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
-            #"{"timestamp":"2026-07-16T01:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"private"}}"#
+            #"{"timestamp":"2026-07-16T01:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"fixed recovery prompt"}}"#
         ])
         let confirmed = parser.parse(lines: [
             #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
-            #"{"timestamp":"2026-07-16T01:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"private"}}"#,
+            #"{"timestamp":"2026-07-16T01:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"fixed recovery prompt"}}"#,
             #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
-            #"{"timestamp":"2026-07-16T01:01:01Z","type":"event_msg","payload":{"type":"user_message","message":"private"}}"#
+            #"{"timestamp":"2026-07-16T01:01:01Z","type":"event_msg","payload":{"type":"user_message","message":"fixed recovery prompt\n"}}"#
         ])
-        let missingStart = parser.parse(lines: [
+        let unrelatedMessage = parser.parse(lines: [
             #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
-            #"{"timestamp":"2026-07-16T01:02:00Z","type":"event_msg","payload":{"type":"user_message","message":"private"}}"#
+            #"{"timestamp":"2026-07-16T01:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"fixed recovery prompt"}}"#,
+            #"{"timestamp":"2026-07-16T01:02:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:02:01Z","type":"event_msg","payload":{"type":"user_message","message":"unrelated concurrent message"}}"#
         ])
 
         try expect(
@@ -202,8 +206,8 @@ let rolloutTailParserTests = [
             "both recovery events advancing should confirm the new turn"
         )
         try expect(
-            !missingStart.confirmsNewTurn(after: baseline),
-            "a new user message without a new task start must remain unconfirmed"
+            !unrelatedMessage.confirmsNewTurn(after: baseline),
+            "an unrelated user message must not confirm recovery delivery"
         )
         try expect(
             !Mirror(reflecting: confirmed).children.compactMap(\.label).contains("message"),

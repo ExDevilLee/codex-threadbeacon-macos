@@ -28,7 +28,9 @@ enum SystemAccessibilityRecoverySender {
             return .rolloutUnavailable
         }
 
-        let checkpointParser = RolloutRecoveryCheckpointParser()
+        let checkpointParser = RolloutRecoveryCheckpointParser(
+            expectedUserMessage: fixedPrompt
+        )
         guard let baseline = try? checkpointParser.parse(fileURL: rolloutURL) else {
             return .rolloutUnavailable
         }
