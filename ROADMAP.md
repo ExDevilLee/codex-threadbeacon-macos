@@ -201,10 +201,12 @@
   和 Settings；演示 GIF 仍作为后续增强。
 - **已完成（P1）**：简体中文和英文界面国际化，默认跟随系统语言，并在 Settings 中提供
   覆盖；README 保持中文主文档与英文入口同步。
-- `P1`：完善安装、升级、卸载和权限说明，解释 App 读取 `~/.codex` 的范围、非官方关系、
-  Codex 数据格式兼容风险，以及为什么当前版本没有 App Sandbox。
-- `P2`：继续补充问题反馈模板和贡献指南；GitHub Releases、变更日志与安全问题报告入口
-  已具备，再考虑 Homebrew Cask 或其他分发渠道。
+- **已完成（P1 上手包 v1）**：中英文 README 提供系统要求和 30 秒快速开始；中英文故障
+  排查覆盖首次打开、空列表、状态、提示音、升级、回滚、卸载和隐私安全诊断范围。
+- **已完成（P1 上手包 v1）**：提供 Bug/Feature Issue Forms、PR 模板和贡献指南，反馈入口
+  明确禁止上传 Codex 数据文件、会话内容、本机路径或凭据。
+- `P2`：GitHub Releases、变更日志与安全问题报告入口已具备；继续评估 Homebrew Cask 或
+  其他分发渠道。
 
 详细检查表见 [`docs/public-sharing-readiness.md`](docs/public-sharing-readiness.md)。
 
@@ -225,7 +227,7 @@
 
 1. 创建并验证第一版 GitHub Release，邀请少量技术用户试用技术预览包。
 2. 获得 Developer ID Application 后补齐正式签名、公证，并完成登录启动端到端验证。
-3. 补充演示 GIF、Issue 模板、贡献指南与色盲安全设计。
+3. 补充演示 GIF、App 内版本入口与色盲安全设计。
 4. 真实副屏恢复复验，并根据反馈决定是否增加显式显示器选择器。
 5. Codex CLI 长生命周期、归档、resume 与跨版本兼容性验证。
 6. 扩展状态、压缩历史、Token 与 Subagent 后续增强可行性验证。

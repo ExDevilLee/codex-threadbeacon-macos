@@ -8,5 +8,6 @@
 
 ## 支持范围
 
-ThreadBeacon 当前仍是 POC，仅支持 README 中列出的 macOS 和本地 Codex 数据路径。
-未经正式签名、公证的本地构建不应被视为正式发布包。
+ThreadBeacon 当前是技术预览版，仅支持 README 中列出的 macOS 和本地 Codex 数据路径。
+只有本仓库 GitHub Releases 中的资产属于项目公开预览包；这些资产仍未使用 Developer ID
+Application 签名或完成 Apple 公证，不应被视为正式分发版本。

@@ -2,6 +2,10 @@
 
 [简体中文](README.md) | English
 
+[![GitHub Release](https://img.shields.io/github/v/release/ExDevilLee/codex-threadbeacon-macos?include_prereleases&sort=semver)](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases)
+![macOS 14+](https://img.shields.io/badge/macOS-14%2B-black)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 ## Purpose
 
 ThreadBeacon is a native macOS status window for monitoring primary Codex Desktop
@@ -13,6 +17,26 @@ failures found in local structured logs. Approval waiting still has no reliable 
 data source.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
+
+## 30-Second Quick Start
+
+Before starting, make sure that:
+
+- You are running macOS 14 or later on an Apple Silicon or Intel Mac.
+- Codex Desktop or Codex CLI is installed and has run at least one task.
+- The current download is an ad-hoc signed, unnotarized technical preview.
+
+Then:
+
+1. Download `ThreadBeacon-vX.Y.Z-macos-universal.zip` from
+   [Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases).
+2. Extract it and move `ThreadBeacon.app` to `/Applications`.
+3. If macOS blocks the first launch, Control-click the app in Finder and select **Open**.
+4. ThreadBeacon automatically reads recent local Codex primary tasks. No account, API token,
+   or data path is required.
+
+If no tasks appear or the footer reports a data-source problem, see
+[`Troubleshooting`](docs/troubleshooting-en.md) before opening a privacy-safe Issue.
 
 ## Interface Preview
 
@@ -66,7 +90,8 @@ system-wide security protections.
 
 Launch at login is not guaranteed for the current preview package. It will be verified again
 after Developer ID Application signing and notarization are available. See
-[`CHANGELOG.md`](CHANGELOG.md) for version changes.
+[`CHANGELOG.md`](CHANGELOG.md) for version changes and
+[`Troubleshooting`](docs/troubleshooting-en.md) for common problems.
 
 ## Run From Source
 
@@ -266,6 +291,9 @@ does not install a separate system service or modify global configuration.
 ## License And Security
 
 - Licensed under the [MIT License](LICENSE).
+- Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before contributing.
+- Use GitHub Issue Forms for ordinary reports. Never upload task titles, conversation content,
+  databases, or local paths.
 - See [`SECURITY.md`](SECURITY.md) for security reporting guidance.
 
 ## Platform Repositories
