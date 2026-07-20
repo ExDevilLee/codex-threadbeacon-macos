@@ -119,7 +119,8 @@ macOS runner，并赋予最小的 `contents: write` 权限。
 7. 使用 GitHub 官方 CLI 创建 Release，并上传两个产物。
 
 尽量使用 runner 自带的 Xcode、系统工具和 `gh`，避免引入负责发布的第三方 Action。首次
-实现固定 runner 的 macOS 主版本；后续升级 runner 前需要重新验证 Xcode 和最低系统兼容性。
+实现使用 `macos-15`，其默认 Xcode 16.4 满足 Swift tools 6.1 要求；后续升级 runner 前
+需要重新验证 Xcode 和最低系统兼容性。
 
 ## 失败保护
 

@@ -286,7 +286,7 @@ concurrency:
 
 jobs:
   release:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - name: Check out release tag
         uses: actions/checkout@v4
@@ -320,7 +320,7 @@ jobs:
 Run:
 
 ```bash
-rg -n 'tags:|contents: write|macos-14|package_release|gh release create|--prerelease|--verify-tag' .github/workflows/release.yml
+rg -n 'tags:|contents: write|macos-15|package_release|gh release create|--prerelease|--verify-tag' .github/workflows/release.yml
 git diff --check
 ```
 
