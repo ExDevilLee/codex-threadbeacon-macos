@@ -42,7 +42,33 @@ See the Chinese
 [`Codex CLI compatibility POC`](docs/codex-cli-compatibility.md) for the verified data
 path and the remaining compatibility boundaries.
 
-## Run
+## Download And Install
+
+Open [GitHub Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases)
+and download both files for the selected version:
+
+```text
+ThreadBeacon-vX.Y.Z-macos-universal.zip
+ThreadBeacon-vX.Y.Z-macos-universal.zip.sha256
+```
+
+With both files in the same directory, optionally verify the download:
+
+```bash
+shasum -a 256 -c ThreadBeacon-vX.Y.Z-macos-universal.zip.sha256
+```
+
+Extract the ZIP, move `ThreadBeacon.app` to `/Applications`, and open it. The current
+technical preview uses an ad-hoc signature and is not notarized by Apple. If macOS blocks
+the first launch, Control-click the app in Finder, select **Open**, and confirm the source,
+or follow the matching prompt in **System Settings > Privacy & Security**. Do not disable
+system-wide security protections.
+
+Launch at login is not guaranteed for the current preview package. It will be verified again
+after Developer ID Application signing and notarization are available. See
+[`CHANGELOG.md`](CHANGELOG.md) for version changes.
+
+## Run From Source
 
 From the project directory:
 

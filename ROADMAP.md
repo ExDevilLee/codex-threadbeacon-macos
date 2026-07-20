@@ -183,22 +183,28 @@
 
 ## 公开分享前检查
 
-当前版本适合公开源码和邀请技术用户自行构建，但还不适合直接面向普通用户发布安装包。
-公开分享前按下面优先级收口：
+当前版本已具备可下载的 ad-hoc 签名 Universal App 技术预览包，但尚未达到 Developer ID
+签名、公证和普通用户无障碍安装的正式分发标准。公开分享继续按下面优先级收口：
+
+- **已完成（技术预览发布 MVP）**：使用 SemVer、`CHANGELOG.md` 和 `v*` Git Tag 管理版本；
+  Tag 触发 GitHub Actions 测试、构建 `arm64 + x86_64` Universal App、验证身份/版本/架构/
+  ad-hoc 签名，并上传 ZIP、SHA-256 和 Release notes。
+- **已完成（技术预览发布 MVP）**：中英文 README 提供 GitHub Releases 下载、校验、安装和
+  Gatekeeper 首次打开说明；不建议关闭系统安全保护。
 
 - `P0`：准备固定安装包流程，使用 Developer ID Application 签名并完成公证；同时复验
   登录启动功能。当前免费 Personal Team 的 `Apple Development` 结果已记录为
   `notFound`，不能把它当作已支持。
 - `P0`：检查公开仓库中不包含 Team ID、邮箱、钥匙串导出、真实任务标题、SQLite/rollout
   数据、日志和本机路径；示例配置只使用占位符。
-- `P1`：补充真实 App 截图或演示 GIF，至少覆盖主列表、状态灯、Subagent 展开、Token
-  详情、Settings 和异常提示音设置；截图中的任务名需要使用脱敏数据。
-- `P1`：完成简体中文和英文界面国际化，默认跟随系统语言，并在 Settings 中提供覆盖；
-  README 保持中文主文档与英文入口同步。
+- **已完成（P1）**：README 使用脱敏截图覆盖主列表、状态灯、Subagent 展开、Token 详情
+  和 Settings；演示 GIF 仍作为后续增强。
+- **已完成（P1）**：简体中文和英文界面国际化，默认跟随系统语言，并在 Settings 中提供
+  覆盖；README 保持中文主文档与英文入口同步。
 - `P1`：完善安装、升级、卸载和权限说明，解释 App 读取 `~/.codex` 的范围、非官方关系、
   Codex 数据格式兼容风险，以及为什么当前版本没有 App Sandbox。
-- `P2`：补充 GitHub Releases、变更日志、问题反馈模板、贡献指南和安全问题报告入口；
-  再考虑 Homebrew Cask 或其他分发渠道。
+- `P2`：继续补充问题反馈模板和贡献指南；GitHub Releases、变更日志与安全问题报告入口
+  已具备，再考虑 Homebrew Cask 或其他分发渠道。
 
 详细检查表见 [`docs/public-sharing-readiness.md`](docs/public-sharing-readiness.md)。
 
@@ -217,9 +223,9 @@
 
 ## 建议顺序
 
-1. 获得 Developer ID Application 后完成登录启动端到端验证；在此之前保持入口禁用。
-2. 国际化、`System` / `Light` / `Dark` 与色盲安全设计。
-3. 补齐脱敏宣传截图、安装说明和第一版 GitHub Release，再邀请更多技术用户试用。
+1. 创建并验证第一版 GitHub Release，邀请少量技术用户试用技术预览包。
+2. 获得 Developer ID Application 后补齐正式签名、公证，并完成登录启动端到端验证。
+3. 补充演示 GIF、Issue 模板、贡献指南与色盲安全设计。
 4. 真实副屏恢复复验，并根据反馈决定是否增加显式显示器选择器。
 5. Codex CLI 长生命周期、归档、resume 与跨版本兼容性验证。
 6. 扩展状态、压缩历史、Token 与 Subagent 后续增强可行性验证。

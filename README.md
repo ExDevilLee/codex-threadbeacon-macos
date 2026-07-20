@@ -36,7 +36,31 @@ GitHub 同类项目、实现差异、命名风险与可参考功能候选见
 Codex CLI 任务兼容性 POC 的验证结果与当前边界见
 [`docs/codex-cli-compatibility.md`](docs/codex-cli-compatibility.md)。
 
-## 运行
+## 下载与安装
+
+前往 [GitHub Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases)，
+下载对应版本的两个文件：
+
+```text
+ThreadBeacon-vX.Y.Z-macos-universal.zip
+ThreadBeacon-vX.Y.Z-macos-universal.zip.sha256
+```
+
+将两个文件放在同一目录后，可选执行完整性校验：
+
+```bash
+shasum -a 256 -c ThreadBeacon-vX.Y.Z-macos-universal.zip.sha256
+```
+
+解压 ZIP，将 `ThreadBeacon.app` 拖入 `/Applications` 后打开。当前技术预览包使用 ad-hoc
+签名，尚未经过 Apple 公证；如果 macOS 阻止首次启动，请在 Finder 中按住 Control 点击
+App，选择“打开”并确认来源，或前往“系统设置 > 隐私与安全性”处理对应提示。不要关闭
+系统级安全保护。
+
+当前发布包不承诺“登录时启动”可用；取得 Developer ID Application 并完成公证后会重新
+验证。版本变更见 [`CHANGELOG.md`](CHANGELOG.md)。
+
+## 从源码运行
 
 在本目录执行：
 
