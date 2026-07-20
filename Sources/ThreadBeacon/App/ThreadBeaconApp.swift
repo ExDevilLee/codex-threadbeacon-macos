@@ -20,6 +20,7 @@ struct ThreadBeaconApp: App {
     @StateObject private var store: ThreadStatusStore
     @StateObject private var launchAtLoginStore: LaunchAtLoginStore
     @StateObject private var updateCheckStore: UpdateCheckStore
+    @StateObject private var autoRecoveryLogStore: AutoRecoveryLogStore
     @AppStorage(DisplayPreferenceKeys.appTheme)
     private var appThemeRawValue = AppTheme.defaultValue.rawValue
     private let soundPlayer: SoundPlaybackService
@@ -32,6 +33,9 @@ struct ThreadBeaconApp: App {
         let repository = SQLiteThreadRepository(databaseURL: CodexPaths.stateDatabaseURL)
         let loader = ThreadStatusLoader(repository: repository)
         let archiveRestoreService = CodexArchiveRestoreService()
+        let messageSendService = CodexMessageSendService()
+        let recoveryLogs = AutoRecoveryLogStore()
+        _autoRecoveryLogStore = StateObject(wrappedValue: recoveryLogs)
         let history = SoundNotificationHistory()
         let preferenceRepository = ThreadListPreferenceRepository()
         let player = SoundPlaybackService()
@@ -62,6 +66,23 @@ struct ThreadBeaconApp: App {
             notificationTracker: SoundNotificationTracker(initialSeenEventIDs: history.load()),
             onNotification: { event in
                 player.play(event)
+            },
+            onAutoRecovery: { threadID, episodeID, incident, prompt in
+                let logID = recoveryLogs.recordAttempt(
+                    threadID: threadID,
+                    episodeID: episodeID,
+                    incident: incident,
+                    prompt: prompt
+                )
+                Task {
+                    do {
+                        try await messageSendService.send(threadID: threadID, message: prompt)
+                        recoveryLogs.recordSuccess(logID)
+                    } catch {
+                        let detail = (error as? CodexMessageSendError)?.logDescription ?? "发送恢复提示失败"
+                        recoveryLogs.recordFailure(logID, detail: detail)
+                    }
+                }
             },
             onNotificationHistoryChange: { eventIDs in
                 history.save(eventIDs)
@@ -98,7 +119,8 @@ struct ThreadBeaconApp: App {
             ThreadBeaconSettingsView(
                 languageStore: appLanguageStore,
                 launchAtLoginStore: launchAtLoginStore,
-                previewSound: soundPlayer.preview
+                previewSound: soundPlayer.preview,
+                autoRecoveryLogStore: autoRecoveryLogStore
             )
             .environment(\.locale, appLanguageStore.locale)
             .environmentObject(appLanguageStore)

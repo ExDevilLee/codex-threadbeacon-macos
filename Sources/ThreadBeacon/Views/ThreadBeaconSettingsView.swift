@@ -5,6 +5,7 @@ struct ThreadBeaconSettingsView: View {
     @ObservedObject var languageStore: AppLanguageStore
     @ObservedObject var launchAtLoginStore: LaunchAtLoginStore
     let previewSound: (SoundSource) -> Void
+    @ObservedObject var autoRecoveryLogStore: AutoRecoveryLogStore
 
     var body: some View {
         TabView {
@@ -17,9 +18,102 @@ struct ThreadBeaconSettingsView: View {
                 .tabItem {
                     Label("提示音", systemImage: "speaker.wave.2")
                 }
+
+            AutoRecoveryLogView(store: autoRecoveryLogStore)
+                .tabItem {
+                    Label("自动恢复", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
+                }
         }
         .frame(width: 460, height: 400)
         .scenePadding()
+    }
+}
+
+private struct AutoRecoveryLogView: View {
+    @ObservedObject var store: AutoRecoveryLogStore
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(localized("异常自动恢复记录"))
+                    .font(.headline)
+                Spacer()
+                Button(localized("清空记录")) {
+                    store.clear()
+                }
+                .disabled(store.entries.isEmpty)
+            }
+
+            if store.entries.isEmpty {
+                ContentUnavailableView(
+                    localized("暂无自动恢复记录"),
+                    systemImage: "arrow.trianglehead.2.clockwise.rotate.90",
+                    description: Text(localized("检测到新的异常后，发送结果会显示在这里。"))
+                )
+            } else {
+                List(store.entries) { entry in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Label(entry.status.localizedTitle(locale: locale), systemImage: entry.status.systemImage)
+                                .foregroundStyle(entry.status.color)
+                            Spacer()
+                            Text(entry.occurredAt, style: .time)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(AppLocalization.formatted("会话 %@", locale: locale, entry.threadID))
+                            .font(.caption.monospaced())
+                        Text(entry.incident)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                        Text(entry.prompt)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        if let detail = entry.detail {
+                            Text(AppLocalization.userFacing(detail, locale: locale))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+                    }
+                    .padding(.vertical, 3)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private func localized(_ source: String) -> String {
+        AppLocalization.string(source, locale: locale)
+    }
+}
+
+private extension AutoRecoveryLogStatus {
+    var systemImage: String {
+        switch self {
+        case .sending: "arrow.triangle.2.circlepath"
+        case .succeeded: "checkmark.circle.fill"
+        case .failed: "xmark.circle.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .sending: .orange
+        case .succeeded: .green
+        case .failed: .red
+        }
+    }
+
+    func localizedTitle(locale: Locale) -> String {
+        let source: String
+        switch self {
+        case .sending: source = "发送中"
+        case .succeeded: source = "已发送"
+        case .failed: source = "发送失败"
+        }
+        return AppLocalization.string(source, locale: locale)
     }
 }
 

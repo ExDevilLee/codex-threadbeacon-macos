@@ -6,8 +6,10 @@ ThreadBeacon 可以在不接管 Codex 任务、不读取会话正文的前提下
 当前可见主任务的 HTTP 400 Bad Request、HTTP 429/503 自动重试与最终失败，以及明确记录的
 所选模型容量错误。
 
-这个能力补充了 rollout 状态推导，但不改变独立 app-server POC 的结论：不同
-app-server 实例仍不能共享 Desktop 运行时事件。授权等待目前也没有可靠数据源。
+这个能力补充了 rollout 状态推导。检测到新的主任务终止型 HTTP 400、429 或模型容量异常
+episode 后，App 会通过 `codex exec resume` 自动发送固定提示词“刚才中断了，请继续未完成的任务”；
+HTTP 503 明确排除，避免服务不可用时继续触发请求。启动时已有的历史异常只登记不发送，同一
+episode 每次运行只尝试一次。授权等待目前也没有可靠数据源。
 
 ## 真实验证记录
 
@@ -49,6 +51,9 @@ feedback tags、工具输出或其他日志 target。
 服务 incident 优先于 rollout 的 `task_complete`。这是因为失败 turn 也可能写入通用
 `task_complete`；若不覆盖，会把真实失败误报为完成并播放错误的完成音。
 
+自动续做只使用固定文本，不读取或拼接会话正文；CLI 不可用或发送失败时保留红色失败状态，
+不重试、不改变状态，也不阻塞后续刷新。
+
 ## 隐私边界
 
 - 原始白名单日志行仅在一次刷新解析期间存在，不进入 `ThreadSnapshot`、界面或本地偏好。
@@ -78,6 +83,8 @@ feedback tags、工具输出或其他日志 target。
 - `transport` target 即使包含 429 也被忽略。
 - incident 覆盖误导性的 `task_complete`。
 - 同 episode 只产生一次异常提示音。
+- 新 HTTP 400 episode 只尝试一次自动续做，启动时历史 episode 不发送。
+- 终止型 HTTP 429 和模型容量异常也只尝试一次自动续做；HTTP 503 不自动发送。
 
 运行：
 

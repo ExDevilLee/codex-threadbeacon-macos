@@ -49,7 +49,12 @@ enum AppLocalization {
             "Codex 任务数据库不可用",
             "未找到 Codex CLI，请先安装 Codex CLI，或确认它位于受支持的安装目录。",
             "当前 Codex CLI 不支持恢复归档任务，请升级 Codex CLI 后重试。",
-            "Codex CLI 未能恢复该任务。"
+            "Codex CLI 未能恢复该任务。",
+            "Codex CLI 已接受提示词（进程退出码 0）",
+            "发送恢复提示失败",
+            "未找到 Codex CLI",
+            "Codex CLI 执行失败",
+            "无法启动 Codex CLI"
         ]
         if catalogBackedMessages.contains(source) {
             return string(source, locale: locale)

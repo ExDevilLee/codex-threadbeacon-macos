@@ -111,6 +111,93 @@ let threadStatusStoreTests = [
         try expect(receivedEvents.values.first?.category == .done, "completion should use done category")
         try expect(receivedHistory.values.count == 2, "new event IDs should be persisted")
     },
+    TestCase(name: "store sends one recovery prompt for a new HTTP 400 incident") {
+        let incident = ServiceIncident(
+            episodeID: "turn-400",
+            phase: .failed,
+            kind: .badRequest,
+            httpStatusCode: 400,
+            retryAttempt: nil,
+            retryLimit: nil,
+            occurredAt: Date(timeIntervalSince1970: 10)
+        )
+        let snapshot = ThreadSnapshot(
+            id: "thread-400",
+            title: "thread-400",
+            status: .error,
+            statusChangedAt: incident.occurredAt,
+            updatedAt: incident.occurredAt,
+            latestEventAt: incident.occurredAt,
+            serviceIncident: incident
+        )
+        let sequence = SnapshotSequence(values: [[], [snapshot], [snapshot]])
+        let recoveryCalls = RecoveryCallBox()
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in await sequence.next() },
+                onAutoRecovery: { threadID, _, _, prompt in
+                    recoveryCalls.append(threadID: threadID, prompt: prompt)
+                }
+            )
+        }
+
+        await store.refresh(notificationPolicy: .baseline)
+        await store.refresh(notificationPolicy: .notify)
+        await store.refresh(notificationPolicy: .notify)
+
+        try expect(recoveryCalls.values.count == 1, "one incident episode should trigger one prompt")
+        try expect(recoveryCalls.values.first?.threadID == "thread-400", "prompt should target the failed thread")
+        try expect(
+            recoveryCalls.values.first?.prompt == "刚才中断了，请继续未完成的任务",
+            "prompt should use the fixed recovery text"
+        )
+    },
+    TestCase(name: "store recovers terminal 429 and skips 503") {
+        let retryIncident = ServiceIncident(
+            episodeID: "turn-429",
+            phase: .failed,
+            kind: .httpRateLimit,
+            httpStatusCode: 429,
+            retryAttempt: 5,
+            retryLimit: 5,
+            occurredAt: Date(timeIntervalSince1970: 20)
+        )
+        let unavailableIncident = ServiceIncident(
+            episodeID: "turn-503",
+            phase: .failed,
+            kind: .serviceUnavailable,
+            httpStatusCode: 503,
+            retryAttempt: 5,
+            retryLimit: 5,
+            occurredAt: Date(timeIntervalSince1970: 20)
+        )
+        let snapshots = [retryIncident, unavailableIncident].enumerated().map { index, incident in
+            ThreadSnapshot(
+                id: "thread-\(index)",
+                title: "thread-\(index)",
+                status: .error,
+                statusChangedAt: incident.occurredAt,
+                updatedAt: incident.occurredAt,
+                latestEventAt: incident.occurredAt,
+                serviceIncident: incident
+            )
+        }
+        let sequence = SnapshotSequence(values: [[], snapshots])
+        let recoveryCalls = RecoveryCallBox()
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in await sequence.next() },
+                onAutoRecovery: { threadID, _, _, prompt in
+                    recoveryCalls.append(threadID: threadID, prompt: prompt)
+                }
+            )
+        }
+
+        await store.refresh(notificationPolicy: .baseline)
+        await store.refresh(notificationPolicy: .notify)
+
+        try expect(recoveryCalls.values.map(\.threadID) == ["thread-0"], "429 should recover while 503 stays excluded")
+    },
     TestCase(name: "store passes transient expanded thread IDs to refreshes") {
         let receivedExpansions = ExpansionHistoryBox()
         let store = await MainActor.run {
@@ -636,6 +723,26 @@ private func completedStoreSnapshot(id: String, second: TimeInterval) -> ThreadS
         latestEventAt: date,
         completionEventAt: date
     )
+}
+
+private final class RecoveryCallBox: @unchecked Sendable {
+    struct Call {
+        let threadID: String
+        let prompt: String
+    }
+
+    private let lock = NSLock()
+    private var storage: [Call] = []
+
+    var values: [Call] {
+        lock.withLock { storage }
+    }
+
+    func append(threadID: String, prompt: String) {
+        lock.withLock {
+            storage.append(Call(threadID: threadID, prompt: prompt))
+        }
+    }
 }
 
 private func storeHealthReport(

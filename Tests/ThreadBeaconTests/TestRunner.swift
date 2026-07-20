@@ -4,12 +4,14 @@ import Foundation
 enum TestRunner {
     static func main() async {
         let tests = threadStatusTests
+            + autoRecoveryLogStoreTests
             + aboutAppInfoTests
             + appLanguageTests
             + appLanguageStoreTests
             + appThemeTests
             + archiveRestoreAvailabilityTests
             + codexArchiveRestoreServiceTests
+            + codexMessageSendServiceTests
             + codexCLIResolverTests
             + dataSourceHealthTests
             + displaySettingsTests

@@ -1,36 +1,33 @@
 import Foundation
 
-public struct CodexCommandResult: Equatable, Sendable {
-    public let exitCode: Int32
-    public let output: String
-
-    public init(exitCode: Int32, output: String) {
-        self.exitCode = exitCode
-        self.output = output
-    }
-}
-
-public enum ArchiveRestoreError: LocalizedError, Equatable, Sendable {
+public enum CodexMessageSendError: LocalizedError, Equatable, Sendable {
     case cliNotFound
-    case unsupportedCommand
     case executionFailed(String?)
     case launchFailed(String)
 
     public var errorDescription: String? {
         switch self {
         case .cliNotFound:
-            "未找到 Codex CLI，请先安装 Codex CLI，或确认它位于受支持的安装目录。"
-        case .unsupportedCommand:
-            "当前 Codex CLI 不支持恢复归档任务，请升级 Codex CLI 后重试。"
+            "未找到 Codex CLI，无法发送恢复提示。"
         case let .executionFailed(message):
-            message.map { "恢复失败：\($0)" } ?? "Codex CLI 未能恢复该任务。"
+            message.map { "发送恢复提示失败：\($0)" } ?? "发送恢复提示失败。"
         case let .launchFailed(message):
             "无法启动 Codex CLI：\(message)"
         }
     }
+
+    public var logDescription: String {
+        switch self {
+        case .cliNotFound: "未找到 Codex CLI"
+        case .executionFailed: "Codex CLI 执行失败"
+        case .launchFailed: "无法启动 Codex CLI"
+        }
+    }
 }
 
-public struct CodexArchiveRestoreService: Sendable {
+/// Sends a follow-up prompt to an existing Codex session through the supported CLI resume path.
+/// The caller is responsible for deciding which incident is eligible and for de-duplication.
+public struct CodexMessageSendService: Sendable {
     private let resolveExecutable: @Sendable () throws -> URL
     private let environment: [String: String]
     private let runCommand: @Sendable (URL, [String], [String: String]) throws -> CodexCommandResult
@@ -41,7 +38,7 @@ public struct CodexArchiveRestoreService: Sendable {
     ) {
         resolveExecutable = { try resolver.resolve() }
         self.environment = environment
-        runCommand = Self.executeCommand
+        runCommand = CodexArchiveRestoreService.executeCommand
     }
 
     public init(
@@ -54,14 +51,18 @@ public struct CodexArchiveRestoreService: Sendable {
         self.runCommand = runCommand
     }
 
-    public func restore(threadID: String) async throws {
+    public func send(threadID: String, message: String) async throws {
+        guard !threadID.isEmpty, !message.isEmpty else {
+            throw CodexMessageSendError.executionFailed(nil)
+        }
+
         let executable: URL
         do {
             executable = try resolveExecutable()
         } catch CodexCLIResolutionError.cliNotFound {
-            throw ArchiveRestoreError.cliNotFound
+            throw CodexMessageSendError.cliNotFound
         } catch {
-            throw ArchiveRestoreError.launchFailed(Self.sanitized(error.localizedDescription) ?? "未知错误")
+            throw CodexMessageSendError.launchFailed(Self.sanitized(error.localizedDescription) ?? "未知错误")
         }
 
         let result: CodexCommandResult
@@ -69,42 +70,19 @@ public struct CodexArchiveRestoreService: Sendable {
             let operation = runCommand
             let commandEnvironment = commandEnvironment(for: executable)
             result = try await Task.detached(priority: .utility) {
-                try operation(executable, ["unarchive", threadID], commandEnvironment)
+                try operation(
+                    executable,
+                    ["exec", "resume", threadID, message, "--skip-git-repo-check"],
+                    commandEnvironment
+                )
             }.value
         } catch {
-            throw ArchiveRestoreError.launchFailed(Self.sanitized(error.localizedDescription) ?? "未知错误")
+            throw CodexMessageSendError.launchFailed(Self.sanitized(error.localizedDescription) ?? "未知错误")
         }
 
-        guard result.exitCode != 0 else { return }
-        let output = Self.sanitized(result.output)
-        let normalized = output?.lowercased() ?? ""
-        if normalized.contains("unknown subcommand")
-            || normalized.contains("unrecognized subcommand")
-            || normalized.contains("unexpected argument 'unarchive'") {
-            throw ArchiveRestoreError.unsupportedCommand
+        guard result.exitCode == 0 else {
+            throw CodexMessageSendError.executionFailed(Self.sanitized(result.output))
         }
-        throw ArchiveRestoreError.executionFailed(output)
-    }
-
-    static func executeCommand(
-        executable: URL,
-        arguments: [String],
-        environment: [String: String]
-    ) throws -> CodexCommandResult {
-        let process = Process()
-        let outputPipe = Pipe()
-        process.executableURL = executable
-        process.arguments = arguments
-        process.environment = environment
-        process.standardOutput = outputPipe
-        process.standardError = outputPipe
-        try process.run()
-        let data = outputPipe.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        return CodexCommandResult(
-            exitCode: process.terminationStatus,
-            output: String(decoding: data, as: UTF8.self)
-        )
     }
 
     private func commandEnvironment(for executable: URL) -> [String: String] {
@@ -125,6 +103,6 @@ public struct CodexArchiveRestoreService: Sendable {
             .filter { !$0.isEmpty }
             .joined(separator: " ")
         guard !singleLine.isEmpty else { return nil }
-        return String(singleLine.prefix(500))
+        return String(singleLine.prefix(300))
     }
 }

@@ -188,7 +188,21 @@
     "前往下载" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Download" } } } },
     "暂时无法检查更新，请稍后重试。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Couldn’t check for updates. Try again later." } } } },
     "重试" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Retry" } } } },
-    "无法确定当前版本。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The current version couldn’t be determined." } } } }
+    "无法确定当前版本。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "The current version couldn’t be determined." } } } },
+    "自动恢复" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Auto recovery" } } } },
+    "异常自动恢复记录" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Incident auto-recovery log" } } } },
+    "清空记录" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear log" } } } },
+    "暂无自动恢复记录" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No auto-recovery records" } } } },
+    "检测到新的异常后，发送结果会显示在这里。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Send results appear here after a new incident is detected." } } } },
+    "发送中" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Sending" } } } },
+    "已发送" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Sent" } } } },
+    "发送失败" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Send failed" } } } },
+    "会话 %@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Session %@" } } } },
+    "Codex CLI 已接受提示词（进程退出码 0）" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Codex CLI accepted the prompt (process exit code 0)" } } } },
+    "发送恢复提示失败" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Recovery prompt failed to send" } } } },
+    "未找到 Codex CLI" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Codex CLI not found" } } } },
+    "Codex CLI 执行失败" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Codex CLI execution failed" } } } },
+    "无法启动 Codex CLI" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Could not launch Codex CLI" } } } }
   },
   "version" : "1.0"
 }

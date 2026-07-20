@@ -15,6 +15,9 @@ controls are outside the current scope. The current sound feature only covers re
 detected primary-task completion events, explicit HTTP 400 Bad Request failures, HTTP 429/503
 retries or terminal failures, and selected-model capacity failures found in local structured logs. Approval waiting
 still has no reliable read-only data source.
+When a new terminal primary-task HTTP 400, 429, or model-capacity incident is detected, the app uses
+the local Codex CLI to send “刚才中断了，请继续未完成的任务” to that session. HTTP 503 is excluded;
+historical incidents found at startup are recorded but not replayed, and a send failure does not stop monitoring.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -229,6 +232,11 @@ project-created sounds and verify all assets with:
 - Retryable 429/503 incidents appear as yellow `warning`; HTTP 400, exhausted retries, and
   selected-model capacity failures appear as red `error`. One incident episode plays at most one warning sound,
   and failures suppress a misleading completion sound.
+- A new terminal primary-task HTTP 400, 429, or model-capacity episode triggers one automatic recovery
+  prompt; HTTP 503 does not send messages automatically.
+- Settings > Auto recovery records the session ID, incident episode, send time, sending/sent/failed state,
+  and a sanitized result. “Sent” means the Codex CLI accepted the prompt (exit code 0), not that the
+  follow-up task has completed.
 - Sort priority is `error`, `needsAction`, `warning`, `running`, `justCompleted`, `idle`, then
   `unknown`.
 
@@ -252,8 +260,9 @@ The app does not read `codex_http_client::transport` or extract reasoning summar
 conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
 service, upload Codex data, or request Accessibility permission. After launch, it only requests
 public Release metadata from `api.github.com` to check for updates; the request contains no Codex
-data, local paths, user settings, or device identifier. The current public UI does not modify
-Codex data. The validated archive-restore POC has no user-accessible entry point and never writes
+data, local paths, user settings, or device identifier. The current public UI does not directly modify
+Codex SQLite. HTTP 400 recovery sends one fixed prompt through the local Codex CLI to the target
+session without reading or composing conversation content. The validated archive-restore POC has no user-accessible entry point and never writes
 SQLite directly. Data-source health reports remain in memory and contain only stable categories,
 counts, and the last successful refresh time. They do not retain raw errors, local paths, or task
 identities and do not expand the app's read scope. See [`PRIVACY.md`](PRIVACY.md) for the full

@@ -40,8 +40,10 @@ public final class ThreadStatusStore: ObservableObject {
     private var visibleLimit: Int
     private var candidateSnapshots: [ThreadSnapshot] = []
     private var notificationTracker: SoundNotificationTracker
+    private var autoRecoveryEpisodeIDs: Set<String> = []
     private var pendingRefreshPolicy: RefreshNotificationPolicy?
     private let onNotification: @MainActor (SoundNotificationEvent) -> Void
+    private let onAutoRecovery: @MainActor (String, String, String, String) -> Void
     private let onNotificationHistoryChange: @MainActor ([String]) -> Void
     private let onPreferencesChange: @MainActor (ThreadListPreferences) -> Void
 
@@ -55,6 +57,7 @@ public final class ThreadStatusStore: ObservableObject {
         visibleLimit: Int = 8,
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
+        onAutoRecovery: @escaping @MainActor (String, String, String, String) -> Void = { _, _, _, _ in },
         onNotificationHistoryChange: @escaping @MainActor ([String]) -> Void = { _ in },
         onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
     ) {
@@ -79,6 +82,7 @@ public final class ThreadStatusStore: ObservableObject {
             visibleLimit: visibleLimit,
             notificationTracker: notificationTracker,
             onNotification: onNotification,
+            onAutoRecovery: onAutoRecovery,
             onNotificationHistoryChange: onNotificationHistoryChange,
             onPreferencesChange: onPreferencesChange
         )
@@ -94,6 +98,7 @@ public final class ThreadStatusStore: ObservableObject {
         visibleLimit: Int = 8,
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
+        onAutoRecovery: @escaping @MainActor (String, String, String, String) -> Void = { _, _, _, _ in },
         onNotificationHistoryChange: @escaping @MainActor ([String]) -> Void = { _ in },
         onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
     ) {
@@ -104,6 +109,7 @@ public final class ThreadStatusStore: ObservableObject {
         self.visibleLimit = max(1, visibleLimit)
         self.notificationTracker = notificationTracker
         self.onNotification = onNotification
+        self.onAutoRecovery = onAutoRecovery
         self.onNotificationHistoryChange = onNotificationHistoryChange
         self.onPreferencesChange = onPreferencesChange
     }
@@ -251,6 +257,7 @@ public final class ThreadStatusStore: ObservableObject {
                     onNotificationHistoryChange(notificationTracker.seenEventIDs)
                 }
                 events.forEach(onNotification)
+                observeAutoRecovery(policy: currentPolicy)
             } catch let error as ThreadStatusLoadFailure {
                 if let lastRefreshedAt {
                     dataSourceHealth = error.health.recordingSuccessfulRefresh(at: lastRefreshedAt)
@@ -331,5 +338,30 @@ public final class ThreadStatusStore: ObservableObject {
             return .notify
         }
         return .baseline
+    }
+
+    private func observeAutoRecovery(policy: RefreshNotificationPolicy) {
+        let prompt = "刚才中断了，请继续未完成的任务"
+        for snapshot in snapshots {
+            guard let incident = snapshot.serviceIncident,
+                  incident.kind != .serviceUnavailable,
+                  incident.phase == .failed else {
+                continue
+            }
+            let isNew = autoRecoveryEpisodeIDs.insert("\(snapshot.id):\(incident.episodeID)").inserted
+            guard isNew, policy == .notify else { continue }
+            onAutoRecovery(snapshot.id, incident.episodeID, incident.logLabel, prompt)
+        }
+    }
+}
+
+private extension ServiceIncident {
+    var logLabel: String {
+        switch kind {
+        case .badRequest: "HTTP 400"
+        case .httpRateLimit: "HTTP 429"
+        case .serviceUnavailable: "HTTP 503"
+        case .modelCapacity: "模型容量"
+        }
     }
 }
