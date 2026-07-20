@@ -7,6 +7,17 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-07-20
+
+### Added
+
+- 识别白名单结构化日志中的 HTTP 400 Bad Request，将其显示为红色失败状态并沿用服务异常
+  提示音；不扫描会话正文或扩大日志 target 范围。
+
+### Fixed
+
+- About 窗口标题现在会随 App 语言即时切换，不再出现英文内容配中文窗口标题。
+
 ## [0.1.1] - 2026-07-20
 
 ### Added
@@ -59,6 +70,7 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ExDevilLee/codex-threadbeacon-macos/releases/tag/v0.1.0

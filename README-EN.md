@@ -12,8 +12,8 @@ ThreadBeacon is a native macOS status window for monitoring primary Codex Deskto
 and Codex CLI tasks at a glance. The first version tests whether a glanceable status
 view reduces the need to repeatedly switch back to Codex. USB displays and Codex
 controls are outside the current scope. The current sound feature only covers reliably
-detected primary-task completion events and explicit HTTP 429/503 retries or terminal
-failures and selected-model capacity failures found in local structured logs. Approval waiting
+detected primary-task completion events, explicit HTTP 400 Bad Request failures, HTTP 429/503
+retries or terminal failures, and selected-model capacity failures found in local structured logs. Approval waiting
 still has no reliable read-only data source.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
@@ -47,6 +47,10 @@ If no tasks appear or the footer reports a data-source problem, see
 | Token usage details | General Settings |
 | :---: | :---: |
 | ![ThreadBeacon Token usage details](docs/assets/readme/en/threadbeacon-token-details.png) | ![ThreadBeacon General Settings](docs/assets/readme/en/threadbeacon-settings.png) |
+
+### Update Check
+
+![ThreadBeacon update check](docs/assets/readme/en/threadbeacon-update-check.png)
 
 See [`ROADMAP.md`](ROADMAP.md) for planned features and their proposed validation order.
 
@@ -222,8 +226,8 @@ project-created sounds and verify all assets with:
   files. Missing, moved, or unsupported custom files fall back to the selected built-in sound.
   Settings persist across
   launches. Startup, manual refresh, and resumed monitoring do not replay historical events.
-- Retryable 429/503 incidents appear as yellow `warning`; exhausted retries and selected-model
-  capacity failures appear as red `error`. One incident episode plays at most one warning sound,
+- Retryable 429/503 incidents appear as yellow `warning`; HTTP 400, exhausted retries, and
+  selected-model capacity failures appear as red `error`. One incident episode plays at most one warning sound,
   and failures suppress a misleading completion sound.
 - Sort priority is `error`, `needsAction`, `warning`, `running`, `justCompleted`, `idle`, then
   `unknown`.
@@ -241,7 +245,7 @@ The app reads only local data:
   timestamps, and numeric Token fields to derive status, usage details, and
   `task_complete` completion events.
 - `~/.codex/logs_2.sqlite`: opened read-only and restricted to three allowlisted targets for
-  visible tasks. Only turn IDs, HTTP 429/503 status, retry progress, explicit model-capacity kind,
+  visible tasks. Only turn IDs, HTTP 400/429/503 status, retry progress, explicit model-capacity kind,
   and terminal failure time are extracted.
 
 The app does not read `codex_http_client::transport` or extract reasoning summaries,
@@ -265,10 +269,10 @@ privacy statement.
 - Cumulative Tokens represent processing across model calls. They are not the
   current context length and are not a cost estimate.
 - The current version plays one completion sound for a new `task_complete` event and one
-  incident sound for a new 429/503 or model-capacity episode. A later success clears a retry
+  incident sound for a new 400/429/503 or model-capacity episode. A later success clears a retry
   warning; a terminal failure overrides a misleading rollout `task_complete`.
 - The app does not infer `error`, `warning`, or `needsAction` from silence, timeouts, or
-  conversation text. Current error and warning states require allowlisted 429/503 or explicit
+  conversation text. Current error and warning states require allowlisted 400/429/503 or explicit
   model-capacity log evidence; approval status is not implemented.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
 - The POC is not sandboxed because it reads `~/.codex`. It is not distribution-signed or notarized,

@@ -53,6 +53,7 @@ public struct LogEventRepository: Sendable {
               AND feedback_log_body LIKE '%Request completed%'
               AND (
                 feedback_log_body LIKE '%status=200 OK%'
+                OR feedback_log_body LIKE '%status=400 Bad Request%'
                 OR feedback_log_body LIKE '%status=429 Too Many Requests%'
                 OR feedback_log_body LIKE '%status=503 Service Unavailable%'
               )
@@ -65,7 +66,8 @@ public struct LogEventRepository: Sendable {
               target = 'codex_core::session::turn'
               AND feedback_log_body LIKE '%Turn error:%'
               AND (
-                feedback_log_body LIKE '%status 429 Too Many Requests%'
+                feedback_log_body LIKE '%status 400 Bad Request%'
+                OR feedback_log_body LIKE '%status 429 Too Many Requests%'
                 OR feedback_log_body LIKE '%status 503 Service Unavailable%'
                 OR feedback_log_body LIKE '%Turn error: Selected model is at capacity. Please try a different model.%'
               )

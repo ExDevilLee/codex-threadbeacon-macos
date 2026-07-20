@@ -71,6 +71,7 @@ struct ThreadBeaconAboutView: View {
         }
         .padding(28)
         .frame(width: 430)
+        .background(WindowTitleBridge(title: localized("关于 ThreadBeacon")))
         .alert(localized("无法打开链接"), isPresented: $linkOpenFailed) {
             Button(localized("好"), role: .cancel) {}
         } message: {

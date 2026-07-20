@@ -6,6 +6,7 @@ public enum ServiceIncidentPhase: Equatable, Sendable {
 }
 
 public enum ServiceIncidentKind: Equatable, Sendable {
+    case badRequest
     case httpRateLimit
     case serviceUnavailable
     case modelCapacity

@@ -12,8 +12,8 @@
 和 `failure` 提示音。
 
 这项结论只否定“独立 app-server 跨实例订阅”路线。后续验证发现，本机
-`~/.codex/logs_2.sqlite` 的白名单结构化日志可只读识别 HTTP 429/503 的自动重试和最终
-失败，现已作为独立数据源实现；它仍不能识别授权等待。详见
+`~/.codex/logs_2.sqlite` 的白名单结构化日志可只读识别 HTTP 400 Bad Request，以及
+HTTP 429/503 的自动重试和最终失败，现已作为独立数据源实现；它仍不能识别授权等待。详见
 [`service-incident-monitoring.md`](service-incident-monitoring.md)。
 
 本次验证达到预先设定的停止条件后，没有调用 `thread/resume`、`turn/start`、审批响应
@@ -118,13 +118,13 @@ thread/read(includeTurns=false)
 - 根据 `willRetry` 区分自动重试和重试耗尽。
 - 通过 `turn/completed.failed` 或结构化错误生成可靠失败音。
 
-以上限制针对独立 app-server。ThreadBeacon 当前改由白名单日志证据识别 429/503，不把
+以上限制针对独立 app-server。ThreadBeacon 当前改由白名单日志证据识别 400/429/503，不把
 该实现描述成 app-server 能力，也不据此扩展到授权或其他错误。
 
 ### 不采用的回退
 
-- 不扫描会话正文猜测 `429`、`503` 或授权状态；429/503 只接受白名单 target 中已经验证
-  的结构化日志形状。
+- 不扫描会话正文猜测 `400`、`429`、`503` 或授权状态；HTTP 状态只接受白名单 target 中
+  明确的结构化日志形状。
 - 不让 ThreadBeacon `resume` Desktop 任务来换取订阅。
 - 不要求用户把全部 Codex 任务迁移到 ThreadBeacon 自己启动的 app-server。
 

@@ -86,10 +86,7 @@ struct ThreadBeaconApp: App {
             ThreadBeaconAboutCommands(locale: appLanguageStore.locale)
         }
 
-        Window(
-            AppLocalization.string("关于 ThreadBeacon", locale: appLanguageStore.locale),
-            id: "about"
-        ) {
+        Window("ThreadBeacon", id: "about") {
             ThreadBeaconAboutView(updateCheckStore: updateCheckStore)
                 .environment(\.locale, appLanguageStore.locale)
                 .environmentObject(appLanguageStore)

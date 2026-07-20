@@ -120,6 +120,21 @@ let logEventParserTests = [
         try expect(incident?.phase == .failed, "model capacity Turn error should become failure")
         try expect(incident?.kind == .modelCapacity, "model capacity should retain its incident kind")
         try expect(incident?.httpStatusCode == nil, "capacity failure should not invent an HTTP status")
+    },
+    TestCase(name: "log parser recognizes terminal 400 bad request") {
+        let records = [
+            logRecord(
+                second: 500,
+                target: "codex_http_client::default_client",
+                body: "turn{turn.id=turn-bad-request}: Request completed status=400 Bad Request"
+            )
+        ]
+
+        let incident = LogEventParser().latestIncidents(from: records)["thread-a"]
+
+        try expect(incident?.phase == .failed, "completed 400 request should immediately become failure")
+        try expect(incident?.kind == .badRequest, "400 should retain its incident kind")
+        try expect(incident?.httpStatusCode == 400, "400 should retain its HTTP status")
     }
 ]
 

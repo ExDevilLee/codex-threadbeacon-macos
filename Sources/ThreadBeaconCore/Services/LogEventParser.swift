@@ -28,10 +28,14 @@ public struct LogEventParser: Sendable {
                 if let status = statusCode(in: record.body) {
                     if status == 200 {
                         episode.latestSuccessAt = max(episode.latestSuccessAt, record.occurredAt)
-                    } else if status == 429 || status == 503 {
-                        episode.kind = status == 429 ? .httpRateLimit : .serviceUnavailable
+                    } else if let kind = incidentKind(for: status) {
+                        episode.kind = kind
                         episode.httpStatusCode = status
-                        episode.latestErrorAt = max(episode.latestErrorAt, record.occurredAt)
+                        if kind == .badRequest {
+                            episode.failedAt = max(episode.failedAt, record.occurredAt)
+                        } else {
+                            episode.latestErrorAt = max(episode.latestErrorAt, record.occurredAt)
+                        }
                     }
                 }
             case "codex_core::responses_retry":
@@ -47,8 +51,8 @@ public struct LogEventParser: Sendable {
                     episode.failedAt = max(episode.failedAt, record.occurredAt)
                 } else if record.body.contains("Turn error:"),
                           let status = statusCode(in: record.body),
-                          status == 429 || status == 503 {
-                    episode.kind = status == 429 ? .httpRateLimit : .serviceUnavailable
+                          let kind = incidentKind(for: status) {
+                    episode.kind = kind
                     episode.httpStatusCode = status
                     episode.failedAt = max(episode.failedAt, record.occurredAt)
                 }
@@ -80,6 +84,15 @@ public struct LogEventParser: Sendable {
 
     private func statusCode(in body: String) -> Int? {
         firstCapture(in: body, patterns: [#"status[= ]+(\d{3})\b"#]).flatMap(Int.init)
+    }
+
+    private func incidentKind(for statusCode: Int) -> ServiceIncidentKind? {
+        switch statusCode {
+        case 400: .badRequest
+        case 429: .httpRateLimit
+        case 503: .serviceUnavailable
+        default: nil
+        }
     }
 
     private func retryProgress(in body: String) -> (attempt: Int, limit: Int)? {

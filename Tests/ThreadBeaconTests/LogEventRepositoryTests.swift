@@ -8,9 +8,9 @@ let logEventRepositoryTests = [
         defer { try? FileManager.default.removeItem(at: databaseURL) }
 
         let incidents = try LogEventRepository(databaseURL: databaseURL)
-            .loadLatestIncidents(threadIDs: ["thread-a", "thread-b", "thread-capacity"])
+            .loadLatestIncidents(threadIDs: ["thread-a", "thread-b", "thread-capacity", "thread-400"])
 
-        try expect(incidents.count == 3, "only requested threads should be returned")
+        try expect(incidents.count == 4, "only requested threads should be returned")
         try expect(incidents["thread-a"]?.phase == .failed, "503 Turn error should be returned")
         try expect(incidents["thread-a"]?.httpStatusCode == 503, "503 should survive SQLite read")
         try expect(incidents["thread-b"]?.phase == .retrying, "429 retry should be returned")
@@ -18,6 +18,8 @@ let logEventRepositoryTests = [
         try expect(incidents["thread-b"]?.kind == .httpRateLimit, "429 should retain its incident kind")
         try expect(incidents["thread-capacity"]?.phase == .failed, "capacity Turn error should be returned")
         try expect(incidents["thread-capacity"]?.kind == .modelCapacity, "capacity should retain its incident kind")
+        try expect(incidents["thread-400"]?.phase == .failed, "400 Turn error should be returned")
+        try expect(incidents["thread-400"]?.kind == .badRequest, "400 should retain its incident kind")
         try expect(incidents["thread-c"] == nil, "unrequested thread must stay excluded")
     }
 ]
@@ -63,7 +65,11 @@ private func makeTemporaryLogDatabase() throws -> URL {
         (300, 0, 'INFO', 'codex_core::session::turn',
          'turn{turn.id=turn-c}: Turn error: unexpected status 503 Service Unavailable', 'thread-c'),
         (400, 0, 'INFO', 'codex_core::session::turn',
-         'turn{turn.id=turn-capacity}: Turn error: Selected model is at capacity. Please try a different model.', 'thread-capacity');
+         'turn{turn.id=turn-capacity}: Turn error: Selected model is at capacity. Please try a different model.', 'thread-capacity'),
+        (500, 0, 'DEBUG', 'codex_http_client::default_client',
+         'turn{turn.id=turn-400}: Request completed status=400 Bad Request', 'thread-400'),
+        (501, 0, 'INFO', 'codex_core::session::turn',
+         'turn{turn.id=turn-400}: Turn error: unexpected status 400 Bad Request', 'thread-400');
     """
     var errorMessage: UnsafeMutablePointer<CChar>?
     guard sqlite3_exec(database, sql, nil, nil, &errorMessage) == SQLITE_OK else {

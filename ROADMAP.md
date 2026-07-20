@@ -93,8 +93,8 @@
   `notLoaded`，无法看到 Desktop 已加载线程或接收其实时事件；详见
   [`docs/app-server-integration-poc.md`](docs/app-server-integration-poc.md)。
 - **已完成（阶段三）**：通过只读 `logs_2.sqlite` 的三个白名单 target 识别 HTTP
-  429/503 与明确的模型容量错误。自动重试显示黄色 `warning`，重试耗尽和模型容量错误
-  显示红色 `error`；新 turn 和同 turn
+  400/429/503 与明确的模型容量错误。429/503 自动重试显示黄色 `warning`，HTTP 400、
+  重试耗尽和模型容量错误显示红色 `error`；新 turn 和同 turn
   后续成功会清除旧 warning。
 - **已完成（阶段三）**：每个异常 episode 只播放一次独立警告音；最终失败覆盖 rollout
   的误导性完成状态，不播放错误的完成音。详见
