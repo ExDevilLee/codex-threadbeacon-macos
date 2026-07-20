@@ -38,6 +38,7 @@ private struct AutoRecoveryLogView: View {
     @ObservedObject var accessibilityPermissionStore: AccessibilityPermissionStore
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
+    @State private var targetThreadID = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -156,6 +157,58 @@ private struct AutoRecoveryLogView: View {
                     .font(.caption)
                     .foregroundStyle(result.isReady ? .green : .secondary)
                 }
+
+                if accessibilityPermissionStore.diagnosticResult?.isReady == true {
+                    Button(localized("验证当前 Codex 输入框（不发送）")) {
+                        accessibilityPermissionStore.runComposerValidation()
+                    }
+                    .disabled(accessibilityPermissionStore.isChecking)
+
+                    Text(localized("会短暂写入固定提示词，回读后立即清空；已有草稿时拒绝执行。"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    if let result = accessibilityPermissionStore.composerValidationResult {
+                        Label(
+                            composerValidationText(result),
+                            systemImage: result.isVerified
+                                ? "checkmark.shield.fill"
+                                : "exclamationmark.triangle.fill"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(result.isVerified ? .green : .secondary)
+                    }
+
+                    Divider()
+
+                    TextField(localized("目标任务 ID"), text: $targetThreadID)
+                        .textFieldStyle(.roundedBorder)
+
+                    Button(localized("切换并验证目标任务（不发送）")) {
+                        accessibilityPermissionStore.runTargetSelection(
+                            threadID: targetThreadID
+                        )
+                    }
+                    .disabled(
+                        accessibilityPermissionStore.isChecking
+                            || targetThreadID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
+
+                    Text(localized("只切换到唯一匹配的任务，并在 Codex 标题栏再次确认身份；不会写入或发送消息。"))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+
+                    if let result = accessibilityPermissionStore.targetSelectionResult {
+                        Label(
+                            targetSelectionText(result),
+                            systemImage: result.isSelected
+                                ? "checkmark.shield.fill"
+                                : "exclamationmark.triangle.fill"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(result.isSelected ? .green : .secondary)
+                    }
+                }
             }
         }
     }
@@ -175,6 +228,75 @@ private struct AutoRecoveryLogView: View {
                 Int64(textAreaCount),
                 Int64(visitedNodeCount)
             )
+        }
+    }
+
+    private func composerValidationText(
+        _ result: AccessibilityComposerValidationResult
+    ) -> String {
+        switch result {
+        case .notAuthorized:
+            localized("输入框验证失败：尚未获得辅助功能权限。")
+        case .codexNotRunning:
+            localized("输入框验证失败：Codex App 未运行。")
+        case let .composerNotUnique(count):
+            String(
+                format: localized("输入框验证失败：找到 %lld 个输入框。"),
+                Int64(count)
+            )
+        case .composerNotEmpty:
+            localized("输入框验证已停止：检测到已有草稿。")
+        case .composerNotSettable:
+            localized("输入框验证失败：当前输入框不可写。")
+        case .writeFailed:
+            localized("输入框验证失败：无法写入固定提示词。")
+        case .readbackFailed:
+            localized("输入框验证失败：写入后的回读不一致，输入框已清空。")
+        case .cleanupFailed:
+            localized("输入框验证失败：无法确认输入框已清空。")
+        case .verified:
+            localized("输入框验证通过：写入、回读和清空均成功，未发送消息。")
+        }
+    }
+
+    private func targetSelectionText(
+        _ result: AccessibilityTargetSelectionResult
+    ) -> String {
+        switch result {
+        case .notAuthorized:
+            localized("目标任务验证失败：尚未获得辅助功能权限。")
+        case .codexNotRunning:
+            localized("目标任务验证失败：Codex App 未运行。")
+        case .invalidThreadID:
+            localized("目标任务验证失败：任务 ID 为空。")
+        case .sessionIndexUnavailable:
+            localized("目标任务验证失败：无法读取 Codex 任务索引。")
+        case .titleUnavailable:
+            localized("目标任务验证失败：未找到该任务的 rename 标题。")
+        case let .titleNotUnique(count):
+            String(
+                format: localized("目标任务验证失败：rename 标题对应 %lld 个任务。"),
+                Int64(count)
+            )
+        case let .taskRowNotUnique(count):
+            String(
+                format: localized("目标任务验证失败：找到 %lld 个可操作任务行。"),
+                Int64(count)
+            )
+        case .selectionFailed:
+            localized("目标任务验证失败：无法切换 Codex 任务。")
+        case let .targetHeaderNotUnique(count):
+            String(
+                format: localized("目标任务验证失败：标题栏身份匹配数为 %lld。"),
+                Int64(count)
+            )
+        case let .composerNotUnique(count):
+            String(
+                format: localized("目标任务验证失败：切换后找到 %lld 个输入框。"),
+                Int64(count)
+            )
+        case .selected:
+            localized("目标任务验证通过：已切换并确认任务身份，未发送消息。")
         }
     }
 

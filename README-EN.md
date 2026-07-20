@@ -247,6 +247,15 @@ project-created sounds and verify all assets with:
   Accessibility Settings. After authorization, users can run a read-only Codex access
   diagnostic. It reports only window, text-area, and visited-node counts, reads no task
   titles or conversation content, and does not enable automatic sending.
+- After the read-only diagnostic passes, users can manually validate the current Codex
+  input field. Only a unique composer without a draft is temporarily populated with the
+  fixed prompt, read back, and immediately cleared. The validation never finds a send
+  button, simulates Return, or joins the automatic recovery path.
+- Users can also enter a target task ID to validate task switching. The app proceeds only
+  when the renamed title, Codex task row, and post-switch title-bar identity are unique.
+  This validation does not write to the input field or send a message.
+- Only task rows currently rendered in the Codex Accessibility tree can be switched. Older
+  or unloaded tasks fail closed, so this POC is not connected to unattended auto recovery.
 - To make the recovery message visible in the corresponding Codex App conversation,
   ThreadBeacon must control the Codex App input field through macOS Accessibility.
   This requires a separate user-granted Accessibility permission. Without it,
@@ -274,7 +283,10 @@ The app reads only local data:
 The app does not read `codex_http_client::transport` or extract reasoning summaries,
 conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
 service or upload Codex data. Accessibility is used only after the user explicitly grants
-permission and starts the read-only diagnostic; the result contains structural counts only.
+permission and starts a validation. The read-only result contains structural counts only;
+input validation temporarily writes the fixed prompt and clears it immediately. Target-task
+validation matches the ID, renamed title, and Codex title bar in memory. Neither path sends a
+message or persists a task title.
 After launch, the app only requests
 public Release metadata from `api.github.com` to check for updates; the request contains no Codex
 data, local paths, user settings, or device identifier. The current public UI does not

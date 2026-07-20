@@ -7,6 +7,8 @@ import ThreadBeaconCore
 final class AccessibilityPermissionStore: ObservableObject {
     @Published private(set) var isAuthorized: Bool
     @Published private(set) var diagnosticResult: AccessibilityDiagnosticResult?
+    @Published private(set) var composerValidationResult: AccessibilityComposerValidationResult?
+    @Published private(set) var targetSelectionResult: AccessibilityTargetSelectionResult?
     @Published private(set) var isChecking = false
 
     init() {
@@ -17,6 +19,8 @@ final class AccessibilityPermissionStore: ObservableObject {
         isAuthorized = AXIsProcessTrusted()
         if !isAuthorized {
             diagnosticResult = nil
+            composerValidationResult = nil
+            targetSelectionResult = nil
         }
     }
 
@@ -43,6 +47,30 @@ final class AccessibilityPermissionStore: ObservableObject {
 
         isChecking = true
         diagnosticResult = SystemAccessibilityDiagnosticChecker.check()
+        isChecking = false
+    }
+
+    func runComposerValidation() {
+        refresh()
+        guard isAuthorized else {
+            composerValidationResult = .notAuthorized
+            return
+        }
+
+        isChecking = true
+        composerValidationResult = SystemAccessibilityComposerValidator.validate()
+        isChecking = false
+    }
+
+    func runTargetSelection(threadID: String) {
+        refresh()
+        guard isAuthorized else {
+            targetSelectionResult = .notAuthorized
+            return
+        }
+
+        isChecking = true
+        targetSelectionResult = SystemAccessibilityTargetSelector.select(threadID: threadID)
         isChecking = false
     }
 }
