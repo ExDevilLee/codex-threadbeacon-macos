@@ -1,9 +1,9 @@
-# 429/503 服务异常监控
+# 服务异常监控
 
 ## 结论
 
 ThreadBeacon 可以在不接管 Codex 任务、不读取会话正文的前提下，从本机只读日志中识别
-当前可见主任务的 HTTP 429/503 自动重试与最终失败。
+当前可见主任务的 HTTP 429/503 自动重试与最终失败，以及明确记录的所选模型容量错误。
 
 这个能力补充了 rollout 状态推导，但不改变独立 app-server POC 的结论：不同
 app-server 实例仍不能共享 Desktop 运行时事件。授权等待目前也没有可靠数据源。
@@ -22,7 +22,7 @@ App 以 SQLite read-only 模式打开：
 | --- | --- | --- |
 | `codex_http_client::default_client` | turn ID、HTTP 200/429/503、时间 | 识别异常与同 turn 恢复 |
 | `codex_core::responses_retry` | turn ID、重试次数与上限、时间 | 显示自动重试进度 |
-| `codex_core::session::turn` | turn ID、最终 429/503、时间 | 识别重试耗尽 |
+| `codex_core::session::turn` | turn ID、最终 429/503、模型容量错误、时间 | 识别终止失败 |
 
 `codex_http_client::transport` 被明确排除，因为它可能包含完整请求上下文。查询也不选择
 feedback tags、工具输出或其他日志 target。
@@ -34,6 +34,7 @@ feedback tags、工具输出或其他日志 target。
 | 429/503 后仍在自动重试 | 黄色 `warning`，显示 HTTP 状态和可用的 `n/limit` | 每个 turn episode 一次异常音 |
 | 同 turn 后续出现 200 | 清除 warning，回到 rollout 推导状态 | 不补播声音 |
 | 重试耗尽并出现 `Turn error` | 红色 `error` | 同 episode 已提醒则不重复播放 |
+| 出现明确的所选模型容量 `Turn error` | 红色 `error`，显示“所选模型容量已满” | 每个 turn episode 一次异常音 |
 | 更晚出现新的 `task_started` | 清除旧 incident | 新 turn 若再次异常，视为新 episode |
 
 服务 incident 优先于 rollout 的 `task_complete`。这是因为失败 turn 也可能写入通用
@@ -51,8 +52,8 @@ feedback tags、工具输出或其他日志 target。
 - `logs_2.sqlite` 是 Codex 内部滚动日志，不是稳定公开 API，字段、target 或日志形状可能
   随版本变化。
 - 日志轮转后，较早的异常证据可能消失。
-- 当前只接受已验证的 HTTP 429/503，不把其他状态码、静默、超时或正文关键词推断为
-  服务异常。
+- 当前只接受已验证的 HTTP 429/503 和精确的模型容量 `Turn error`，不把其他状态码、
+  静默、超时或宽泛正文关键词推断为服务异常。
 - 该能力不能识别授权请求、用户输入等待或所有失败类型。
 
 ## 验证
@@ -62,6 +63,7 @@ feedback tags、工具输出或其他日志 target。
 - 503 重试耗尽转为 `error`。
 - 429 活跃重试转为 `warning`。
 - 同 turn 200 清除 warning。
+- 明确的所选模型容量错误转为 `error`，且不伪造 HTTP 状态。
 - `transport` target 即使包含 429 也被忽略。
 - incident 覆盖误导性的 `task_complete`。
 - 同 episode 只产生一次异常提示音。

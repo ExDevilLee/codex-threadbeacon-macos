@@ -29,6 +29,7 @@ public struct LogEventParser: Sendable {
                     if status == 200 {
                         episode.latestSuccessAt = max(episode.latestSuccessAt, record.occurredAt)
                     } else if status == 429 || status == 503 {
+                        episode.kind = status == 429 ? .httpRateLimit : .serviceUnavailable
                         episode.httpStatusCode = status
                         episode.latestErrorAt = max(episode.latestErrorAt, record.occurredAt)
                     }
@@ -40,9 +41,14 @@ public struct LogEventParser: Sendable {
                     episode.latestRetryAt = max(episode.latestRetryAt, record.occurredAt)
                 }
             case "codex_core::session::turn":
-                if record.body.contains("Turn error:"),
-                   let status = statusCode(in: record.body),
-                   status == 429 || status == 503 {
+                if record.body.contains("Turn error: Selected model is at capacity. Please try a different model.") {
+                    episode.kind = .modelCapacity
+                    episode.httpStatusCode = nil
+                    episode.failedAt = max(episode.failedAt, record.occurredAt)
+                } else if record.body.contains("Turn error:"),
+                          let status = statusCode(in: record.body),
+                          status == 429 || status == 503 {
+                    episode.kind = status == 429 ? .httpRateLimit : .serviceUnavailable
                     episode.httpStatusCode = status
                     episode.failedAt = max(episode.failedAt, record.occurredAt)
                 }
@@ -121,6 +127,7 @@ private struct EpisodeKey: Hashable {
 }
 
 private struct Episode {
+    var kind: ServiceIncidentKind = .serviceUnavailable
     var httpStatusCode: Int?
     var retryAttempt: Int?
     var retryLimit: Int?
@@ -134,6 +141,7 @@ private struct Episode {
             return ServiceIncident(
                 episodeID: episodeID,
                 phase: .failed,
+                kind: kind,
                 httpStatusCode: httpStatusCode,
                 retryAttempt: retryAttempt,
                 retryLimit: retryLimit,
@@ -149,6 +157,7 @@ private struct Episode {
         return ServiceIncident(
             episodeID: episodeID,
             phase: .retrying,
+            kind: kind,
             httpStatusCode: httpStatusCode,
             retryAttempt: retryAttempt,
             retryLimit: retryLimit,

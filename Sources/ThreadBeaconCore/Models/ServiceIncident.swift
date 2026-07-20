@@ -5,9 +5,16 @@ public enum ServiceIncidentPhase: Equatable, Sendable {
     case failed
 }
 
+public enum ServiceIncidentKind: Equatable, Sendable {
+    case httpRateLimit
+    case serviceUnavailable
+    case modelCapacity
+}
+
 public struct ServiceIncident: Equatable, Sendable {
     public let episodeID: String
     public let phase: ServiceIncidentPhase
+    public let kind: ServiceIncidentKind
     public let httpStatusCode: Int?
     public let retryAttempt: Int?
     public let retryLimit: Int?
@@ -16,6 +23,7 @@ public struct ServiceIncident: Equatable, Sendable {
     public init(
         episodeID: String,
         phase: ServiceIncidentPhase,
+        kind: ServiceIncidentKind = .serviceUnavailable,
         httpStatusCode: Int?,
         retryAttempt: Int?,
         retryLimit: Int?,
@@ -23,6 +31,7 @@ public struct ServiceIncident: Equatable, Sendable {
     ) {
         self.episodeID = episodeID
         self.phase = phase
+        self.kind = kind
         self.httpStatusCode = httpStatusCode
         self.retryAttempt = retryAttempt
         self.retryLimit = retryLimit

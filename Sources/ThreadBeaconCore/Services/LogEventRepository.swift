@@ -67,6 +67,7 @@ public struct LogEventRepository: Sendable {
               AND (
                 feedback_log_body LIKE '%status 429 Too Many Requests%'
                 OR feedback_log_body LIKE '%status 503 Service Unavailable%'
+                OR feedback_log_body LIKE '%Turn error: Selected model is at capacity. Please try a different model.%'
               )
             )
           )

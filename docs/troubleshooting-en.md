@@ -49,10 +49,11 @@ in data-source health. Refresh and check the Rename index status instead of edit
 If the Rollout source is degraded or unavailable, report only its health category and
 success/failure counts. Do not attach rollout files.
 
-## No 429/503 Warning Appears
+## No Service Incident Warning Appears
 
 Incident detection reads structured 429/503 evidence for visible primary tasks from only three
-allowlisted log targets. Logs can rotate, so old incidents may disappear. ThreadBeacon does not
+allowlisted log targets, plus explicit selected-model capacity errors from
+`codex_core::session::turn`. Logs can rotate, so old incidents may disappear. ThreadBeacon does not
 infer failures from silence, conversation text, or ordinary timeouts, and it cannot yet detect
 approval waiting reliably.
 

@@ -83,7 +83,9 @@ struct ThreadRowView: View {
                         .fontWeight(.medium)
                         .foregroundStyle(snapshot.status.color)
                     if let incident = snapshot.serviceIncident {
-                        if let statusCode = incident.httpStatusCode {
+                        if incident.kind == .modelCapacity {
+                            Text(AppLocalization.string("所选模型容量已满", locale: locale))
+                        } else if let statusCode = incident.httpStatusCode {
                             Text("·")
                             Text("HTTP \(statusCode)")
                         }

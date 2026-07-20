@@ -46,7 +46,7 @@ struct SoundSettingsView: View {
             }
 
             Section("服务异常") {
-                Toggle("播放 429/503 提示音", isOn: $warningEnabled)
+                Toggle("播放服务异常提示音", isOn: $warningEnabled)
                     .disabled(!enabled)
                 Picker("异常声音", selection: $selectedWarning) {
                     ForEach(CompletionSound.allCases) { sound in

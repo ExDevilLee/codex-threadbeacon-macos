@@ -169,7 +169,7 @@ public struct ThreadStatusLoader: Sendable {
                 serviceLogsHealth = .healthy
             } catch {
                 incidentsByThread = [:]
-                serviceLogsHealth = .degraded("服务异常日志不可用，429/503 状态可能缺失")
+                serviceLogsHealth = .degraded("服务异常日志不可用，服务错误状态可能缺失")
             }
         }
 

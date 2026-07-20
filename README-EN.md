@@ -13,8 +13,8 @@ and Codex CLI tasks at a glance. The first version tests whether a glanceable st
 view reduces the need to repeatedly switch back to Codex. USB displays and Codex
 controls are outside the current scope. The current sound feature only covers reliably
 detected primary-task completion events and explicit HTTP 429/503 retries or terminal
-failures found in local structured logs. Approval waiting still has no reliable read-only
-data source.
+failures and selected-model capacity failures found in local structured logs. Approval waiting
+still has no reliable read-only data source.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -60,7 +60,7 @@ why an independent app-server cannot currently observe Codex Desktop runtime eve
 
 See the Chinese
 [`service incident monitoring design`](docs/service-incident-monitoring.md) for the
-429/503 data source, state rules, and privacy boundary.
+service-incident data source, state rules, and privacy boundary.
 
 See the Chinese
 [`Codex CLI compatibility POC`](docs/codex-cli-compatibility.md) for the verified data
@@ -153,7 +153,7 @@ The Xcode application target copies the `.icns` file into the app bundle and wri
 
 Eight sounds are built in. Beacon, Chime, Pulse, Alert, Resolve, and Knock are generated
 deterministically by project scripts. The other two are CC0 sounds from Freesound and are
-optional custom choices, not defaults. Completion defaults to Chime, while 429/503 incidents
+optional custom choices, not defaults. Completion defaults to Chime, while service incidents
 default to Alert. Either notification can use any of the eight sounds or a separate local audio file. See
 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for sources and licenses. Regenerate the
 project-created sounds and verify all assets with:
@@ -215,16 +215,16 @@ project-created sounds and verify all assets with:
 - When ignored tasks exist, an `eye.slash` toolbar button can restore one task or all tasks.
 - The gear button opens the native macOS Settings window. The General tab configures the
   language, theme, refresh interval, task limit, and launch at login; the Sounds tab manages completion and
-  429/503 incident sounds. Launch at login uses Apple's `SMAppService.mainApp` and reflects the
+  service-incident sounds. Launch at login uses Apple's `SMAppService.mainApp` and reflects the
   current macOS status rather than a simulated preference. If approval is required, the toggle
   remains on and Settings provides a shortcut to Login Items. Both sound categories can be
   disabled independently and selected from eight built-in sounds, or assigned separate local audio
   files. Missing, moved, or unsupported custom files fall back to the selected built-in sound.
   Settings persist across
   launches. Startup, manual refresh, and resumed monitoring do not replay historical events.
-- Retryable 429/503 incidents appear as yellow `warning`; exhausted retries appear as red
-  `error`. One incident episode plays at most one warning sound, and failures suppress a
-  misleading completion sound.
+- Retryable 429/503 incidents appear as yellow `warning`; exhausted retries and selected-model
+  capacity failures appear as red `error`. One incident episode plays at most one warning sound,
+  and failures suppress a misleading completion sound.
 - Sort priority is `error`, `needsAction`, `warning`, `running`, `justCompleted`, `idle`, then
   `unknown`.
 
@@ -241,8 +241,8 @@ The app reads only local data:
   timestamps, and numeric Token fields to derive status, usage details, and
   `task_complete` completion events.
 - `~/.codex/logs_2.sqlite`: opened read-only and restricted to three allowlisted targets for
-  visible tasks. Only turn IDs, HTTP 429/503 status, retry progress, and terminal failure time
-  are extracted.
+  visible tasks. Only turn IDs, HTTP 429/503 status, retry progress, explicit model-capacity kind,
+  and terminal failure time are extracted.
 
 The app does not read `codex_http_client::transport` or extract reasoning summaries,
 conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
@@ -265,11 +265,11 @@ privacy statement.
 - Cumulative Tokens represent processing across model calls. They are not the
   current context length and are not a cost estimate.
 - The current version plays one completion sound for a new `task_complete` event and one
-  incident sound for a new 429/503 episode. A later success clears a retry warning; a terminal
-  failure overrides a misleading rollout `task_complete`.
+  incident sound for a new 429/503 or model-capacity episode. A later success clears a retry
+  warning; a terminal failure overrides a misleading rollout `task_complete`.
 - The app does not infer `error`, `warning`, or `needsAction` from silence, timeouts, or
-  conversation text. Current error and warning states require allowlisted 429/503 log evidence;
-  approval status is not implemented.
+  conversation text. Current error and warning states require allowlisted 429/503 or explicit
+  model-capacity log evidence; approval status is not implemented.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
 - The POC is not sandboxed because it reads `~/.codex`. It is not distribution-signed or notarized,
   and update reminders do not automatically install a release.

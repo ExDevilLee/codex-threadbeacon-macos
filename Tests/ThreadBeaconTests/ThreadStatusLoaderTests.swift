@@ -503,7 +503,7 @@ let threadStatusLoaderTests = [
             "rename failure should be visible"
         )
         try expect(
-            result.health.serviceLogs == .degraded("服务异常日志不可用，429/503 状态可能缺失"),
+            result.health.serviceLogs == .degraded("服务异常日志不可用，服务错误状态可能缺失"),
             "log failure should be visible"
         )
         try expect(result.health.overallStatus == .degraded, "optional failures should degrade health")

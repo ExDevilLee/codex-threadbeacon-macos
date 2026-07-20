@@ -7,8 +7,12 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-20
+
 ### Added
 
+- 识别 `codex_core::session::turn` 中明确记录的“所选模型容量已满”终止错误，显示红色失败
+  状态并沿用服务异常提示音；不读取请求 transport 或会话正文。
 - 启动后静默检查最新非 Draft GitHub Release（技术预览阶段包含 prerelease）；发现新版本时
   在主窗口底栏显示更新图标，About 支持手动检查、重试并打开对应下载页。该功能不自动
   下载或安装，失败不影响 Codex 任务监听和数据源健康状态。
@@ -55,5 +59,6 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ExDevilLee/codex-threadbeacon-macos/releases/tag/v0.1.0

@@ -105,6 +105,21 @@ let logEventParserTests = [
         let incidents = LogEventParser().latestIncidents(from: records)
 
         try expect(incidents["thread-a"] == nil, "a later success in the same turn should clear warning")
+    },
+    TestCase(name: "log parser recognizes model capacity terminal failure") {
+        let records = [
+            logRecord(
+                second: 400,
+                target: "codex_core::session::turn",
+                body: "turn{turn.id=turn-capacity}: Turn error: Selected model is at capacity. Please try a different model."
+            )
+        ]
+
+        let incident = LogEventParser().latestIncidents(from: records)["thread-a"]
+
+        try expect(incident?.phase == .failed, "model capacity Turn error should become failure")
+        try expect(incident?.kind == .modelCapacity, "model capacity should retain its incident kind")
+        try expect(incident?.httpStatusCode == nil, "capacity failure should not invent an HTTP status")
     }
 ]
 
