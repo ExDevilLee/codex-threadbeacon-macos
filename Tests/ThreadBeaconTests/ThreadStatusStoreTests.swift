@@ -152,7 +152,7 @@ let threadStatusStoreTests = [
             "prompt should use the fixed recovery text"
         )
     },
-    TestCase(name: "store recovers terminal 429 and skips 503") {
+    TestCase(name: "store recovers terminal non-503 incidents and skips 503") {
         let retryIncident = ServiceIncident(
             episodeID: "turn-429",
             phase: .failed,
@@ -171,7 +171,16 @@ let threadStatusStoreTests = [
             retryLimit: 5,
             occurredAt: Date(timeIntervalSince1970: 20)
         )
-        let snapshots = [retryIncident, unavailableIncident].enumerated().map { index, incident in
+        let otherHTTPIncident = ServiceIncident(
+            episodeID: "turn-500",
+            phase: .failed,
+            kind: .httpStatus(500),
+            httpStatusCode: 500,
+            retryAttempt: nil,
+            retryLimit: nil,
+            occurredAt: Date(timeIntervalSince1970: 20)
+        )
+        let snapshots = [retryIncident, unavailableIncident, otherHTTPIncident].enumerated().map { index, incident in
             ThreadSnapshot(
                 id: "thread-\(index)",
                 title: "thread-\(index)",
@@ -196,7 +205,7 @@ let threadStatusStoreTests = [
         await store.refresh(notificationPolicy: .baseline)
         await store.refresh(notificationPolicy: .notify)
 
-        try expect(recoveryCalls.values.map(\.threadID) == ["thread-0"], "429 should recover while 503 stays excluded")
+        try expect(recoveryCalls.values.map(\.threadID) == ["thread-0", "thread-2"], "non-503 incidents should recover while 503 stays excluded")
     },
     TestCase(name: "store passes transient expanded thread IDs to refreshes") {
         let receivedExpansions = ExpansionHistoryBox()

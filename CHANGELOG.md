@@ -9,8 +9,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ### Added
 
-- 检测到新的主任务终止型 HTTP 400、429 或模型容量异常 episode 后，自动通过 `codex exec resume`
-  发送固定提示词“刚才中断了，请继续未完成的任务”；HTTP 503 明确排除。启动时历史异常只
+- 检测到新的主任务终止型 HTTP 4xx/5xx（HTTP 503 除外）或模型容量异常 episode 后，自动通过
+  `codex exec resume` 发送固定提示词“刚才中断了，请继续未完成的任务”；启动时历史异常只
   登记不发送，同一 episode 每次运行只尝试一次。发送失败不会改变任务状态或阻塞监听。
 
 ### Documentation

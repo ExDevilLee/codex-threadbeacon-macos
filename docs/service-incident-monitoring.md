@@ -3,12 +3,10 @@
 ## 结论
 
 ThreadBeacon 可以在不接管 Codex 任务、不读取会话正文的前提下，从本机只读日志中识别
-当前可见主任务的 HTTP 400 Bad Request、HTTP 429/503 自动重试与最终失败，以及明确记录的
-所选模型容量错误。
+当前可见主任务的结构化 HTTP 4xx/5xx 异常、自动重试与最终失败，以及明确记录的所选模型容量错误。
 
-这个能力补充了 rollout 状态推导。检测到新的主任务终止型 HTTP 400、429 或模型容量异常
-episode 后，App 会通过 `codex exec resume` 自动发送固定提示词“刚才中断了，请继续未完成的任务”；
-HTTP 503 明确排除，避免服务不可用时继续触发请求。启动时已有的历史异常只登记不发送，同一
+这个能力补充了 rollout 状态推导。检测到新的主任务终止型异常 episode 后，App 会通过 `codex exec resume` 自动发送固定提示词“刚才中断了，请继续未完成的任务”；
+HTTP 503 明确排除，其他结构化 HTTP 4xx/5xx 和模型容量异常均可触发。启动时已有的历史异常只登记不发送，同一
 episode 每次运行只尝试一次。授权等待目前也没有可靠数据源。
 
 ## 真实验证记录
@@ -30,9 +28,9 @@ App 以 SQLite read-only 模式打开：
 
 | Target | 提取字段 | 用途 |
 | --- | --- | --- |
-| `codex_http_client::default_client` | turn ID、HTTP 200/400/429/503、时间 | 识别异常与同 turn 恢复 |
+| `codex_http_client::default_client` | turn ID、HTTP 状态、时间 | 识别异常与同 turn 恢复 |
 | `codex_core::responses_retry` | turn ID、重试次数与上限、时间 | 显示自动重试进度 |
-| `codex_core::session::turn` | turn ID、最终 400/429/503、模型容量错误、时间 | 识别终止失败 |
+| `codex_core::session::turn` | turn ID、最终 HTTP 状态、模型容量错误、时间 | 识别终止失败 |
 
 `codex_http_client::transport` 被明确排除，因为它可能包含完整请求上下文。查询也不选择
 feedback tags、工具输出或其他日志 target。
@@ -41,7 +39,7 @@ feedback tags、工具输出或其他日志 target。
 
 | 证据 | 展示 | 提示音 |
 | --- | --- | --- |
-| 出现结构化 HTTP 400 Bad Request | 红色 `error`，显示 HTTP 400 | 每个 turn episode 一次异常音 |
+| 出现结构化 HTTP 4xx/5xx（不含 503） | 红色 `error`，显示 HTTP 状态 | 每个 turn episode 一次异常音 |
 | 429/503 后仍在自动重试 | 黄色 `warning`，显示 HTTP 状态和可用的 `n/limit` | 每个 turn episode 一次异常音 |
 | 同 turn 后续出现 200 | 清除 warning，回到 rollout 推导状态 | 不补播声音 |
 | 重试耗尽并出现 `Turn error` | 红色 `error` | 同 episode 已提醒则不重复播放 |
@@ -66,8 +64,8 @@ feedback tags、工具输出或其他日志 target。
 - `logs_2.sqlite` 是 Codex 内部滚动日志，不是稳定公开 API，字段、target 或日志形状可能
   随版本变化。
 - 日志轮转后，较早的异常证据可能消失。
-- 当前只接受白名单 target 中明确的 HTTP 400/429/503 结构化形态和精确的模型容量
-  `Turn error`，不把其他状态码、静默、超时或宽泛正文关键词推断为服务异常。日志轮转后，
+- 当前只接受白名单 target 中明确的 HTTP 4xx/5xx 结构化形态和精确的模型容量 `Turn error`，不把
+  2xx、静默、超时或宽泛正文关键词推断为服务异常。日志轮转后，
   过去的异常仍可能无法追溯；现场验证只证明验证时刻的结构化日志链路，不代表历史日志永久可查。
 - 该能力不能识别授权请求、用户输入等待或所有失败类型。
 
@@ -83,8 +81,7 @@ feedback tags、工具输出或其他日志 target。
 - `transport` target 即使包含 429 也被忽略。
 - incident 覆盖误导性的 `task_complete`。
 - 同 episode 只产生一次异常提示音。
-- 新 HTTP 400 episode 只尝试一次自动续做，启动时历史 episode 不发送。
-- 终止型 HTTP 429 和模型容量异常也只尝试一次自动续做；HTTP 503 不自动发送。
+- 新的非 503 终止型 HTTP episode 和模型容量异常只尝试一次自动续做，启动时历史 episode 不发送；HTTP 503 不自动发送。
 
 运行：
 

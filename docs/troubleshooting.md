@@ -47,7 +47,7 @@ ThreadBeacon 优先读取 `~/.codex/session_index.jsonl` 中最后一次有效 r
 
 ## 没有出现服务异常警告
 
-服务异常识别只读取当前可见主任务在三个白名单日志 target 中的结构化 400/429/503 证据，
+服务异常识别只读取当前可见主任务在三个白名单日志 target 中的结构化 HTTP 4xx/5xx 证据，
 以及 `codex_core::session::turn` 中明确的所选模型容量错误。
 HTTP 400 只有在白名单 target 中出现明确的 `Bad Request` 结构化记录时才会显示红色失败；
 普通正文中的相同文字会被忽略。日志可能轮转，旧异常不保证永久保留。ThreadBeacon 不从

@@ -361,6 +361,7 @@ private extension ServiceIncident {
         case .badRequest: "HTTP 400"
         case .httpRateLimit: "HTTP 429"
         case .serviceUnavailable: "HTTP 503"
+        case let .httpStatus(code): "HTTP \(code)"
         case .modelCapacity: "模型容量"
         }
     }

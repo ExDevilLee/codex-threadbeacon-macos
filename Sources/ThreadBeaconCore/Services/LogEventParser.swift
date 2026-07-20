@@ -91,6 +91,7 @@ public struct LogEventParser: Sendable {
         case 400: .badRequest
         case 429: .httpRateLimit
         case 503: .serviceUnavailable
+        case 400...599: .httpStatus(statusCode)
         default: nil
         }
     }

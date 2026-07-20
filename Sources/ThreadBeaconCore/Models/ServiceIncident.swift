@@ -9,6 +9,8 @@ public enum ServiceIncidentKind: Equatable, Sendable {
     case badRequest
     case httpRateLimit
     case serviceUnavailable
+    /// A structured HTTP failure not covered by a dedicated semantic case.
+    case httpStatus(Int)
     case modelCapacity
 }
 

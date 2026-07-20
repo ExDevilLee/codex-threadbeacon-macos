@@ -51,7 +51,7 @@ success/failure counts. Do not attach rollout files.
 
 ## No Service Incident Warning Appears
 
-Incident detection reads structured 400/429/503 evidence for visible primary tasks from only three
+Incident detection reads structured HTTP 4xx/5xx evidence for visible primary tasks from only three
 allowlisted log targets, plus explicit selected-model capacity errors from
 `codex_core::session::turn`. HTTP 400 becomes a red failure only when an allowlisted target contains
 an explicit structured `Bad Request` record; the same words in conversation text are ignored. Logs

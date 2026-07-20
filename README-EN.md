@@ -12,10 +12,10 @@ ThreadBeacon is a native macOS status window for monitoring primary Codex Deskto
 and Codex CLI tasks at a glance. The first version tests whether a glanceable status
 view reduces the need to repeatedly switch back to Codex. USB displays and Codex
 controls are outside the current scope. The current sound feature only covers reliably
-detected primary-task completion events, explicit HTTP 400 Bad Request failures, HTTP 429/503
+detected primary-task completion events, explicit HTTP 4xx/5xx failures (except HTTP 503),
 retries or terminal failures, and selected-model capacity failures found in local structured logs. Approval waiting
 still has no reliable read-only data source.
-When a new terminal primary-task HTTP 400, 429, or model-capacity incident is detected, the app uses
+When a new terminal primary-task HTTP 4xx/5xx (except HTTP 503) or model-capacity incident is detected, the app uses
 the local Codex CLI to send “刚才中断了，请继续未完成的任务” to that session. HTTP 503 is excluded;
 historical incidents found at startup are recorded but not replayed, and a send failure does not stop monitoring.
 
@@ -253,7 +253,7 @@ The app reads only local data:
   timestamps, and numeric Token fields to derive status, usage details, and
   `task_complete` completion events.
 - `~/.codex/logs_2.sqlite`: opened read-only and restricted to three allowlisted targets for
-  visible tasks. Only turn IDs, HTTP 400/429/503 status, retry progress, explicit model-capacity kind,
+  visible tasks. Only turn IDs, HTTP status, retry progress, explicit model-capacity kind,
   and terminal failure time are extracted.
 
 The app does not read `codex_http_client::transport` or extract reasoning summaries,
@@ -261,7 +261,7 @@ conversation bodies, full requests, provider URLs, or request IDs. It does not s
 service, upload Codex data, or request Accessibility permission. After launch, it only requests
 public Release metadata from `api.github.com` to check for updates; the request contains no Codex
 data, local paths, user settings, or device identifier. The current public UI does not directly modify
-Codex SQLite. HTTP 400 recovery sends one fixed prompt through the local Codex CLI to the target
+Codex SQLite. Non-503 HTTP recovery sends one fixed prompt through the local Codex CLI to the target
 session without reading or composing conversation content. The validated archive-restore POC has no user-accessible entry point and never writes
 SQLite directly. Data-source health reports remain in memory and contain only stable categories,
 counts, and the last successful refresh time. They do not retain raw errors, local paths, or task
@@ -278,10 +278,10 @@ privacy statement.
 - Cumulative Tokens represent processing across model calls. They are not the
   current context length and are not a cost estimate.
 - The current version plays one completion sound for a new `task_complete` event and one
-  incident sound for a new 400/429/503 or model-capacity episode. A later success clears a retry
+  incident sound for a new HTTP 4xx/5xx or model-capacity episode. A later success clears a retry
   warning; a terminal failure overrides a misleading rollout `task_complete`.
 - The app does not infer `error`, `warning`, or `needsAction` from silence, timeouts, or
-  conversation text. Current error and warning states require allowlisted 400/429/503 or explicit
+  conversation text. Current error and warning states require allowlisted HTTP 4xx/5xx or explicit
   model-capacity log evidence; approval status is not implemented.
 - Codex SQLite, session index, and rollout formats are not stable public APIs and may require adaptation after Codex updates.
 - The POC is not sandboxed because it reads `~/.codex`. It is not distribution-signed or notarized,

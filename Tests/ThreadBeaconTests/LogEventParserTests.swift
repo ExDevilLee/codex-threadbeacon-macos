@@ -135,6 +135,26 @@ let logEventParserTests = [
         try expect(incident?.phase == .failed, "completed 400 request should immediately become failure")
         try expect(incident?.kind == .badRequest, "400 should retain its incident kind")
         try expect(incident?.httpStatusCode == 400, "400 should retain its HTTP status")
+    },
+    TestCase(name: "log parser recognizes other terminal HTTP failures") {
+        let records = [
+            logRecord(
+                second: 600,
+                target: "codex_http_client::default_client",
+                body: "turn{turn.id=turn-other-http}: Request completed status=500 Internal Server Error"
+            ),
+            logRecord(
+                second: 601,
+                target: "codex_core::session::turn",
+                body: "turn{turn.id=turn-other-http}: Turn error: unexpected status 500 Internal Server Error"
+            )
+        ]
+
+        let incident = LogEventParser().latestIncidents(from: records)["thread-a"]
+
+        try expect(incident?.phase == .failed, "other HTTP failures should become terminal failures")
+        try expect(incident?.kind == .httpStatus(500), "unclassified HTTP status should be retained")
+        try expect(incident?.httpStatusCode == 500, "other HTTP status should be retained")
     }
 ]
 
