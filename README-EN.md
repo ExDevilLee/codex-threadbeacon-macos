@@ -242,6 +242,9 @@ project-created sounds and verify all assets with:
 - Settings > Auto recovery records the session ID, incident episode, record time,
   not-sent/sending/sent/failed state, and a sanitized result. The default not-sent
   reason is that macOS Accessibility permission is required.
+- Auto recovery shows the app's real Accessibility authorization state. It requests
+  permission only after the user clicks Request Access and can explicitly open macOS
+  Accessibility Settings. This POC entry does not enable automatic sending.
 - To make the recovery message visible in the corresponding Codex App conversation,
   ThreadBeacon must control the Codex App input field through macOS Accessibility.
   This requires a separate user-granted Accessibility permission. Without it,

@@ -13,7 +13,11 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   提示，但当前版本禁用不可见的外部 `codex exec resume` 自动发送；日志新增“未发送”状态，默认原因
   为需要 macOS Accessibility 授权。方案 A 的 Codex App 输入框注入仍处于 POC 研究阶段。
 - 新增只读 `AccessibilityProbe`：可按任务 ID 匹配 rename 标题、唯一任务按钮和输入框；只有双确认
-  参数才允许切换任务，且工具不包含输入或发送消息的代码路径。
+  参数才允许切换任务，默认和仅切换模式都不会输入或发送消息。
+- 扩展 `AccessibilityProbe` 的受保护注入验证：要求索引标题和 Codex 顶部标题双重唯一，拒绝覆盖
+  已有输入，只写入、回读并清空固定提示词，不触发发送或创建新 turn。
+- Settings 的“自动恢复”页新增真实 Accessibility 授权状态和用户触发的授权／系统设置入口；
+  不自动申请权限，也不启用恢复消息发送。
 
 ### Documentation
 

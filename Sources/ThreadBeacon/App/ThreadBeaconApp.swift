@@ -21,6 +21,7 @@ struct ThreadBeaconApp: App {
     @StateObject private var launchAtLoginStore: LaunchAtLoginStore
     @StateObject private var updateCheckStore: UpdateCheckStore
     @StateObject private var autoRecoveryLogStore: AutoRecoveryLogStore
+    @StateObject private var accessibilityPermissionStore: AccessibilityPermissionStore
     @AppStorage(DisplayPreferenceKeys.appTheme)
     private var appThemeRawValue = AppTheme.defaultValue.rawValue
     private let soundPlayer: SoundPlaybackService
@@ -35,6 +36,7 @@ struct ThreadBeaconApp: App {
         let archiveRestoreService = CodexArchiveRestoreService()
         let recoveryLogs = AutoRecoveryLogStore()
         _autoRecoveryLogStore = StateObject(wrappedValue: recoveryLogs)
+        _accessibilityPermissionStore = StateObject(wrappedValue: AccessibilityPermissionStore())
         let history = SoundNotificationHistory()
         let preferenceRepository = ThreadListPreferenceRepository()
         let player = SoundPlaybackService()
@@ -113,7 +115,8 @@ struct ThreadBeaconApp: App {
                 languageStore: appLanguageStore,
                 launchAtLoginStore: launchAtLoginStore,
                 previewSound: soundPlayer.preview,
-                autoRecoveryLogStore: autoRecoveryLogStore
+                autoRecoveryLogStore: autoRecoveryLogStore,
+                accessibilityPermissionStore: accessibilityPermissionStore
             )
             .environment(\.locale, appLanguageStore.locale)
             .environmentObject(appLanguageStore)

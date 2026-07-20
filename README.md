@@ -218,6 +218,8 @@ Xcode App target 会把 `.icns` 作为 App bundle 资源，并写入 `CFBundleIc
   当前版本不会自动发送。
 - Settings 的“自动恢复”页记录会话 ID、异常 episode、记录时间、未发送／发送中／已发送／发送失败
   和脱敏结果；未发送的默认原因是“需要 macOS Accessibility 授权”。
+- “自动恢复”页显示当前 App 的真实 Accessibility 授权状态；只有用户点击“请求授权”时才调用
+  macOS 系统授权，也可显式打开辅助功能设置。当前授权入口仅用于 POC 验证，不会启用自动发送。
 - 如果希望恢复消息也出现在 Codex App 对应会话中，需要额外授予 ThreadBeacon macOS
   Accessibility（辅助功能）权限，并使用 Codex App 输入框注入消息；未授权时只能做只读监控
   ，不会使用用户不可见的外部 CLI 恢复。当前方案仍处于研究阶段。

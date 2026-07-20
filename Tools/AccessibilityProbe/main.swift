@@ -7,11 +7,14 @@ import Foundation
 private struct Options {
     let threadID: String
     let shouldSelect: Bool
+    let shouldInject: Bool
 
     static func parse(_ arguments: [String]) throws -> Options {
         var threadID: String?
         var select = false
         var confirmSelect = false
+        var inject = false
+        var confirmInject = false
         var index = 0
 
         while index < arguments.count {
@@ -24,6 +27,10 @@ private struct Options {
                 select = true
             case "--confirm-select":
                 confirmSelect = true
+            case "--inject":
+                inject = true
+            case "--confirm-inject":
+                confirmInject = true
             default:
                 throw ProbeError.invalidArguments
             }
@@ -32,26 +39,47 @@ private struct Options {
 
         guard let threadID, !threadID.isEmpty else { throw ProbeError.invalidArguments }
         guard select == confirmSelect else { throw ProbeError.selectionRequiresConfirmation }
-        return Options(threadID: threadID, shouldSelect: select && confirmSelect)
+        guard inject == confirmInject else { throw ProbeError.injectionRequiresConfirmation }
+        guard !inject || select else { throw ProbeError.injectionRequiresSelection }
+        return Options(
+            threadID: threadID,
+            shouldSelect: select && confirmSelect,
+            shouldInject: inject && confirmInject
+        )
     }
 }
 
 private enum ProbeError: Error, CustomStringConvertible {
     case invalidArguments
     case selectionRequiresConfirmation
+    case injectionRequiresConfirmation
+    case injectionRequiresSelection
     case accessibilityNotGranted
     case codexNotRunning
     case sessionIndexUnavailable
     case threadNameUnavailable
+    case threadNameNotUnique(Int)
     case taskRowNotUnique(Int)
     case selectionFailed(AXError)
+    case targetHeaderNotUnique(Int)
+    case composerNotUnique(Int)
+    case composerNotEmpty
+    case composerValueNotSettable
+    case injectionFailed(AXError)
+    case injectionReadbackFailed(expected: Int, actual: Int)
+    case cleanupFailed(AXError)
+    case cleanupReadbackFailed
 
     var description: String {
         switch self {
         case .invalidArguments:
-            return "用法：swift Tools/AccessibilityProbe/main.swift --thread-id <ID> [--select --confirm-select]"
+            return "用法：swift Tools/AccessibilityProbe/main.swift --thread-id <ID> [--select --confirm-select [--inject --confirm-inject]]"
         case .selectionRequiresConfirmation:
             return "切换任务必须同时提供 --select 和 --confirm-select"
+        case .injectionRequiresConfirmation:
+            return "注入验证必须同时提供 --inject 和 --confirm-inject"
+        case .injectionRequiresSelection:
+            return "注入验证前必须先启用任务切换双确认"
         case .accessibilityNotGranted:
             return "当前执行进程未获得 macOS Accessibility 权限"
         case .codexNotRunning:
@@ -60,10 +88,28 @@ private enum ProbeError: Error, CustomStringConvertible {
             return "无法读取 ~/.codex/session_index.jsonl"
         case .threadNameUnavailable:
             return "未找到该任务的 rename 标题"
+        case let .threadNameNotUnique(count):
+            return "rename 标题无法唯一映射到任务 ID，同名任务数：\(count)"
         case let .taskRowNotUnique(count):
             return "目标任务按钮无法唯一定位，候选数：\(count)"
         case let .selectionFailed(error):
             return "切换目标任务失败：AXError \(error.rawValue)"
+        case let .targetHeaderNotUnique(count):
+            return "切换后无法在 Codex 标题栏唯一确认目标任务，候选数：\(count)"
+        case let .composerNotUnique(count):
+            return "消息输入框无法唯一定位，候选数：\(count)"
+        case .composerNotEmpty:
+            return "消息输入框已有内容，拒绝覆盖"
+        case .composerValueNotSettable:
+            return "消息输入框的 AXValue 不可写"
+        case let .injectionFailed(error):
+            return "写入固定提示词失败：AXError \(error.rawValue)"
+        case let .injectionReadbackFailed(expected, actual):
+            return "写入后的 AXValue 回读不一致，期望长度：\(expected)，实际长度：\(actual)"
+        case let .cleanupFailed(error):
+            return "清空固定提示词失败：AXError \(error.rawValue)"
+        case .cleanupReadbackFailed:
+            return "清空后的 AXValue 回读仍有内容"
         }
     }
 }
@@ -71,7 +117,13 @@ private enum ProbeError: Error, CustomStringConvertible {
 private struct AXSnapshot {
     let titleMatchCount: Int
     let actionableRows: [AXUIElement]
-    let textAreaCount: Int
+    let headerTitleMatchCount: Int
+    let textAreas: [AXUIElement]
+}
+
+private struct ThreadIdentity {
+    let title: String
+    let matchingThreadCount: Int
 }
 
 private func copyValue(_ element: AXUIElement, _ attribute: CFString) -> CFTypeRef? {
@@ -121,24 +173,45 @@ private func appendUnique(_ element: AXUIElement, to elements: inout [AXUIElemen
     elements.append(element)
 }
 
+private func hasAncestorDOMClass(_ element: AXUIElement, className: String) -> Bool {
+    var current: AXUIElement? = element
+
+    for _ in 0..<8 {
+        guard let candidate = current else { return false }
+        let classes = copyValue(candidate, "AXDOMClassList" as CFString) as? [String] ?? []
+        if classes.contains(className) { return true }
+
+        guard let parent = copyValue(candidate, kAXParentAttribute as CFString) else {
+            return false
+        }
+        current = (parent as! AXUIElement)
+    }
+
+    return false
+}
+
 private func snapshot(processID: pid_t, targetTitle: String) -> AXSnapshot {
     var stack = [AXUIElementCreateApplication(processID)]
     var visitedNodes = 0
     var titleMatchCount = 0
     var actionableRows: [AXUIElement] = []
-    var textAreaCount = 0
+    var headerTitleMatchCount = 0
+    var textAreas: [AXUIElement] = []
 
     while let element = stack.popLast(), visitedNodes < 10_000 {
         visitedNodes += 1
         let role = stringValue(element, kAXRoleAttribute as CFString)
         if role == kAXTextAreaRole as String {
-            textAreaCount += 1
+            appendUnique(element, to: &textAreas)
         }
 
         let titleMatches = stringValue(element, kAXTitleAttribute as CFString) == targetTitle
         let valueMatches = stringValue(element, kAXValueAttribute as CFString) == targetTitle
         if titleMatches || valueMatches {
             titleMatchCount += 1
+            if hasAncestorDOMClass(element, className: "app-header-tint") {
+                headerTitleMatchCount += 1
+            }
             if let row = actionableAncestor(of: element) {
                 appendUnique(row, to: &actionableRows)
             }
@@ -150,31 +223,100 @@ private func snapshot(processID: pid_t, targetTitle: String) -> AXSnapshot {
     return AXSnapshot(
         titleMatchCount: titleMatchCount,
         actionableRows: actionableRows,
-        textAreaCount: textAreaCount
+        headerTitleMatchCount: headerTitleMatchCount,
+        textAreas: textAreas
     )
 }
 
-private func latestThreadName(threadID: String) throws -> String {
+private func isAttributeSettable(_ element: AXUIElement, _ attribute: CFString) -> Bool {
+    var settable = DarwinBoolean(false)
+    guard AXUIElementIsAttributeSettable(element, attribute, &settable) == .success else {
+        return false
+    }
+    return settable.boolValue
+}
+
+private func normalizedComposerValue(_ composer: AXUIElement) -> String {
+    stringValue(composer, kAXValueAttribute as CFString)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
+private func isEmptyComposer(_ composer: AXUIElement) -> Bool {
+    let value = normalizedComposerValue(composer)
+    return value.isEmpty || value == "随心输入"
+}
+
+private func verifyInjection(in composer: AXUIElement) throws {
+    let fixedPrompt = "刚才中断了，请继续未完成的任务"
+    guard isEmptyComposer(composer) else {
+        throw ProbeError.composerNotEmpty
+    }
+    guard isAttributeSettable(composer, kAXValueAttribute as CFString) else {
+        throw ProbeError.composerValueNotSettable
+    }
+
+    let writeResult = AXUIElementSetAttributeValue(
+        composer,
+        kAXValueAttribute as CFString,
+        fixedPrompt as CFString
+    )
+    guard writeResult == .success else { throw ProbeError.injectionFailed(writeResult) }
+
+    RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+    let readback = normalizedComposerValue(composer)
+    guard readback == fixedPrompt else {
+        let clearResult = AXUIElementSetAttributeValue(
+            composer,
+            kAXValueAttribute as CFString,
+            "" as CFString
+        )
+        guard clearResult == .success else { throw ProbeError.cleanupFailed(clearResult) }
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        guard isEmptyComposer(composer) else { throw ProbeError.cleanupReadbackFailed }
+        throw ProbeError.injectionReadbackFailed(
+            expected: fixedPrompt.count,
+            actual: readback.count
+        )
+    }
+    print("injection=verified")
+
+    let clearResult = AXUIElementSetAttributeValue(
+        composer,
+        kAXValueAttribute as CFString,
+        "" as CFString
+    )
+    guard clearResult == .success else { throw ProbeError.cleanupFailed(clearResult) }
+    RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+    guard isEmptyComposer(composer) else {
+        throw ProbeError.cleanupReadbackFailed
+    }
+    print("cleanup=verified")
+}
+
+private func threadIdentity(threadID: String) throws -> ThreadIdentity {
     let indexURL = FileManager.default.homeDirectoryForCurrentUser
         .appending(path: ".codex/session_index.jsonl")
     guard let contents = try? String(contentsOf: indexURL, encoding: .utf8) else {
         throw ProbeError.sessionIndexUnavailable
     }
 
-    var latestName: String?
+    var latestNames: [String: String] = [:]
     for line in contents.split(whereSeparator: \.isNewline) {
         guard let data = line.data(using: .utf8),
               let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              object["id"] as? String == threadID,
+              let id = object["id"] as? String,
               let name = object["thread_name"] as? String,
               !name.isEmpty else {
             continue
         }
-        latestName = name
+        latestNames[id] = name
     }
 
-    guard let latestName else { throw ProbeError.threadNameUnavailable }
-    return latestName
+    guard let targetName = latestNames[threadID] else { throw ProbeError.threadNameUnavailable }
+    return ThreadIdentity(
+        title: targetName,
+        matchingThreadCount: latestNames.values.filter { $0 == targetName }.count
+    )
 }
 
 private func run() throws {
@@ -186,13 +328,17 @@ private func run() throws {
         throw ProbeError.codexNotRunning
     }
 
-    let targetTitle = try latestThreadName(threadID: options.threadID)
-    let initial = snapshot(processID: app.processIdentifier, targetTitle: targetTitle)
+    let identity = try threadIdentity(threadID: options.threadID)
+    guard identity.matchingThreadCount == 1 else {
+        throw ProbeError.threadNameNotUnique(identity.matchingThreadCount)
+    }
+    let initial = snapshot(processID: app.processIdentifier, targetTitle: identity.title)
 
     print("permission=granted")
     print("title-matches=\(initial.titleMatchCount)")
     print("actionable-task-rows=\(initial.actionableRows.count)")
-    print("composer-textareas=\(initial.textAreaCount)")
+    print("header-title-matches=\(initial.headerTitleMatchCount)")
+    print("composer-textareas=\(initial.textAreas.count)")
 
     guard options.shouldSelect else {
         print("selection=not-requested")
@@ -207,10 +353,23 @@ private func run() throws {
     guard result == .success else { throw ProbeError.selectionFailed(result) }
 
     RunLoop.current.run(until: Date().addingTimeInterval(0.8))
-    let selected = snapshot(processID: app.processIdentifier, targetTitle: targetTitle)
+    let selected = snapshot(processID: app.processIdentifier, targetTitle: identity.title)
     print("selection=performed")
-    print("composer-after-selection=\(selected.textAreaCount)")
-    print("message-input=disabled-by-design")
+    print("header-after-selection=\(selected.headerTitleMatchCount)")
+    print("composer-after-selection=\(selected.textAreas.count)")
+
+    guard options.shouldInject else {
+        print("message-input=disabled-by-design")
+        return
+    }
+    guard selected.textAreas.count == 1 else {
+        throw ProbeError.composerNotUnique(selected.textAreas.count)
+    }
+    guard selected.headerTitleMatchCount == 1 else {
+        throw ProbeError.targetHeaderNotUnique(selected.headerTitleMatchCount)
+    }
+    try verifyInjection(in: selected.textAreas[0])
+    print("message-send=disabled-by-design")
 }
 
 do {

@@ -161,6 +161,9 @@
   需要通过 macOS Accessibility 控制 Codex App 输入框并发送；用户必须单独授予辅助功能权限。
   未授权时只读监控并记录未发送，不使用外部 CLI 恢复。AX 树检查和安全约束见
   [`docs/accessibility-recovery-poc.md`](docs/accessibility-recovery-poc.md)。
+- **POC 进行中（Accessibility）**：已验证按唯一 rename 标题定位任务行、顶部标题二次确认、
+  固定提示词写入／回读／清空，且未产生 `user_message`；Settings 已增加真实授权状态和用户触发
+  的授权入口。正式 App 授权后的 AX 访问、发送动作和 rollout 回读仍待人工验证，自动发送保持关闭。
 - 所有新增列默认可隐藏，避免破坏小窗口和未来小屏场景。
 
 ### Codex CLI 适配
