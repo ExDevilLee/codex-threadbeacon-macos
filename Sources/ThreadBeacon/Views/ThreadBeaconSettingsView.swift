@@ -39,6 +39,7 @@ private struct AutoRecoveryLogView: View {
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
     @State private var targetThreadID = ""
+    @State private var showingSendConfirmation = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -208,6 +209,41 @@ private struct AutoRecoveryLogView: View {
                         .font(.caption)
                         .foregroundStyle(result.isSelected ? .green : .secondary)
                     }
+
+                    Button(localized("发送恢复提示并验证（测试）")) {
+                        showingSendConfirmation = true
+                    }
+                    .disabled(
+                        accessibilityPermissionStore.isChecking
+                            || !accessibilityPermissionStore.canSend(to: targetThreadID)
+                    )
+                    .confirmationDialog(
+                        localized("确认向目标任务发送恢复提示？"),
+                        isPresented: $showingSendConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button(localized("发送并验证"), role: .destructive) {
+                            Task {
+                                await accessibilityPermissionStore.runRecoverySend(
+                                    threadID: targetThreadID
+                                )
+                            }
+                        }
+                        Button(localized("取消"), role: .cancel) {}
+                    } message: {
+                        Text(localized("将发送固定提示词“刚才中断了，请继续未完成的任务”。发送后不会自动重试。"))
+                    }
+
+                    if let result = accessibilityPermissionStore.recoverySendResult {
+                        Label(
+                            recoverySendText(result),
+                            systemImage: result.isVerified
+                                ? "checkmark.shield.fill"
+                                : "exclamationmark.triangle.fill"
+                        )
+                        .font(.caption)
+                        .foregroundStyle(result.isVerified ? .green : .orange)
+                    }
                 }
             }
         }
@@ -297,6 +333,36 @@ private struct AutoRecoveryLogView: View {
             )
         case .selected:
             localized("目标任务验证通过：已切换并确认任务身份，未发送消息。")
+        }
+    }
+
+    private func recoverySendText(_ result: AccessibilityRecoverySendResult) -> String {
+        switch result {
+        case let .targetSelectionFailed(selectionResult):
+            targetSelectionText(selectionResult)
+        case .rolloutUnavailable:
+            localized("发送验证失败：无法读取目标任务 rollout。")
+        case .composerNotEmpty:
+            localized("发送验证已停止：目标输入框已有草稿。")
+        case .composerNotSettable:
+            localized("发送验证失败：目标输入框不可写。")
+        case .writeFailed:
+            localized("发送验证失败：无法写入固定提示词。")
+        case .readbackFailed:
+            localized("发送验证失败：提示词回读不一致，输入框已清空。")
+        case .cleanupFailed:
+            localized("发送验证失败：无法确认输入框已清空。")
+        case let .sendButtonNotUnique(count):
+            String(
+                format: localized("发送验证失败：找到 %lld 个发送按钮候选，输入框已清空。"),
+                Int64(count)
+            )
+        case .sendFailed:
+            localized("发送验证失败：发送按钮执行失败，输入框已清空。")
+        case .sentUnconfirmed:
+            localized("已触发发送，但 rollout 未在时限内确认；不会自动重试。")
+        case .verified:
+            localized("发送验证通过：rollout 已出现新的用户消息和任务启动事件。")
         }
     }
 

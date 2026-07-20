@@ -114,6 +114,75 @@ let accessibilityDiagnosticTests = [
             !AccessibilityTargetSelectionResult.targetHeaderNotUnique(0).isSelected,
             "a missing target header must fail closed"
         )
+    },
+    TestCase(name: "send button policy requires one pressable composer submit button") {
+        let candidates = [
+            AccessibilityButtonDescriptor(
+                role: "AXButton",
+                actionNames: ["AXPress"],
+                domClassNames: ["size-token-button-composer", "bg-token-foreground"]
+            ),
+            AccessibilityButtonDescriptor(
+                role: "AXButton",
+                actionNames: ["AXPress"],
+                domClassNames: ["size-token-button-composer", "border-token-border"]
+            )
+        ]
+        try expect(
+            AccessibilitySendButtonPolicy.uniqueCandidateIndex(in: candidates) == 0,
+            "only the pressable composer submit button should be selected"
+        )
+    },
+    TestCase(name: "send button policy fails closed for duplicate candidates") {
+        let candidate = AccessibilityButtonDescriptor(
+            role: "AXButton",
+            actionNames: ["AXPress"],
+            domClassNames: ["size-token-button-composer", "bg-token-foreground"]
+        )
+        try expect(
+            AccessibilitySendButtonPolicy.uniqueCandidateIndex(in: [candidate, candidate]) == nil,
+            "multiple submit candidates must never be guessed"
+        )
+        let disabled = AccessibilityButtonDescriptor(
+            role: "AXButton",
+            actionNames: ["AXPress"],
+            domClassNames: ["size-token-button-composer", "bg-token-foreground"],
+            isEnabled: false
+        )
+        try expect(
+            AccessibilitySendButtonPolicy.uniqueCandidateIndex(in: [disabled]) == nil,
+            "a disabled submit button must never be pressed"
+        )
+    },
+    TestCase(name: "recovery send succeeds only after rollout confirmation") {
+        try expect(
+            AccessibilityRecoverySendResult.verified.isVerified,
+            "rollout-confirmed delivery should be successful"
+        )
+        try expect(
+            !AccessibilityRecoverySendResult.sentUnconfirmed.isVerified,
+            "an unconfirmed press must never be reported as successful"
+        )
+        try expect(
+            AccessibilityRecoverySendResult.sentUnconfirmed.didTriggerSend,
+            "an unconfirmed press must prevent automatic retries"
+        )
+    },
+    TestCase(name: "recovery send requires the currently verified task ID") {
+        try expect(
+            AccessibilityVerifiedTargetPolicy.canSend(
+                threadID: " target-id ",
+                selectedThreadID: "target-id"
+            ),
+            "the normalized input must match the verified task ID"
+        )
+        try expect(
+            !AccessibilityVerifiedTargetPolicy.canSend(
+                threadID: "other-id",
+                selectedThreadID: "target-id"
+            ),
+            "changing the target ID must invalidate send eligibility"
+        )
     }
 ]
 

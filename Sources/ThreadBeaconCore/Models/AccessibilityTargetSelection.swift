@@ -32,6 +32,13 @@ public enum AccessibilityTargetIdentityResolver {
     }
 }
 
+public enum AccessibilityVerifiedTargetPolicy {
+    public static func canSend(threadID: String, selectedThreadID: String?) -> Bool {
+        guard let selectedThreadID else { return false }
+        return threadID.trimmingCharacters(in: .whitespacesAndNewlines) == selectedThreadID
+    }
+}
+
 public enum AccessibilityTargetSelectionResult: Equatable, Sendable {
     case notAuthorized
     case codexNotRunning

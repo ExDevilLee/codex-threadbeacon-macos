@@ -179,6 +179,36 @@ let rolloutTailParserTests = [
         let result = RolloutTailParser().parse(lines: lines)
 
         try expect(result.tokenUsage?.currentTurn == nil, "backward totals must be rejected")
+    },
+    TestCase(name: "recovery checkpoint requires a newer user message and task start") {
+        let parser = RolloutRecoveryCheckpointParser()
+        let baseline = parser.parse(lines: [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"private"}}"#
+        ])
+        let confirmed = parser.parse(lines: [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:00:01Z","type":"event_msg","payload":{"type":"user_message","message":"private"}}"#,
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:01:01Z","type":"event_msg","payload":{"type":"user_message","message":"private"}}"#
+        ])
+        let missingStart = parser.parse(lines: [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:02:00Z","type":"event_msg","payload":{"type":"user_message","message":"private"}}"#
+        ])
+
+        try expect(
+            confirmed.confirmsNewTurn(after: baseline),
+            "both recovery events advancing should confirm the new turn"
+        )
+        try expect(
+            !missingStart.confirmsNewTurn(after: baseline),
+            "a new user message without a new task start must remain unconfirmed"
+        )
+        try expect(
+            !Mirror(reflecting: confirmed).children.compactMap(\.label).contains("message"),
+            "the checkpoint must not retain message content"
+        )
     }
 ]
 

@@ -9,7 +9,9 @@ final class AccessibilityPermissionStore: ObservableObject {
     @Published private(set) var diagnosticResult: AccessibilityDiagnosticResult?
     @Published private(set) var composerValidationResult: AccessibilityComposerValidationResult?
     @Published private(set) var targetSelectionResult: AccessibilityTargetSelectionResult?
+    @Published private(set) var recoverySendResult: AccessibilityRecoverySendResult?
     @Published private(set) var isChecking = false
+    private var selectedTargetThreadID: String?
 
     init() {
         isAuthorized = AXIsProcessTrusted()
@@ -21,6 +23,8 @@ final class AccessibilityPermissionStore: ObservableObject {
             diagnosticResult = nil
             composerValidationResult = nil
             targetSelectionResult = nil
+            recoverySendResult = nil
+            selectedTargetThreadID = nil
         }
     }
 
@@ -70,7 +74,32 @@ final class AccessibilityPermissionStore: ObservableObject {
         }
 
         isChecking = true
-        targetSelectionResult = SystemAccessibilityTargetSelector.select(threadID: threadID)
+        let result = SystemAccessibilityTargetSelector.select(threadID: threadID)
+        targetSelectionResult = result
+        selectedTargetThreadID = result.isSelected
+            ? threadID.trimmingCharacters(in: .whitespacesAndNewlines)
+            : nil
+        recoverySendResult = nil
+        isChecking = false
+    }
+
+    func canSend(to threadID: String) -> Bool {
+        AccessibilityVerifiedTargetPolicy.canSend(
+            threadID: threadID,
+            selectedThreadID: selectedTargetThreadID
+        )
+    }
+
+    func runRecoverySend(threadID: String) async {
+        guard canSend(to: threadID) else {
+            recoverySendResult = .targetSelectionFailed(.selectionFailed)
+            return
+        }
+
+        isChecking = true
+        recoverySendResult = await SystemAccessibilityRecoverySender.send(
+            threadID: threadID
+        )
         isChecking = false
     }
 }

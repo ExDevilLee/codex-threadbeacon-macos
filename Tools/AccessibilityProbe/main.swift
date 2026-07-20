@@ -246,6 +246,56 @@ private func isEmptyComposer(_ composer: AXUIElement) -> Bool {
     return value.isEmpty || value == "随心输入"
 }
 
+private func parent(of element: AXUIElement) -> AXUIElement? {
+    guard let value = copyValue(element, kAXParentAttribute as CFString) else {
+        return nil
+    }
+    return (value as! AXUIElement)
+}
+
+private func sanitizedAttribute(_ element: AXUIElement, _ attribute: CFString) -> String {
+    stringValue(element, attribute)
+        .replacingOccurrences(of: "\n", with: " ")
+        .prefix(80)
+        .description
+}
+
+private func inspectSendControlContext(around composer: AXUIElement) {
+    print("composer-actions=\(actionNames(of: composer).sorted().joined(separator: ","))")
+
+    var current: AXUIElement? = composer
+    for depth in 0..<8 {
+        guard let element = current else { break }
+        let role = sanitizedAttribute(element, kAXRoleAttribute as CFString)
+        let title = sanitizedAttribute(element, kAXTitleAttribute as CFString)
+        let description = sanitizedAttribute(element, kAXDescriptionAttribute as CFString)
+        let identifier = sanitizedAttribute(element, kAXIdentifierAttribute as CFString)
+        let classes = copyValue(element, "AXDOMClassList" as CFString) as? [String] ?? []
+        let actions = actionNames(of: element).sorted()
+        print(
+            "ancestor[\(depth)] role=\(role) title=\(title) description=\(description) "
+                + "identifier=\(identifier) classes=\(classes.joined(separator: ",")) "
+                + "actions=\(actions.joined(separator: ",")) children=\(children(of: element).count)"
+        )
+
+        for (index, child) in children(of: element).enumerated() {
+            let childRole = sanitizedAttribute(child, kAXRoleAttribute as CFString)
+            let childTitle = sanitizedAttribute(child, kAXTitleAttribute as CFString)
+            let childDescription = sanitizedAttribute(child, kAXDescriptionAttribute as CFString)
+            let childIdentifier = sanitizedAttribute(child, kAXIdentifierAttribute as CFString)
+            let childClasses = copyValue(child, "AXDOMClassList" as CFString) as? [String] ?? []
+            let childActions = actionNames(of: child).sorted()
+            print(
+                "ancestor[\(depth)].child[\(index)] role=\(childRole) title=\(childTitle) "
+                    + "description=\(childDescription) identifier=\(childIdentifier) "
+                    + "classes=\(childClasses.joined(separator: ",")) "
+                    + "actions=\(childActions.joined(separator: ","))"
+            )
+        }
+        current = parent(of: element)
+    }
+}
+
 private func verifyInjection(in composer: AXUIElement) throws {
     let fixedPrompt = "刚才中断了，请继续未完成的任务"
     guard isEmptyComposer(composer) else {
@@ -279,6 +329,7 @@ private func verifyInjection(in composer: AXUIElement) throws {
         )
     }
     print("injection=verified")
+    inspectSendControlContext(around: composer)
 
     let clearResult = AXUIElementSetAttributeValue(
         composer,

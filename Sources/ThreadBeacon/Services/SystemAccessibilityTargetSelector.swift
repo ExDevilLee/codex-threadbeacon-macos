@@ -4,11 +4,32 @@ import ThreadBeaconCore
 
 enum SystemAccessibilityTargetSelector {
     static func select(threadID: String) -> AccessibilityTargetSelectionResult {
-        guard AXIsProcessTrusted() else { return .notAuthorized }
+        switch SystemAccessibilityTargetAccess.select(threadID: threadID) {
+        case let .failed(result):
+            result
+        case .selected:
+            .selected
+        }
+    }
+}
+
+struct AccessibilitySelectedTarget {
+    let identity: AccessibilityTargetIdentity
+    let composer: AXUIElement
+}
+
+enum AccessibilityTargetAccessOutcome {
+    case failed(AccessibilityTargetSelectionResult)
+    case selected(AccessibilitySelectedTarget)
+}
+
+enum SystemAccessibilityTargetAccess {
+    static func select(threadID: String) -> AccessibilityTargetAccessOutcome {
+        guard AXIsProcessTrusted() else { return .failed(.notAuthorized) }
         guard let codex = NSRunningApplication.runningApplications(
             withBundleIdentifier: "com.openai.codex"
         ).first else {
-            return .codexNotRunning
+            return .failed(.codexNotRunning)
         }
 
         let titles: [String: String]
@@ -17,7 +38,7 @@ enum SystemAccessibilityTargetSelector {
                 indexURL: CodexPaths.sessionIndexURL
             ).loadLatestTitles()
         } catch {
-            return .sessionIndexUnavailable
+            return .failed(.sessionIndexUnavailable)
         }
 
         let identity: AccessibilityTargetIdentity
@@ -26,11 +47,11 @@ enum SystemAccessibilityTargetSelector {
             latestTitles: titles
         ) {
         case .invalidThreadID:
-            return .invalidThreadID
+            return .failed(.invalidThreadID)
         case .titleUnavailable:
-            return .titleUnavailable
+            return .failed(.titleUnavailable)
         case let .titleNotUnique(count):
-            return .titleNotUnique(count)
+            return .failed(.titleNotUnique(count))
         case let .resolved(resolvedIdentity):
             identity = resolvedIdentity
         }
@@ -38,25 +59,28 @@ enum SystemAccessibilityTargetSelector {
         let application = AXUIElementCreateApplication(codex.processIdentifier)
         let initial = snapshot(root: application, targetTitle: identity.title)
         guard initial.actionableRows.count == 1 else {
-            return .taskRowNotUnique(initial.actionableRows.count)
+            return .failed(.taskRowNotUnique(initial.actionableRows.count))
         }
 
         guard AXUIElementPerformAction(
             initial.actionableRows[0],
             kAXPressAction as CFString
         ) == .success else {
-            return .selectionFailed
+            return .failed(.selectionFailed)
         }
 
         waitForWebContentUpdate()
         let selected = snapshot(root: application, targetTitle: identity.title)
         guard selected.headerTitleMatchCount == 1 else {
-            return .targetHeaderNotUnique(selected.headerTitleMatchCount)
+            return .failed(.targetHeaderNotUnique(selected.headerTitleMatchCount))
         }
         guard selected.textAreas.count == 1 else {
-            return .composerNotUnique(selected.textAreas.count)
+            return .failed(.composerNotUnique(selected.textAreas.count))
         }
-        return .selected
+        return .selected(AccessibilitySelectedTarget(
+            identity: identity,
+            composer: selected.textAreas[0]
+        ))
     }
 
     private struct Snapshot {
