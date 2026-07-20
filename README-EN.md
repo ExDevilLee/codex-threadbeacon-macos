@@ -252,13 +252,15 @@ project-created sounds and verify all assets with:
   fixed prompt, read back, and immediately cleared. The validation never finds a send
   button, simulates Return, or joins the automatic recovery path.
 - Users can also enter a target task ID. The app opens `codex://threads/<thread-id>` and
-  verifies the renamed title in the Codex title bar. This validation does not write or send.
+  verifies the renamed title in the Codex title bar. Before opening the deep link, it stops
+  if the current Codex composer contains a draft, its value cannot be read, or multiple
+  composers make the source ambiguous. This validation does not write or send.
 - After explicit confirmation, the test action can send the fixed recovery prompt. Success
   requires a matching new message and `task_started` in the rollout belonging to the exact
   target ID. A live test with two identically named tasks succeeded before and after their
   list positions were swapped; only the requested ID changed.
-- Codex Accessibility does not expose task IDs, and switching the visible task can interfere
-  with concurrent typing. Unattended automatic sending therefore remains disabled.
+- The unattended preflight policy also stops while Codex is frontmost. It is covered by
+  policy tests but is not connected to automatic incident recovery, which remains disabled.
 - To make the recovery message visible in the corresponding Codex App conversation,
   ThreadBeacon must control the Codex App input field through macOS Accessibility.
   This requires a separate user-granted Accessibility permission. Without it,

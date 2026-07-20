@@ -114,6 +114,66 @@ let accessibilityDiagnosticTests = [
             "the deep link must route with the exact normalized task ID"
         )
     },
+    TestCase(name: "target interaction preflight stops while Codex is frontmost") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .unattended,
+                isCodexFrontmost: true,
+                sourceComposerValues: [""]
+            ) == .codexFrontmost,
+            "unattended navigation must not interrupt active Codex interaction"
+        )
+    },
+    TestCase(name: "target interaction preflight allows explicit action while Codex is frontmost") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .userInitiated,
+                isCodexFrontmost: true,
+                sourceComposerValues: [""]
+            ) == .safe,
+            "an explicit action can proceed after the user has reviewed the target"
+        )
+    },
+    TestCase(name: "target interaction preflight stops when the current task has a draft") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .userInitiated,
+                isCodexFrontmost: false,
+                sourceComposerValues: ["unfinished draft"]
+            ) == .sourceComposerNotEmpty,
+            "target navigation must not move an existing draft to another task"
+        )
+    },
+    TestCase(name: "target interaction preflight allows an empty background composer") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .userInitiated,
+                isCodexFrontmost: false,
+                sourceComposerValues: [" \n"]
+            ) == .safe,
+            "an inactive Codex task with no draft should allow explicit navigation"
+        )
+    },
+    TestCase(name: "target interaction preflight rejects ambiguous source composers") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .userInitiated,
+                isCodexFrontmost: false,
+                sourceComposerValues: ["", ""]
+            ) == .sourceComposerNotUnique(2),
+            "multiple source composers must fail closed"
+        )
+    },
+    TestCase(name: "target interaction preflight rejects an unreadable source composer") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .userInitiated,
+                isCodexFrontmost: false,
+                sourceComposerValues: [nil]
+            ) == .sourceComposerValueUnavailable,
+            "an unreadable composer value must never be treated as empty"
+        )
+    },
     TestCase(name: "target selection reports success only after identity confirmation") {
         try expect(
             AccessibilityTargetSelectionResult.selected.isSelected,
@@ -122,6 +182,18 @@ let accessibilityDiagnosticTests = [
         try expect(
             !AccessibilityTargetSelectionResult.targetHeaderNotUnique(0).isSelected,
             "a missing target header must fail closed"
+        )
+        try expect(
+            !AccessibilityTargetSelectionResult.codexInteractionInProgress.isSelected,
+            "active Codex interaction must fail closed"
+        )
+        try expect(
+            !AccessibilityTargetSelectionResult.sourceComposerNotEmpty.isSelected,
+            "a source draft must fail closed"
+        )
+        try expect(
+            !AccessibilityTargetSelectionResult.sourceComposerNotUnique(2).isSelected,
+            "ambiguous source composers must fail closed"
         )
     },
     TestCase(name: "send button policy requires one pressable composer submit button") {

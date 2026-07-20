@@ -7,9 +7,12 @@ enum SystemAccessibilityRecoverySender {
     private static let fixedPrompt = "刚才中断了，请继续未完成的任务"
     private static let rolloutConfirmationTimeout: Duration = .seconds(10)
 
-    static func send(threadID: String) async -> AccessibilityRecoverySendResult {
+    static func send(
+        threadID: String,
+        mode: AccessibilityInteractionMode
+    ) async -> AccessibilityRecoverySendResult {
         let selectedTarget: AccessibilitySelectedTarget
-        switch SystemAccessibilityTargetAccess.select(threadID: threadID) {
+        switch SystemAccessibilityTargetAccess.select(threadID: threadID, mode: mode) {
         case let .failed(result):
             return .targetSelectionFailed(result)
         case let .selected(target):

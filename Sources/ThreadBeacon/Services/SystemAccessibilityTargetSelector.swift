@@ -4,7 +4,10 @@ import ThreadBeaconCore
 
 enum SystemAccessibilityTargetSelector {
     static func select(threadID: String) -> AccessibilityTargetSelectionResult {
-        switch SystemAccessibilityTargetAccess.select(threadID: threadID) {
+        switch SystemAccessibilityTargetAccess.select(
+            threadID: threadID,
+            mode: .userInitiated
+        ) {
         case let .failed(result):
             result
         case .selected:
@@ -24,7 +27,10 @@ enum AccessibilityTargetAccessOutcome {
 }
 
 enum SystemAccessibilityTargetAccess {
-    static func select(threadID: String) -> AccessibilityTargetAccessOutcome {
+    static func select(
+        threadID: String,
+        mode: AccessibilityInteractionMode
+    ) -> AccessibilityTargetAccessOutcome {
         guard AXIsProcessTrusted() else { return .failed(.notAuthorized) }
         guard let codex = NSRunningApplication.runningApplications(
             withBundleIdentifier: "com.openai.codex"
@@ -54,13 +60,33 @@ enum SystemAccessibilityTargetAccess {
             identity = resolvedIdentity
         }
 
+        let application = AXUIElementCreateApplication(codex.processIdentifier)
+        let source = snapshot(root: application, targetTitle: "")
+        switch AccessibilityInteractionPreflight.evaluate(
+            mode: mode,
+            isCodexFrontmost: codex.isActive,
+            sourceComposerValues: source.textAreas.map {
+                stringAttribute($0, kAXValueAttribute as CFString)
+            }
+        ) {
+        case .safe:
+            break
+        case .codexFrontmost:
+            return .failed(.codexInteractionInProgress)
+        case .sourceComposerNotEmpty:
+            return .failed(.sourceComposerNotEmpty)
+        case let .sourceComposerNotUnique(count):
+            return .failed(.sourceComposerNotUnique(count))
+        case .sourceComposerValueUnavailable:
+            return .failed(.sourceComposerValueUnavailable)
+        }
+
         guard let deepLink = AccessibilityThreadDeepLink.url(
             threadID: identity.threadID
         ), NSWorkspace.shared.open(deepLink) else {
             return .failed(.selectionFailed)
         }
 
-        let application = AXUIElementCreateApplication(codex.processIdentifier)
         waitForWebContentUpdate()
         let selected = snapshot(root: application, targetTitle: identity.title)
         guard selected.headerTitleMatchCount == 1 else {

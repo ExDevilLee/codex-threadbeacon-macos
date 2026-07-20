@@ -25,6 +25,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 - 新增用户触发的目标任务验证与发送 POC：使用 `codex://threads/<thread-id>` 按 ID 打开任务，
   通过顶部 rename 标题和唯一输入框二次确认；明确确认后发送固定恢复提示，并要求目标 ID 对应
   rollout 出现严格匹配的新消息与 `task_started`。两个同名任务交换列表位置前后均验证仅命中指定 ID。
+- 新增目标切换前的输入冲突保护：当前 Codex 输入框存在草稿或输入框数量不唯一时，在 deep link
+  前停止；无人值守模式还会在 Codex 保持前台时停止。草稿阻断已完成正式 App 实机验证。
 
 ### Documentation
 

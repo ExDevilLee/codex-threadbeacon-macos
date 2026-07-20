@@ -40,6 +40,43 @@ public enum AccessibilityThreadDeepLink {
     }
 }
 
+public enum AccessibilityInteractionPreflightResult: Equatable, Sendable {
+    case safe
+    case codexFrontmost
+    case sourceComposerNotEmpty
+    case sourceComposerNotUnique(Int)
+    case sourceComposerValueUnavailable
+}
+
+public enum AccessibilityInteractionMode: Equatable, Sendable {
+    case userInitiated
+    case unattended
+}
+
+public enum AccessibilityInteractionPreflight {
+    public static func evaluate(
+        mode: AccessibilityInteractionMode,
+        isCodexFrontmost: Bool,
+        sourceComposerValues: [String?]
+    ) -> AccessibilityInteractionPreflightResult {
+        if mode == .unattended, isCodexFrontmost {
+            return .codexFrontmost
+        }
+        guard sourceComposerValues.count <= 1 else {
+            return .sourceComposerNotUnique(sourceComposerValues.count)
+        }
+        guard sourceComposerValues.allSatisfy({ $0 != nil }) else {
+            return .sourceComposerValueUnavailable
+        }
+        guard sourceComposerValues.allSatisfy({ value in
+            value?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == true
+        }) else {
+            return .sourceComposerNotEmpty
+        }
+        return .safe
+    }
+}
+
 public enum AccessibilityVerifiedTargetPolicy {
     public static func canSend(threadID: String, selectedThreadID: String?) -> Bool {
         guard let selectedThreadID else { return false }
@@ -50,9 +87,13 @@ public enum AccessibilityVerifiedTargetPolicy {
 public enum AccessibilityTargetSelectionResult: Equatable, Sendable {
     case notAuthorized
     case codexNotRunning
+    case codexInteractionInProgress
     case invalidThreadID
     case sessionIndexUnavailable
     case titleUnavailable
+    case sourceComposerNotEmpty
+    case sourceComposerNotUnique(Int)
+    case sourceComposerValueUnavailable
     case selectionFailed
     case targetHeaderNotUnique(Int)
     case composerNotUnique(Int)

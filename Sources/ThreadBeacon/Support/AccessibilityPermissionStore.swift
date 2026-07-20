@@ -98,7 +98,8 @@ final class AccessibilityPermissionStore: ObservableObject {
 
         isChecking = true
         recoverySendResult = await SystemAccessibilityRecoverySender.send(
-            threadID: threadID
+            threadID: threadID,
+            mode: .userInitiated
         )
         isChecking = false
     }
