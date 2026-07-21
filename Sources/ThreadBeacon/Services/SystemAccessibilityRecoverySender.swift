@@ -4,11 +4,11 @@ import ThreadBeaconCore
 
 @MainActor
 enum SystemAccessibilityRecoverySender {
-    private static let fixedPrompt = "刚才中断了，请继续未完成的任务"
     private static let rolloutConfirmationTimeout: Duration = .seconds(10)
 
     static func send(
         threadID: String,
+        prompt: String,
         mode: AccessibilityInteractionMode
     ) async -> AccessibilityRecoverySendResult {
         let selectedTarget: AccessibilitySelectedTarget
@@ -32,7 +32,7 @@ enum SystemAccessibilityRecoverySender {
         }
 
         let checkpointParser = RolloutRecoveryCheckpointParser(
-            expectedUserMessage: fixedPrompt
+            expectedUserMessage: prompt
         )
         guard let baseline = try? checkpointParser.parse(fileURL: rolloutURL) else {
             return .rolloutUnavailable
@@ -46,9 +46,9 @@ enum SystemAccessibilityRecoverySender {
             return .composerNotSettable
         }
 
-        guard setValue(fixedPrompt, on: composer) else { return .writeFailed }
+        guard setValue(prompt, on: composer) else { return .writeFailed }
         waitForWebContentUpdate()
-        guard normalizedValue(of: composer) == fixedPrompt else {
+        guard normalizedValue(of: composer) == prompt else {
             return cleanup(composer) ? .readbackFailed : .cleanupFailed
         }
 

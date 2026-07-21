@@ -27,7 +27,10 @@ let autoRecoveryLogStoreTests = [
 
         try expect(reloaded.count == 1, "one log entry should persist")
         try expect(reloaded.first?.status == .succeeded, "success status should persist")
-        try expect(reloaded.first?.detail == "Codex CLI 已接受提示词（进程退出码 0）", "success detail should explain the boundary")
+        try expect(
+            reloaded.first?.detail == "Codex App 已确认恢复消息并启动新任务",
+            "success detail should describe the visible Accessibility path"
+        )
         try expect(reloaded.first?.threadID == "thread-id", "thread ID should persist for observation")
         try expect(reloaded.first?.prompt == "刚才中断了，请继续未完成的任务", "prompt should persist")
         try? FileManager.default.removeItem(at: fileURL)

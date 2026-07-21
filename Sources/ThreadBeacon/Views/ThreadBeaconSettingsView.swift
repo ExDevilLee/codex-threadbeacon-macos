@@ -6,6 +6,7 @@ struct ThreadBeaconSettingsView: View {
     @ObservedObject var launchAtLoginStore: LaunchAtLoginStore
     let previewSound: (SoundSource) -> Void
     @ObservedObject var autoRecoveryLogStore: AutoRecoveryLogStore
+    @ObservedObject var autoRecoverySettingsStore: AutoRecoverySettingsStore
     @ObservedObject var accessibilityPermissionStore: AccessibilityPermissionStore
 
     var body: some View {
@@ -20,21 +21,22 @@ struct ThreadBeaconSettingsView: View {
                     Label("提示音", systemImage: "speaker.wave.2")
                 }
 
-            AutoRecoveryLogView(
-                store: autoRecoveryLogStore,
+            AutoRecoverySettingsView(
+                settingsStore: autoRecoverySettingsStore,
+                logStore: autoRecoveryLogStore,
                 accessibilityPermissionStore: accessibilityPermissionStore
             )
                 .tabItem {
                     Label("自动恢复", systemImage: "arrow.trianglehead.2.clockwise.rotate.90")
                 }
         }
-        .frame(width: 460, height: 460)
+        .frame(width: 500, height: 560)
         .scenePadding()
     }
 }
 
-private struct AutoRecoveryLogView: View {
-    @ObservedObject var store: AutoRecoveryLogStore
+#if DEBUG
+struct AutoRecoveryDiagnosticsView: View {
     @ObservedObject var accessibilityPermissionStore: AccessibilityPermissionStore
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
@@ -44,54 +46,6 @@ private struct AutoRecoveryLogView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             accessibilityPermissionSection
-
-            Divider()
-
-            HStack {
-                Text(localized("异常自动恢复记录"))
-                    .font(.headline)
-                Spacer()
-                Button(localized("清空记录")) {
-                    store.clear()
-                }
-                .disabled(store.entries.isEmpty)
-            }
-
-            if store.entries.isEmpty {
-                ContentUnavailableView(
-                    localized("暂无自动恢复记录"),
-                    systemImage: "arrow.trianglehead.2.clockwise.rotate.90",
-                    description: Text(localized("检测到新的异常后，处理结果会显示在这里。"))
-                )
-            } else {
-                List(store.entries) { entry in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Label(entry.status.localizedTitle(locale: locale), systemImage: entry.status.systemImage)
-                                .foregroundStyle(entry.status.color)
-                            Spacer()
-                            Text(entry.occurredAt, style: .time)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Text(AppLocalization.formatted("会话 %@", locale: locale, entry.threadID))
-                            .font(.caption.monospaced())
-                        Text(entry.incident)
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.secondary)
-                        Text(entry.prompt)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        if let detail = entry.detail {
-                            Text(AppLocalization.userFacing(detail, locale: locale))
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                        }
-                    }
-                    .padding(.vertical, 3)
-                }
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
@@ -120,9 +74,7 @@ private struct AutoRecoveryLogView: View {
                 .foregroundStyle(accessibilityPermissionStore.isAuthorized ? .green : .secondary)
             }
 
-            Text(localized(accessibilityPermissionStore.isAuthorized
-                ? "已授权；当前仅用于继续验证，自动发送仍然关闭。"
-                : "ThreadBeacon 只有在获得此权限后，才可能控制 Codex App 输入框。当前自动发送仍然关闭。"))
+            Text(localized("以下诊断功能仅用于本地开发验证，不会出现在 Release 构建中。"))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -371,37 +323,7 @@ private struct AutoRecoveryLogView: View {
         AppLocalization.string(source, locale: locale)
     }
 }
-
-private extension AutoRecoveryLogStatus {
-    var systemImage: String {
-        switch self {
-        case .sending: "arrow.triangle.2.circlepath"
-        case .succeeded: "checkmark.circle.fill"
-        case .failed: "xmark.circle.fill"
-        case .skipped: "hand.raised.circle.fill"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .sending: .orange
-        case .succeeded: .green
-        case .failed: .red
-        case .skipped: .secondary
-        }
-    }
-
-    func localizedTitle(locale: Locale) -> String {
-        let source: String
-        switch self {
-        case .sending: source = "发送中"
-        case .succeeded: source = "已发送"
-        case .failed: source = "发送失败"
-        case .skipped: source = "未发送"
-        }
-        return AppLocalization.string(source, locale: locale)
-    }
-}
+#endif
 
 private struct GeneralSettingsView: View {
     @Environment(\.scenePhase) private var scenePhase

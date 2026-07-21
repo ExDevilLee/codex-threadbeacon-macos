@@ -15,13 +15,12 @@ controls are outside the current scope. The current sound feature only covers re
 detected primary-task completion events, explicit HTTP 4xx/5xx failures (except HTTP 503),
 retries or terminal failures, and selected-model capacity failures found in local structured logs. Approval waiting
 still has no reliable read-only data source.
-When a new terminal primary-task HTTP 4xx/5xx (except HTTP 503) or model-capacity
-incident is detected, the app records the incident and marks the recovery prompt as
-not sent. The current version does not invoke an external Codex CLI resume. Only
-after the user explicitly grants macOS Accessibility permission and the Accessibility
-POC verifies the Codex App input field will ThreadBeacon consider injecting
-“刚才中断了，请继续未完成的任务” into Codex App. Historical incidents found at startup are
-recorded but not replayed, and monitoring continues.
+Auto recovery is off by default. Settings provides separate rules and editable prompts
+for HTTP 400, HTTP 429, HTTP 503, other HTTP failures, and model-capacity failures.
+Only terminal incidents trigger recovery, and HTTP 503 remains off by default. Sending
+requires explicit macOS Accessibility permission and uses the visible Codex App input
+field; ThreadBeacon never falls back to an external Codex CLI resume. Historical
+incidents found at startup are not replayed, and monitoring continues.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -236,39 +235,38 @@ project-created sounds and verify all assets with:
 - Retryable 429/503 incidents appear as yellow `warning`; HTTP 400, exhausted retries, and
   selected-model capacity failures appear as red `error`. One incident episode plays at most one warning sound,
   and failures suppress a misleading completion sound.
-- A new terminal primary-task HTTP 400, 429, or model-capacity episode records one
-  recovery prompt; the current version does not send it automatically, and HTTP 503
-  does not trigger a prompt.
+- The auto-recovery master switch is off by default. HTTP 400, HTTP 429, other terminal
+  HTTP failures, and model-capacity rules are prepared as enabled; HTTP 503 is prepared
+  as disabled. Every prompt can be edited or restored, and active retries never trigger.
 - Settings > Auto recovery records the session ID, incident episode, record time,
   not-sent/sending/sent/failed state, and a sanitized result. The default not-sent
   reason is that macOS Accessibility permission is required.
 - Auto recovery shows the app's real Accessibility authorization state. It requests
   permission only after the user clicks Request Access and can explicitly open macOS
-  Accessibility Settings. After authorization, users can run a read-only Codex access
-  diagnostic. It reports only window, text-area, and visited-node counts, reads no task
-  titles or conversation content, and does not enable automatic sending.
-- After the read-only diagnostic passes, users can manually validate the current Codex
+  Accessibility Settings. Release builds omit the manual diagnostics, task-ID field,
+  and test-send controls; local Debug builds retain them for compatibility testing.
+- Debug diagnostics can manually validate the current Codex
   input field. Only a unique composer that is safely classified as empty is temporarily
   populated with the fixed prompt, read back, and immediately cleared. Codex can expose
   placeholder state as a stale nonempty `AXValue`; ThreadBeacon treats it as empty only
   when the composer also contains an explicit `placeholder` static-text subtree. Real
   drafts and unreadable values still fail closed. The validation never finds a send button,
   simulates Return, or joins the automatic recovery path.
-- Users can also enter a target task ID. The app opens `codex://threads/<thread-id>` and
+- Debug diagnostics also accept a target task ID. The app opens `codex://threads/<thread-id>` and
   verifies the renamed title in the Codex title bar. Before opening the deep link, it stops
   if the current Codex composer contains a draft, its value cannot be read, or multiple
   composers make the source ambiguous. This validation does not write or send.
-- After explicit confirmation, the test action can send the fixed recovery prompt. Success
+- After explicit confirmation, the Debug test action can send a recovery prompt. Success
   requires a matching new message and `task_started` in the rollout belonging to the exact
   target ID. A live test with two identically named tasks succeeded before and after their
   list positions were swapped; only the requested ID changed.
-- The unattended preflight policy also stops while Codex is frontmost. It is covered by
-  policy tests but is not connected to automatic incident recovery, which remains disabled.
+- Automatic recovery uses the unattended preflight policy. It fails closed while Codex is
+  frontmost, a draft exists, identity is ambiguous, or another recovery is already running.
 - To make the recovery message visible in the corresponding Codex App conversation,
   ThreadBeacon must control the Codex App input field through macOS Accessibility.
   This requires a separate user-granted Accessibility permission. Without it,
   ThreadBeacon only monitors read-only data and never attempts an invisible external
-  CLI resume. This path is still under research.
+  CLI resume.
 - Sort priority is `error`, `needsAction`, `warning`, `running`, `justCompleted`, `idle`, then
   `unknown`.
 
@@ -291,16 +289,17 @@ The app reads only local data:
 The app does not read `codex_http_client::transport` or extract reasoning summaries,
 conversation bodies, full requests, provider URLs, or request IDs. It does not start a network
 service or upload Codex data. Accessibility is used only after the user explicitly grants
-permission and starts a validation. The read-only result contains structural counts only;
+permission. Release builds use it only when auto recovery and the matching incident rule
+are enabled; Debug diagnostics remain manually triggered. The read-only result contains structural counts only;
 input validation temporarily writes the fixed prompt and clears it immediately. Target-task
 validation matches the ID, renamed title, and Codex title bar in memory. Neither path sends a
 message or persists a task title.
 After launch, the app only requests
 public Release metadata from `api.github.com` to check for updates; the request contains no Codex
 data, local paths, user settings, or device identifier. The current public UI does not
-directly modify Codex SQLite. Non-503 HTTP incidents currently record a fixed recovery
-prompt as not sent; the app does not invoke an external Codex CLI or read or compose
-conversation content. The validated archive-restore POC has no user-accessible entry
+directly modify Codex SQLite. Auto recovery sends only the locally visible configured prompt;
+it does not invoke an external Codex CLI or read or compose conversation content. The
+validated archive-restore POC has no user-accessible entry
 point and never writes
 SQLite directly. Data-source health reports remain in memory and contain only stable categories,
 counts, and the last successful refresh time. They do not retain raw errors, local paths, or task

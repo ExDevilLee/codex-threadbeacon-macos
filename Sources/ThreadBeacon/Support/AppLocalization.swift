@@ -51,11 +51,22 @@ enum AppLocalization {
             "当前 Codex CLI 不支持恢复归档任务，请升级 Codex CLI 后重试。",
             "Codex CLI 未能恢复该任务。",
             "Codex CLI 已接受提示词（进程退出码 0）",
+            "Codex App 已确认恢复消息并启动新任务",
             "发送恢复提示失败",
             "未找到 Codex CLI",
             "Codex CLI 执行失败",
             "无法启动 Codex CLI",
-            "需要 macOS Accessibility 授权"
+            "需要 macOS Accessibility 授权",
+            "无法安全定位并确认目标任务",
+            "无法读取目标任务 rollout",
+            "目标输入框已有草稿",
+            "目标输入框不可写",
+            "无法写入恢复提示词",
+            "恢复提示词回读不一致",
+            "无法确认目标输入框已清空",
+            "发送按钮执行失败",
+            "已触发发送，但 rollout 未在时限内确认",
+            "已有恢复操作正在执行，或辅助功能权限已失效"
         ]
         if catalogBackedMessages.contains(source) {
             return string(source, locale: locale)
@@ -71,6 +82,12 @@ enum AppLocalization {
         ]
         for (prefix, catalogKey) in prefixedTranslations where source.hasPrefix(prefix) {
             return formatted(catalogKey, locale: locale, String(source.dropFirst(prefix.count)))
+        }
+
+        let sendButtonCountPrefix = "发送按钮候选数量异常："
+        if source.hasPrefix(sendButtonCountPrefix),
+           let count = Int(source.dropFirst(sendButtonCountPrefix.count)) {
+            return formatted("发送按钮候选数量异常：%lld", locale: locale, count)
         }
 
         let rolloutMarker = " 个任务的 Rollout 不可用，状态可能回退"

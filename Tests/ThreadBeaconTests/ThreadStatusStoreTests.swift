@@ -111,7 +111,7 @@ let threadStatusStoreTests = [
         try expect(receivedEvents.values.first?.category == .done, "completion should use done category")
         try expect(receivedHistory.values.count == 2, "new event IDs should be persisted")
     },
-    TestCase(name: "store sends one recovery prompt for a new HTTP 400 incident") {
+    TestCase(name: "store emits one structured recovery candidate for a new HTTP 400 incident") {
         let incident = ServiceIncident(
             episodeID: "turn-400",
             phase: .failed,
@@ -135,8 +135,8 @@ let threadStatusStoreTests = [
         let store = await MainActor.run {
             ThreadStatusStore(
                 load: { _ in await sequence.next() },
-                onAutoRecovery: { threadID, _, _, prompt in
-                    recoveryCalls.append(threadID: threadID, prompt: prompt)
+                onAutoRecovery: { candidate in
+                    recoveryCalls.append(candidate)
                 }
             )
         }
@@ -145,14 +145,12 @@ let threadStatusStoreTests = [
         await store.refresh(notificationPolicy: .notify)
         await store.refresh(notificationPolicy: .notify)
 
-        try expect(recoveryCalls.values.count == 1, "one incident episode should trigger one prompt")
-        try expect(recoveryCalls.values.first?.threadID == "thread-400", "prompt should target the failed thread")
-        try expect(
-            recoveryCalls.values.first?.prompt == "刚才中断了，请继续未完成的任务",
-            "prompt should use the fixed recovery text"
-        )
+        try expect(recoveryCalls.values.count == 1, "one incident episode should trigger one candidate")
+        try expect(recoveryCalls.values.first?.threadID == "thread-400", "candidate should target the failed thread")
+        try expect(recoveryCalls.values.first?.incidentType == .http400, "candidate should retain its type")
+        try expect(recoveryCalls.values.first?.incidentLabel == "HTTP 400", "candidate should retain its label")
     },
-    TestCase(name: "store recovers terminal non-503 incidents and skips 503") {
+    TestCase(name: "store emits all terminal incidents and skips active retries") {
         let retryIncident = ServiceIncident(
             episodeID: "turn-429",
             phase: .failed,
@@ -180,7 +178,16 @@ let threadStatusStoreTests = [
             retryLimit: nil,
             occurredAt: Date(timeIntervalSince1970: 20)
         )
-        let snapshots = [retryIncident, unavailableIncident, otherHTTPIncident].enumerated().map { index, incident in
+        let activeRetryIncident = ServiceIncident(
+            episodeID: "turn-active-429",
+            phase: .retrying,
+            kind: .httpRateLimit,
+            httpStatusCode: 429,
+            retryAttempt: 2,
+            retryLimit: 5,
+            occurredAt: Date(timeIntervalSince1970: 20)
+        )
+        let snapshots = [retryIncident, unavailableIncident, otherHTTPIncident, activeRetryIncident].enumerated().map { index, incident in
             ThreadSnapshot(
                 id: "thread-\(index)",
                 title: "thread-\(index)",
@@ -196,8 +203,8 @@ let threadStatusStoreTests = [
         let store = await MainActor.run {
             ThreadStatusStore(
                 load: { _ in await sequence.next() },
-                onAutoRecovery: { threadID, _, _, prompt in
-                    recoveryCalls.append(threadID: threadID, prompt: prompt)
+                onAutoRecovery: { candidate in
+                    recoveryCalls.append(candidate)
                 }
             )
         }
@@ -205,7 +212,14 @@ let threadStatusStoreTests = [
         await store.refresh(notificationPolicy: .baseline)
         await store.refresh(notificationPolicy: .notify)
 
-        try expect(recoveryCalls.values.map(\.threadID) == ["thread-0", "thread-2"], "non-503 incidents should recover while 503 stays excluded")
+        try expect(
+            recoveryCalls.values.map(\.threadID) == ["thread-0", "thread-1", "thread-2"],
+            "every terminal incident should become a candidate while active retries stay excluded"
+        )
+        try expect(
+            recoveryCalls.values.map(\.incidentType) == [.http429, .http503, .otherHTTP],
+            "candidates should retain stable rule types"
+        )
     },
     TestCase(name: "store passes transient expanded thread IDs to refreshes") {
         let receivedExpansions = ExpansionHistoryBox()
@@ -735,21 +749,16 @@ private func completedStoreSnapshot(id: String, second: TimeInterval) -> ThreadS
 }
 
 private final class RecoveryCallBox: @unchecked Sendable {
-    struct Call {
-        let threadID: String
-        let prompt: String
-    }
-
     private let lock = NSLock()
-    private var storage: [Call] = []
+    private var storage: [AutoRecoveryCandidate] = []
 
-    var values: [Call] {
+    var values: [AutoRecoveryCandidate] {
         lock.withLock { storage }
     }
 
-    func append(threadID: String, prompt: String) {
+    func append(_ candidate: AutoRecoveryCandidate) {
         lock.withLock {
-            storage.append(Call(threadID: threadID, prompt: prompt))
+            storage.append(candidate)
         }
     }
 }

@@ -1,5 +1,8 @@
 # 自动恢复设置与正式版界面设计
 
+> 实现状态：已完成。Core 配置、终止异常候选、Accessibility 参数化发送、Release/Debug 界面隔离
+> 和中英文文案均已落地；发送后恢复原前台 App 仍属于后续阶段。
+
 ## 背景
 
 Accessibility POC 已验证以下主链路：按任务 ID 打开目标任务、使用 rename 标题二次确认、

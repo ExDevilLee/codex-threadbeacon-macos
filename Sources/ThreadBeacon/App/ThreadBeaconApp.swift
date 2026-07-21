@@ -21,6 +21,7 @@ struct ThreadBeaconApp: App {
     @StateObject private var launchAtLoginStore: LaunchAtLoginStore
     @StateObject private var updateCheckStore: UpdateCheckStore
     @StateObject private var autoRecoveryLogStore: AutoRecoveryLogStore
+    @StateObject private var autoRecoverySettingsStore: AutoRecoverySettingsStore
     @StateObject private var accessibilityPermissionStore: AccessibilityPermissionStore
     @AppStorage(DisplayPreferenceKeys.appTheme)
     private var appThemeRawValue = AppTheme.defaultValue.rawValue
@@ -35,8 +36,11 @@ struct ThreadBeaconApp: App {
         let loader = ThreadStatusLoader(repository: repository)
         let archiveRestoreService = CodexArchiveRestoreService()
         let recoveryLogs = AutoRecoveryLogStore()
+        let recoverySettings = AutoRecoverySettingsStore()
+        let accessibilityStore = AccessibilityPermissionStore()
         _autoRecoveryLogStore = StateObject(wrappedValue: recoveryLogs)
-        _accessibilityPermissionStore = StateObject(wrappedValue: AccessibilityPermissionStore())
+        _autoRecoverySettingsStore = StateObject(wrappedValue: recoverySettings)
+        _accessibilityPermissionStore = StateObject(wrappedValue: accessibilityStore)
         let history = SoundNotificationHistory()
         let preferenceRepository = ThreadListPreferenceRepository()
         let player = SoundPlaybackService()
@@ -68,16 +72,45 @@ struct ThreadBeaconApp: App {
             onNotification: { event in
                 player.play(event)
             },
-            onAutoRecovery: { threadID, episodeID, incident, prompt in
-                let logID = recoveryLogs.recordAttempt(
-                    threadID: threadID,
-                    episodeID: episodeID,
-                    incident: incident,
-                    prompt: prompt
+            onAutoRecovery: { candidate in
+                accessibilityStore.refresh()
+                let decision = AutoRecoveryPolicy.evaluate(
+                    candidate: candidate,
+                    settings: recoverySettings.settings,
+                    isAccessibilityAuthorized: accessibilityStore.isAuthorized
                 )
-                // External `codex exec resume` is intentionally disabled. Only the
-                // future Accessibility path may inject a message into Codex App.
-                recoveryLogs.recordSkipped(logID)
+                switch decision {
+                case .disabled:
+                    break
+                case let .needsAccessibilityAuthorization(prompt):
+                    let logID = recoveryLogs.recordAttempt(
+                        candidate: candidate,
+                        prompt: prompt
+                    )
+                    recoveryLogs.recordSkipped(logID)
+                case let .send(prompt):
+                    let logID = recoveryLogs.recordAttempt(
+                        candidate: candidate,
+                        prompt: prompt
+                    )
+                    Task { @MainActor in
+                        guard let result = await accessibilityStore.runAutomaticRecovery(
+                            threadID: candidate.threadID,
+                            prompt: prompt
+                        ) else {
+                            recoveryLogs.recordFailure(
+                                logID,
+                                detail: "已有恢复操作正在执行，或辅助功能权限已失效"
+                            )
+                            return
+                        }
+                        if result.isVerified {
+                            recoveryLogs.recordSuccess(logID)
+                        } else {
+                            recoveryLogs.recordFailure(logID, detail: result.recoveryLogDetail)
+                        }
+                    }
+                }
             },
             onNotificationHistoryChange: { eventIDs in
                 history.save(eventIDs)
@@ -116,6 +149,7 @@ struct ThreadBeaconApp: App {
                 launchAtLoginStore: launchAtLoginStore,
                 previewSound: soundPlayer.preview,
                 autoRecoveryLogStore: autoRecoveryLogStore,
+                autoRecoverySettingsStore: autoRecoverySettingsStore,
                 accessibilityPermissionStore: accessibilityPermissionStore
             )
             .environment(\.locale, appLanguageStore.locale)
@@ -128,6 +162,46 @@ struct ThreadBeaconApp: App {
         AppTheme(rawValue: appThemeRawValue) ?? .defaultValue
     }
 
+}
+
+private extension AutoRecoveryLogStore {
+    func recordAttempt(candidate: AutoRecoveryCandidate, prompt: String) -> UUID {
+        recordAttempt(
+            threadID: candidate.threadID,
+            episodeID: candidate.episodeID,
+            incident: candidate.incidentLabel,
+            prompt: prompt
+        )
+    }
+}
+
+private extension AccessibilityRecoverySendResult {
+    var recoveryLogDetail: String {
+        switch self {
+        case .targetSelectionFailed:
+            "无法安全定位并确认目标任务"
+        case .rolloutUnavailable:
+            "无法读取目标任务 rollout"
+        case .composerNotEmpty:
+            "目标输入框已有草稿"
+        case .composerNotSettable:
+            "目标输入框不可写"
+        case .writeFailed:
+            "无法写入恢复提示词"
+        case .readbackFailed:
+            "恢复提示词回读不一致"
+        case .cleanupFailed:
+            "无法确认目标输入框已清空"
+        case let .sendButtonNotUnique(count):
+            "发送按钮候选数量异常：\(count)"
+        case .sendFailed:
+            "发送按钮执行失败"
+        case .sentUnconfirmed:
+            "已触发发送，但 rollout 未在时限内确认"
+        case .verified:
+            "Codex App 已确认恢复消息并启动新任务"
+        }
+    }
 }
 
 private struct ThreadBeaconAboutCommands: Commands {

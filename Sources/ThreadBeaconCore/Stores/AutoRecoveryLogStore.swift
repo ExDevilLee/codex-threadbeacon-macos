@@ -42,7 +42,7 @@ public final class AutoRecoveryLogStore: ObservableObject {
         update(id) { entry in
             entry.status = .succeeded
             entry.completedAt = now()
-            entry.detail = "Codex CLI 已接受提示词（进程退出码 0）"
+            entry.detail = "Codex App 已确认恢复消息并启动新任务"
         }
     }
 

@@ -151,17 +151,15 @@
 - `压缩可观测性`：rollout 可显示历史压缩次数和最近完成时间，但不能判断实时压缩状态或
   百分比进度；共享 app-server 或可选 `PreCompact` / `PostCompact` Hook 可提供开始、完成和
   耗时，但仍只能使用不确定进度动画。作为独立 POC 评估，不与 Subagent 展开首版绑定。
-- **MVP 已完成（异常记录）**：检测到新的主任务终止型 400、429 或模型容量异常 episode 后，
-  ThreadBeacon 记录固定恢复提示，但当前版本禁用不可见的外部 `codex exec resume` 自动发送；
-  日志会明确记录“未发送：需要 macOS Accessibility 授权”。503 明确排除，启动时的历史异常只登记
-  不发送，同一 episode 每次运行只记录一次。后续再通过 Settings 配置状态到动作、重试次数、冷却时间
-  和人工确认策略。发送链路和独立 app-server 的跨进程限制见
+- **MVP 已完成（异常记录）**：启动时的历史异常只建立基线、不发送，同一 episode 每次运行只
+  处理一次；日志记录提示词快照和跳过、发送中、成功或失败结果。外部 `codex exec resume` 继续禁用。
+  发送链路和独立 app-server 的跨进程限制见
   [`docs/app-server-integration-poc.md`](docs/app-server-integration-poc.md)。
 - **研究（Codex App 内可见恢复）**：如果希望恢复消息真正出现在 Codex App 对应会话中，
   需要通过 macOS Accessibility 控制 Codex App 输入框并发送；用户必须单独授予辅助功能权限。
   未授权时只读监控并记录未发送，不使用外部 CLI 恢复。AX 树检查和安全约束见
   [`docs/accessibility-recovery-poc.md`](docs/accessibility-recovery-poc.md)。
-- **POC 进行中（Accessibility）**：已验证按任务 ID deep link 打开目标任务、顶部 rename 标题
+- **POC 已验证（Accessibility）**：已验证按任务 ID deep link 打开目标任务、顶部 rename 标题
   二次确认、固定提示词写入／回读／清空；Settings 已增加真实授权状态和用户触发
   的授权入口。正式 App 已完成授权后的 Codex AX 只读访问验证，只输出窗口、输入框和节点计数。
   正式 App 已完成当前任务输入框的固定提示词写入／回读／清理，以及用户确认后的真实发送。
@@ -172,14 +170,17 @@
   `placeholder + AXStaticText` 证据时才按空输入处理，普通草稿与不可读值继续失败关闭。
 - **当前边界（Accessibility）**：AX 树不暴露任务 ID；当前依赖版本敏感的
   `codex://threads/<thread-id>` 按 ID 导航，再以 rename 标题和目标 rollout 回读确认。已区分用户
-  主动与无人值守交互模式；无人值守策略会在 Codex 前台时停止，当前由单测覆盖。自动发送仍保持
-  关闭，接入主链路前还需验证跳转期间的竞态、原任务恢复和连续失败熔断。
-- **下一阶段（自动恢复设置）**：Release 构建移除手工诊断、任务 ID 和测试发送控件，Debug
+  主动与无人值守交互模式；无人值守策略会在 Codex 前台、存在草稿、身份不唯一或另一个恢复操作
+  正在执行时停止。发送后恢复原前台 App 和更完整的连续失败熔断仍待后续验证。
+- **MVP 已完成（自动恢复设置）**：Release 构建移除手工诊断、任务 ID 和测试发送控件，Debug
   构建保留开发验证入口；正式设置支持总开关，以及 HTTP 400、HTTP 429、HTTP 503、其他终止型
   HTTP 错误和模型容量异常各自的启用状态与自定义提示词。HTTP 503 默认关闭，只在重试耗尽后
   才允许触发。设计见 [`docs/auto-recovery-settings-design.md`](docs/auto-recovery-settings-design.md)。
 - **后续（恢复原前台 App）**：自动发送完成后恢复操作前的原前台 App；需要避免覆盖用户发送
   期间的主动切换行为，作为独立阶段验证，不阻塞自动恢复配置功能。
+- **后续（双击打开 Codex 任务）**：用户已授予 Accessibility 权限后，双击 ThreadBeacon 主任务
+  行可在 Codex App 打开对应任务。实现时复用任务 ID deep link、rename 标题二次确认和当前输入框
+  草稿保护；Subagent 行、归档任务和未授权状态的交互规则需在设计阶段单独确认。
 - 所有新增列默认可隐藏，避免破坏小窗口和未来小屏场景。
 
 ### Codex CLI 适配

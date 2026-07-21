@@ -6,6 +6,7 @@ enum TestRunner {
         let tests = threadStatusTests
             + accessibilityDiagnosticTests
             + autoRecoveryLogStoreTests
+            + autoRecoverySettingsTests
             + aboutAppInfoTests
             + appLanguageTests
             + appLanguageStoreTests

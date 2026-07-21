@@ -5,6 +5,7 @@ import ThreadBeaconCore
 
 @MainActor
 final class AccessibilityPermissionStore: ObservableObject {
+    private static let diagnosticPrompt = "刚才中断了，请继续未完成的任务"
     @Published private(set) var isAuthorized: Bool
     @Published private(set) var diagnosticResult: AccessibilityDiagnosticResult?
     @Published private(set) var composerValidationResult: AccessibilityComposerValidationResult?
@@ -99,8 +100,25 @@ final class AccessibilityPermissionStore: ObservableObject {
         isChecking = true
         recoverySendResult = await SystemAccessibilityRecoverySender.send(
             threadID: threadID,
+            prompt: Self.diagnosticPrompt,
             mode: .userInitiated
         )
         isChecking = false
+    }
+
+    func runAutomaticRecovery(
+        threadID: String,
+        prompt: String
+    ) async -> AccessibilityRecoverySendResult? {
+        refresh()
+        guard isAuthorized, !isChecking else { return nil }
+
+        isChecking = true
+        defer { isChecking = false }
+        return await SystemAccessibilityRecoverySender.send(
+            threadID: threadID,
+            prompt: prompt,
+            mode: .unattended
+        )
     }
 }

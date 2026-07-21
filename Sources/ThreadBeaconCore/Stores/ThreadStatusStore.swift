@@ -43,7 +43,7 @@ public final class ThreadStatusStore: ObservableObject {
     private var autoRecoveryEpisodeIDs: Set<String> = []
     private var pendingRefreshPolicy: RefreshNotificationPolicy?
     private let onNotification: @MainActor (SoundNotificationEvent) -> Void
-    private let onAutoRecovery: @MainActor (String, String, String, String) -> Void
+    private let onAutoRecovery: @MainActor (AutoRecoveryCandidate) -> Void
     private let onNotificationHistoryChange: @MainActor ([String]) -> Void
     private let onPreferencesChange: @MainActor (ThreadListPreferences) -> Void
 
@@ -57,7 +57,7 @@ public final class ThreadStatusStore: ObservableObject {
         visibleLimit: Int = 8,
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
-        onAutoRecovery: @escaping @MainActor (String, String, String, String) -> Void = { _, _, _, _ in },
+        onAutoRecovery: @escaping @MainActor (AutoRecoveryCandidate) -> Void = { _ in },
         onNotificationHistoryChange: @escaping @MainActor ([String]) -> Void = { _ in },
         onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
     ) {
@@ -98,7 +98,7 @@ public final class ThreadStatusStore: ObservableObject {
         visibleLimit: Int = 8,
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
-        onAutoRecovery: @escaping @MainActor (String, String, String, String) -> Void = { _, _, _, _ in },
+        onAutoRecovery: @escaping @MainActor (AutoRecoveryCandidate) -> Void = { _ in },
         onNotificationHistoryChange: @escaping @MainActor ([String]) -> Void = { _ in },
         onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
     ) {
@@ -341,16 +341,19 @@ public final class ThreadStatusStore: ObservableObject {
     }
 
     private func observeAutoRecovery(policy: RefreshNotificationPolicy) {
-        let prompt = "刚才中断了，请继续未完成的任务"
         for snapshot in snapshots {
             guard let incident = snapshot.serviceIncident,
-                  incident.kind != .serviceUnavailable,
                   incident.phase == .failed else {
                 continue
             }
             let isNew = autoRecoveryEpisodeIDs.insert("\(snapshot.id):\(incident.episodeID)").inserted
             guard isNew, policy == .notify else { continue }
-            onAutoRecovery(snapshot.id, incident.episodeID, incident.logLabel, prompt)
+            onAutoRecovery(AutoRecoveryCandidate(
+                threadID: snapshot.id,
+                episodeID: incident.episodeID,
+                incidentType: AutoRecoveryIncidentType(incidentKind: incident.kind),
+                incidentLabel: incident.logLabel
+            ))
         }
     }
 }
