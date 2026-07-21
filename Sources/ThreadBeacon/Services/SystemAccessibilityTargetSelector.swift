@@ -65,9 +65,9 @@ enum SystemAccessibilityTargetAccess {
         switch AccessibilityInteractionPreflight.evaluate(
             mode: mode,
             isCodexFrontmost: codex.isActive,
-            sourceComposerValues: source.textAreas.map {
-                stringAttribute($0, kAXValueAttribute as CFString)
-            }
+            sourceComposerValues: source.textAreas.map(
+                SystemAccessibilityComposerState.valueForPreflight
+            )
         ) {
         case .safe:
             break

@@ -17,9 +17,15 @@ public enum AccessibilityComposerValidationResult: Equatable, Sendable {
 }
 
 public enum AccessibilityComposerSafetyPolicy {
-    public static func canTemporarilyReplace(value: String?) -> Bool {
-        let normalized = (value ?? "")
+    public static func canTemporarilyReplace(
+        value: String?,
+        hasVerifiedPlaceholderDescendant: Bool = false
+    ) -> Bool {
+        guard let value else { return false }
+        let normalized = value
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return normalized.isEmpty || normalized == "随心输入"
+        return normalized.isEmpty
+            || normalized == "随心输入"
+            || hasVerifiedPlaceholderDescendant
     }
 }

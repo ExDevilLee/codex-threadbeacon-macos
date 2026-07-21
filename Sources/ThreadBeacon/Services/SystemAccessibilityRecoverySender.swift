@@ -39,9 +39,7 @@ enum SystemAccessibilityRecoverySender {
         }
 
         let composer = selectedTarget.composer
-        guard AccessibilityComposerSafetyPolicy.canTemporarilyReplace(
-            value: stringAttribute(composer, kAXValueAttribute as CFString)
-        ) else {
+        guard SystemAccessibilityComposerState.canTemporarilyReplace(composer) else {
             return .composerNotEmpty
         }
         guard isSettable(composer, kAXValueAttribute as CFString) else {
@@ -122,9 +120,7 @@ enum SystemAccessibilityRecoverySender {
     private static func cleanup(_ composer: AXUIElement) -> Bool {
         guard setValue("", on: composer) else { return false }
         waitForWebContentUpdate()
-        return AccessibilityComposerSafetyPolicy.canTemporarilyReplace(
-            value: stringAttribute(composer, kAXValueAttribute as CFString)
-        )
+        return SystemAccessibilityComposerState.canTemporarilyReplace(composer)
     }
 
     private static func normalizedValue(of element: AXUIElement) -> String {

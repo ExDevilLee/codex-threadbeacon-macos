@@ -18,9 +18,7 @@ enum SystemAccessibilityComposerValidator {
         guard composers.count == 1 else { return .composerNotUnique(composers.count) }
 
         let composer = composers[0]
-        guard AccessibilityComposerSafetyPolicy.canTemporarilyReplace(
-            value: stringAttribute(composer, kAXValueAttribute as CFString)
-        ) else {
+        guard SystemAccessibilityComposerState.canTemporarilyReplace(composer) else {
             return .composerNotEmpty
         }
         guard isSettable(composer, kAXValueAttribute as CFString) else {
@@ -33,9 +31,7 @@ enum SystemAccessibilityComposerValidator {
 
         guard setValue("", on: composer) else { return .cleanupFailed }
         waitForWebContentUpdate()
-        guard AccessibilityComposerSafetyPolicy.canTemporarilyReplace(
-            value: stringAttribute(composer, kAXValueAttribute as CFString)
-        ) else {
+        guard SystemAccessibilityComposerState.canTemporarilyReplace(composer) else {
             return .cleanupFailed
         }
 

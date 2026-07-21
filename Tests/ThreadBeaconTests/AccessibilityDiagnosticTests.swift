@@ -55,6 +55,27 @@ let accessibilityDiagnosticTests = [
             !AccessibilityComposerSafetyPolicy.canTemporarilyReplace(value: "尚未发送的草稿"),
             "a real draft must never be overwritten"
         )
+        try expect(
+            AccessibilityComposerSafetyPolicy.canTemporarilyReplace(
+                value: "AX stale value",
+                hasVerifiedPlaceholderDescendant: true
+            ),
+            "a verified placeholder subtree should override a stale accessibility value"
+        )
+        try expect(
+            !AccessibilityComposerSafetyPolicy.canTemporarilyReplace(
+                value: "尚未发送的草稿",
+                hasVerifiedPlaceholderDescendant: false
+            ),
+            "a nonempty value without placeholder evidence must remain protected"
+        )
+        try expect(
+            !AccessibilityComposerSafetyPolicy.canTemporarilyReplace(
+                value: nil,
+                hasVerifiedPlaceholderDescendant: true
+            ),
+            "an unreadable value must remain protected even when placeholder evidence exists"
+        )
     },
     TestCase(name: "composer validation succeeds only after verified cleanup") {
         try expect(

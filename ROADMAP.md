@@ -168,6 +168,8 @@
   两个同名活跃任务在交换列表位置前后各完成一次指定 ID 发送，只有目标 ID 的 rollout 新增严格
   匹配的固定提示词、`task_started` 与 `task_complete`，另一个同名任务保持不变。目标切换前的
   草稿冲突保护也已完成实机验证：检测到当前输入框有草稿时，在 deep link 前停止且保持发送禁用。
+  已修复 Codex 将可见占位符子树暴露为陈旧非空 `AXValue` 导致的误拦截；只有明确存在
+  `placeholder + AXStaticText` 证据时才按空输入处理，普通草稿与不可读值继续失败关闭。
 - **当前边界（Accessibility）**：AX 树不暴露任务 ID；当前依赖版本敏感的
   `codex://threads/<thread-id>` 按 ID 导航，再以 rename 标题和目标 rollout 回读确认。已区分用户
   主动与无人值守交互模式；无人值守策略会在 Codex 前台时停止，当前由单测覆盖。自动发送仍保持

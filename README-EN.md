@@ -248,9 +248,12 @@ project-created sounds and verify all assets with:
   diagnostic. It reports only window, text-area, and visited-node counts, reads no task
   titles or conversation content, and does not enable automatic sending.
 - After the read-only diagnostic passes, users can manually validate the current Codex
-  input field. Only a unique composer without a draft is temporarily populated with the
-  fixed prompt, read back, and immediately cleared. The validation never finds a send
-  button, simulates Return, or joins the automatic recovery path.
+  input field. Only a unique composer that is safely classified as empty is temporarily
+  populated with the fixed prompt, read back, and immediately cleared. Codex can expose
+  placeholder state as a stale nonempty `AXValue`; ThreadBeacon treats it as empty only
+  when the composer also contains an explicit `placeholder` static-text subtree. Real
+  drafts and unreadable values still fail closed. The validation never finds a send button,
+  simulates Return, or joins the automatic recovery path.
 - Users can also enter a target task ID. The app opens `codex://threads/<thread-id>` and
   verifies the renamed title in the Codex title bar. Before opening the deep link, it stops
   if the current Codex composer contains a draft, its value cannot be read, or multiple
