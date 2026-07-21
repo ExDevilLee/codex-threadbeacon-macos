@@ -9,8 +9,9 @@
 ## 目标
 
 ThreadBeacon 是一个用于集中查看 Codex Desktop 与 Codex CLI 主任务状态的原生 macOS
-小窗口。第一版验证的是“集中看状态是否比反复切回 Codex 更省注意力”，不包含 USB
-小屏或 Codex 控制。
+小窗口。第一版验证的是“集中看状态是否比反复切回 Codex 更省注意力”。
+ThreadBeacon 不负责驱动或控制 USB 小屏硬件；只要扩展屏已被 macOS 识别，就可以把
+窗口移到该屏幕并置顶常驻。
 当前版本可提示可靠识别的主任务完成事件，以及本机日志中明确记录的 HTTP 400 Bad
 Request、HTTP 4xx/5xx 服务重试或最终失败和所选模型容量已满；授权等待仍没有可靠的
 只读数据源。
@@ -21,6 +22,15 @@ Request、HTTP 4xx/5xx 服务重试或最终失败和所选模型容量已满；
 启动时已有的历史异常不会补发，异常记录也不会影响状态监听。
 
 本项目是非官方社区工具，与 OpenAI 无隶属或背书关系。`Codex` 是其相应权利人的商标。
+
+## 小屏状态台
+
+ThreadBeacon 的紧凑列表很适合单独放在 7 英寸等竖向扩展屏上：MacBook 保留 Codex
+交互，主显示器查看代码和 Diff，小屏则持续显示各主任务的运行、完成与异常状态。
+
+![ThreadBeacon 在竖向小屏上作为 Codex 任务状态台的工作台示意](docs/assets/readme/threadbeacon-small-display-workspace.jpg)
+
+> AI 生成的使用场景概念图，屏幕内容仅用于表达布局与工作流；实际界面请以下方截图为准。
 
 ## 30 秒快速开始
 

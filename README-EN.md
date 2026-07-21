@@ -10,8 +10,9 @@
 
 ThreadBeacon is a native macOS status window for monitoring primary Codex Desktop
 and Codex CLI tasks at a glance. The first version tests whether a glanceable status
-view reduces the need to repeatedly switch back to Codex. USB displays and Codex
-controls are outside the current scope. The current sound feature only covers reliably
+view reduces the need to repeatedly switch back to Codex. ThreadBeacon does not drive
+or control USB display hardware; when macOS recognizes a secondary display, the window
+can be moved there and pinned above other apps. The current sound feature only covers reliably
 detected primary-task completion events, explicit HTTP 4xx/5xx failures (except HTTP 503),
 retries or terminal failures, and selected-model capacity failures found in local structured logs. Approval waiting
 still has no reliable read-only data source.
@@ -24,6 +25,18 @@ incidents found at startup are not replayed, and monitoring continues. Built-in 
 follow the app language; prompts explicitly saved by the user keep their original text.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
+
+## A Dedicated Small-Screen Status Board
+
+ThreadBeacon's compact list works well on a separate portrait display, including a
+7-inch secondary screen. Keep Codex interactions on the MacBook, code and diffs on the
+main monitor, and the running, completed, and failed states of primary tasks continuously
+visible on the small display.
+
+![ThreadBeacon used as a Codex task status board on a portrait small display](docs/assets/readme/threadbeacon-small-display-workspace.jpg)
+
+> AI-generated workspace concept. On-screen content illustrates the layout and workflow;
+> refer to the interface screenshots below for the actual app UI.
 
 ## 30-Second Quick Start
 
