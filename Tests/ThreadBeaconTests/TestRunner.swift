@@ -36,6 +36,7 @@ enum TestRunner {
             + subagentAliasFormatterTests
             + threadStatusLoaderTests
             + threadStatusStoreTests
+            + taskOpenPolicyTests
             + tokenCountFormatterTests
             + windowPlacementTests
             + windowPinModeTests
