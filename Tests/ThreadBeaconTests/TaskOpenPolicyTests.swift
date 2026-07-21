@@ -53,5 +53,20 @@ let taskOpenPolicyTests = [
             !TaskOpenResult.selectionFailed(.selectionFailed).isOpened,
             "target selection failure should not report success"
         )
+    },
+    TestCase(name: "task open result exposes only actionable failure presentation") {
+        try expect(
+            !TaskOpenResult.opened.shouldPresentFailure,
+            "successful opening should not leave ThreadBeacon showing an alert"
+        )
+        try expect(
+            TaskOpenResult.notAuthorized.shouldOfferAccessibilitySettings,
+            "missing permission should offer the macOS Accessibility settings shortcut"
+        )
+        try expect(
+            !TaskOpenResult.selectionFailed(.sourceComposerNotEmpty)
+                .shouldOfferAccessibilitySettings,
+            "a protected draft should not offer an unrelated permission shortcut"
+        )
     }
 ]

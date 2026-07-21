@@ -11,6 +11,7 @@ final class AccessibilityPermissionStore: ObservableObject {
     @Published private(set) var composerValidationResult: AccessibilityComposerValidationResult?
     @Published private(set) var targetSelectionResult: AccessibilityTargetSelectionResult?
     @Published private(set) var recoverySendResult: AccessibilityRecoverySendResult?
+    @Published private(set) var taskOpenResult: TaskOpenResult?
     @Published private(set) var isChecking = false
     private var selectedTargetThreadID: String?
 
@@ -82,6 +83,31 @@ final class AccessibilityPermissionStore: ObservableObject {
             : nil
         recoverySendResult = nil
         isChecking = false
+    }
+
+    func openTask(threadID: String, isArchived: Bool) {
+        refresh()
+        switch TaskOpenRequestPolicy.evaluate(
+            isArchived: isArchived,
+            isAuthorized: isAuthorized,
+            isInteractionInProgress: isChecking
+        ) {
+        case .archived:
+            taskOpenResult = .archived
+        case .notAuthorized:
+            taskOpenResult = .notAuthorized
+        case .interactionInProgress:
+            taskOpenResult = .interactionInProgress
+        case .allowed:
+            isChecking = true
+            defer { isChecking = false }
+            let result = SystemAccessibilityTargetSelector.select(threadID: threadID)
+            taskOpenResult = result.isSelected ? .opened : .selectionFailed(result)
+        }
+    }
+
+    func dismissTaskOpenResult() {
+        taskOpenResult = nil
     }
 
     func canSend(to threadID: String) -> Bool {

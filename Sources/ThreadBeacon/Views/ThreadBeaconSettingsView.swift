@@ -153,7 +153,10 @@ struct AutoRecoveryDiagnosticsView: View {
 
                     if let result = accessibilityPermissionStore.targetSelectionResult {
                         Label(
-                            targetSelectionText(result),
+                            AccessibilityTargetSelectionPresentation.message(
+                                for: result,
+                                locale: locale
+                            ),
                             systemImage: result.isSelected
                                 ? "checkmark.shield.fill"
                                 : "exclamationmark.triangle.fill"
@@ -247,52 +250,13 @@ struct AutoRecoveryDiagnosticsView: View {
         }
     }
 
-    private func targetSelectionText(
-        _ result: AccessibilityTargetSelectionResult
-    ) -> String {
-        switch result {
-        case .notAuthorized:
-            localized("目标任务验证失败：尚未获得辅助功能权限。")
-        case .codexNotRunning:
-            localized("目标任务验证失败：Codex App 未运行。")
-        case .codexInteractionInProgress:
-            localized("目标任务验证已停止：Codex 正在前台，可能存在用户输入。")
-        case .invalidThreadID:
-            localized("目标任务验证失败：任务 ID 为空。")
-        case .sessionIndexUnavailable:
-            localized("目标任务验证失败：无法读取 Codex 任务索引。")
-        case .titleUnavailable:
-            localized("目标任务验证失败：未找到该任务的 rename 标题。")
-        case .sourceComposerNotEmpty:
-            localized("目标任务验证已停止：当前 Codex 任务输入框已有草稿。")
-        case let .sourceComposerNotUnique(count):
-            String(
-                format: localized("目标任务验证已停止：切换前找到 %lld 个输入框。"),
-                Int64(count)
-            )
-        case .sourceComposerValueUnavailable:
-            localized("目标任务验证已停止：无法确认当前 Codex 输入框是否为空。")
-        case .selectionFailed:
-            localized("目标任务验证失败：无法切换 Codex 任务。")
-        case let .targetHeaderNotUnique(count):
-            String(
-                format: localized("目标任务验证失败：标题栏身份匹配数为 %lld。"),
-                Int64(count)
-            )
-        case let .composerNotUnique(count):
-            String(
-                format: localized("目标任务验证失败：切换后找到 %lld 个输入框。"),
-                Int64(count)
-            )
-        case .selected:
-            localized("目标任务验证通过：已按 ID 打开并确认 rename 名称，未发送消息。")
-        }
-    }
-
     private func recoverySendText(_ result: AccessibilityRecoverySendResult) -> String {
         switch result {
         case let .targetSelectionFailed(selectionResult):
-            targetSelectionText(selectionResult)
+            AccessibilityTargetSelectionPresentation.message(
+                for: selectionResult,
+                locale: locale
+            )
         case .rolloutUnavailable:
             localized("发送验证失败：无法读取目标任务 rollout。")
         case .composerNotEmpty:

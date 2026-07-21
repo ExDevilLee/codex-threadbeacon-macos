@@ -28,4 +28,12 @@ public enum TaskOpenResult: Equatable, Sendable {
     public var isOpened: Bool {
         self == .opened
     }
+
+    public var shouldPresentFailure: Bool {
+        !isOpened
+    }
+
+    public var shouldOfferAccessibilitySettings: Bool {
+        self == .notAuthorized
+    }
 }
