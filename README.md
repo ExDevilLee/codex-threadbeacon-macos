@@ -51,6 +51,10 @@ Request、HTTP 4xx/5xx 服务重试或最终失败和所选模型容量已满；
 | :---: | :---: |
 | ![ThreadBeacon Token 使用详情](docs/assets/readme/zh-Hans/threadbeacon-token-details.png) | ![ThreadBeacon 通用 Settings](docs/assets/readme/zh-Hans/threadbeacon-settings.png) |
 
+| 提示音与自定义音频 | 自动恢复规则与提示词 |
+| :---: | :---: |
+| ![ThreadBeacon 提示音与自定义音频](docs/assets/readme/zh-Hans/threadbeacon-sounds.png) | ![ThreadBeacon 自动恢复规则与提示词](docs/assets/readme/zh-Hans/threadbeacon-auto-recovery.png) |
+
 ### 检查更新
 
 ![ThreadBeacon 检查更新](docs/assets/readme/zh-Hans/threadbeacon-update-check.png)
