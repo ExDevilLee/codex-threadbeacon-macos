@@ -229,6 +229,9 @@ project-created sounds and verify all assets with:
 - UI language supports `Follow System`, `Simplified Chinese`, and `English`. When following the
   system, unsupported languages fall back to English; more languages are planned.
 - Each row shows a status light, localized status label, task title, and status duration.
+- Settings can enable optional color-blind-safe status indicators. They combine color, a distinct
+  shape, and the existing status text for error, action required, service incident, running,
+  completed, idle, and unknown states. The option is off by default, preserving the original dots.
 - A primary task that created Subagents shows its direct Subagent count beside the title. This is
   a historical relationship count, not a live running count.
 - Click the Subagent count to expand direct children inline. Each row shows
@@ -272,7 +275,8 @@ project-created sounds and verify all assets with:
   ignore rule clears automatically when a newer turn starts.
 - When ignored tasks exist, an `eye.slash` toolbar button can restore one task or all tasks.
 - The gear button opens the native macOS Settings window. The General tab configures the
-  language, theme, refresh interval, task limit, and launch at login; the Sounds tab manages completion and
+  language, theme, color-blind-safe status indicators, refresh interval, task limit, and launch at
+  login; the Sounds tab manages completion and
   service-incident sounds. Launch at login uses Apple's `SMAppService.mainApp` and reflects the
   current macOS status rather than a simulated preference. If approval is required, the toggle
   remains on and Settings provides a shortcut to Login Items. Both sound categories can be

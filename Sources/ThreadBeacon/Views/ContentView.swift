@@ -11,6 +11,8 @@ struct ContentView: View {
     private var refreshIntervalSeconds = DisplaySettings.defaultRefreshIntervalSeconds
     @AppStorage(DisplayPreferenceKeys.maximumTaskCount)
     private var maximumTaskCount = DisplaySettings.defaultMaximumTaskCount
+    @AppStorage(DisplayPreferenceKeys.colorBlindSafeStatusIndicators)
+    private var usesColorBlindSafeStatusIndicators = DisplaySettings.defaultColorBlindSafeStatusIndicators
     @State private var monitoringMode = MonitoringMode.active
     @State private var isShowingIgnoredTasks = false
     @State private var pendingArchiveRestore: ThreadSnapshot?
@@ -252,6 +254,7 @@ struct ContentView: View {
                                 isFavorite: store.isFavorite(snapshot.id),
                                 isRestoringArchive: isRestoringArchive,
                                 isSubagentExpanded: isExpanded,
+                                usesColorBlindSafeIndicators: usesColorBlindSafeStatusIndicators,
                                 canOpenInCodex: !snapshot.isArchived && !isRestoringArchive,
                                 openInCodex: {
                                     accessibilityPermissionStore.openTask(
@@ -323,7 +326,10 @@ struct ContentView: View {
                                     )
                                 } else {
                                     ForEach(Array(snapshot.subagents.enumerated()), id: \.element.id) { childIndex, subagent in
-                                        SubagentRowView(snapshot: subagent)
+                                        SubagentRowView(
+                                            snapshot: subagent,
+                                            usesColorBlindSafeIndicators: usesColorBlindSafeStatusIndicators
+                                        )
                                         if childIndex < snapshot.subagents.count - 1 {
                                             Divider().padding(.leading, 50)
                                         }

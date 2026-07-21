@@ -8,6 +8,7 @@ struct ThreadRowView: View {
     let isFavorite: Bool
     let isRestoringArchive: Bool
     let isSubagentExpanded: Bool
+    let usesColorBlindSafeIndicators: Bool
     let canOpenInCodex: Bool
     let openInCodex: () -> Void
     let toggleSubagents: () -> Void
@@ -25,7 +26,10 @@ struct ThreadRowView: View {
 
     private var rowContent: some View {
         HStack(alignment: .top, spacing: 10) {
-            StatusDotView(status: snapshot.status)
+            StatusDotView(
+                status: snapshot.status,
+                usesColorBlindSafeIndicators: usesColorBlindSafeIndicators
+            )
                 .padding(.top, 4)
 
             VStack(alignment: .leading, spacing: 5) {

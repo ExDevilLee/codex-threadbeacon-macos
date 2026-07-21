@@ -24,6 +24,8 @@
     "主题" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Theme" } } } },
     "浅色" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Light" } } } },
     "深色" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Dark" } } } },
+    "色盲安全状态标识" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Color-blind-safe status indicators" } } } },
+    "同时使用颜色、形状和文字区分任务状态。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Distinguish task status with color, shape, and text." } } } },
     "任务监听" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Task monitoring" } } } },
     "刷新间隔" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh interval" } } } },
     "最大显示任务数" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Maximum visible tasks" } } } },

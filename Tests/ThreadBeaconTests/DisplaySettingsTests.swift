@@ -11,6 +11,22 @@ let displaySettingsTests = [
         try expect(settings.refreshIntervalSeconds == 5, "supported refresh interval should be retained")
         try expect(settings.maximumTaskCount == 12, "supported task count should be retained")
         try expect(settings.appLanguage == .system, "language should default to system")
+        try expect(
+            settings.colorBlindSafeStatusIndicators == false,
+            "color-blind-safe status indicators should default to disabled"
+        )
+    },
+    TestCase(name: "display settings preserve color blind safe status preference") {
+        let settings = DisplaySettings(
+            refreshIntervalSeconds: 5,
+            maximumTaskCount: 12,
+            colorBlindSafeStatusIndicators: true
+        )
+
+        try expect(
+            settings.colorBlindSafeStatusIndicators,
+            "explicit color-blind-safe status preference should be retained"
+        )
     },
     TestCase(name: "display settings replace unsupported values with defaults") {
         let settings = DisplaySettings(
@@ -38,13 +54,18 @@ let displaySettingsTests = [
         repository.save(DisplaySettings(
             refreshIntervalSeconds: 10,
             maximumTaskCount: 20,
-            appLanguage: .english
+            appLanguage: .english,
+            colorBlindSafeStatusIndicators: true
         ))
         let loaded = repository.load()
 
         try expect(loaded.refreshIntervalSeconds == 10, "refresh interval should persist")
         try expect(loaded.maximumTaskCount == 20, "maximum task count should persist")
         try expect(loaded.appLanguage == .english, "language should persist")
+        try expect(
+            loaded.colorBlindSafeStatusIndicators,
+            "color-blind-safe status preference should persist"
+        )
     },
     TestCase(name: "display settings repository defaults invalid language to system") {
         let suiteName = "DisplaySettingsTests.invalidLanguage.\(UUID().uuidString)"

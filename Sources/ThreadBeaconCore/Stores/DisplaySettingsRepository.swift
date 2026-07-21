@@ -5,6 +5,7 @@ public enum DisplayPreferenceKeys {
     public static let maximumTaskCount = "displayMaximumTaskCount"
     public static let appLanguage = "displayAppLanguage"
     public static let appTheme = "displayAppTheme"
+    public static let colorBlindSafeStatusIndicators = "displayColorBlindSafeStatusIndicators"
 }
 
 public struct DisplaySettingsRepository {
@@ -20,7 +21,10 @@ public struct DisplaySettingsRepository {
             maximumTaskCount: defaults.integer(forKey: DisplayPreferenceKeys.maximumTaskCount),
             appLanguage: AppLanguage(
                 rawValue: defaults.string(forKey: DisplayPreferenceKeys.appLanguage) ?? ""
-            ) ?? .defaultValue
+            ) ?? .defaultValue,
+            colorBlindSafeStatusIndicators: defaults.bool(
+                forKey: DisplayPreferenceKeys.colorBlindSafeStatusIndicators
+            )
         )
     }
 
@@ -28,5 +32,9 @@ public struct DisplaySettingsRepository {
         defaults.set(settings.refreshIntervalSeconds, forKey: DisplayPreferenceKeys.refreshIntervalSeconds)
         defaults.set(settings.maximumTaskCount, forKey: DisplayPreferenceKeys.maximumTaskCount)
         defaults.set(settings.appLanguage.rawValue, forKey: DisplayPreferenceKeys.appLanguage)
+        defaults.set(
+            settings.colorBlindSafeStatusIndicators,
+            forKey: DisplayPreferenceKeys.colorBlindSafeStatusIndicators
+        )
     }
 }

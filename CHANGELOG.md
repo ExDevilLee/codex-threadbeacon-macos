@@ -9,6 +9,9 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ### Added
 
+- 新增默认关闭的色盲安全状态标识：在固定状态槽位内为七种任务状态使用不同 SF Symbol，
+  同时保留语义颜色和本地化状态文字；主任务与 Subagent 即时响应 Settings 开关，不改变标题、
+  Token 和持续时间列宽。
 - 新增项目自有 Homebrew Tap，可通过
   `brew install --cask ExDevilLee/tap/threadbeacon` 安装技术预览版；Cask 固定校验 GitHub
   Release 的版本和 SHA-256，并通过 CI 验证 style、strict audit、下载及隔离安装／卸载；

@@ -298,6 +298,8 @@ private struct GeneralSettingsView: View {
     private var maximumTaskCount = DisplaySettings.defaultMaximumTaskCount
     @AppStorage(DisplayPreferenceKeys.appTheme)
     private var appThemeRawValue = AppTheme.defaultValue.rawValue
+    @AppStorage(DisplayPreferenceKeys.colorBlindSafeStatusIndicators)
+    private var usesColorBlindSafeStatusIndicators = DisplaySettings.defaultColorBlindSafeStatusIndicators
     @ObservedObject var languageStore: AppLanguageStore
     @ObservedObject var launchAtLoginStore: LaunchAtLoginStore
 
@@ -323,6 +325,15 @@ private struct GeneralSettingsView: View {
                     Text("浅色").tag(AppTheme.light.rawValue)
                     Text("深色").tag(AppTheme.dark.rawValue)
                 }
+
+                Toggle(
+                    "色盲安全状态标识",
+                    isOn: $usesColorBlindSafeStatusIndicators
+                )
+
+                Text("同时使用颜色、形状和文字区分任务状态。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("任务监听") {

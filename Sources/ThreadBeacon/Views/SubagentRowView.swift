@@ -4,6 +4,7 @@ import SwiftUI
 struct SubagentRowView: View {
     @Environment(\.locale) private var locale
     let snapshot: SubagentSnapshot
+    let usesColorBlindSafeIndicators: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 4) {
@@ -12,7 +13,10 @@ struct SubagentRowView: View {
                 .foregroundStyle(.tertiary)
                 .frame(width: 10, height: 18)
 
-            StatusDotView(status: snapshot.status)
+            StatusDotView(
+                status: snapshot.status,
+                usesColorBlindSafeIndicators: usesColorBlindSafeIndicators
+            )
                 .scaleEffect(0.78)
 
             VStack(alignment: .leading, spacing: 4) {
