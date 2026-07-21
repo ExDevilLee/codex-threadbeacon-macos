@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @ObservedObject var store: ThreadStatusStore
     @ObservedObject var updateCheckStore: UpdateCheckStore
+    @ObservedObject var accessibilityPermissionStore: AccessibilityPermissionStore
     @Environment(\.locale) private var locale
     @AppStorage("windowPinned") private var isWindowPinned = false
     @AppStorage(DisplayPreferenceKeys.refreshIntervalSeconds)
@@ -87,6 +88,23 @@ struct ContentView: View {
             }
         } message: {
             Text(archiveRestoreFeedbackMessage)
+        }
+        .alert(
+            localized("无法打开 Codex 任务"),
+            isPresented: taskOpenFailureIsPresented
+        ) {
+            if accessibilityPermissionStore.taskOpenResult?
+                .shouldOfferAccessibilitySettings == true {
+                Button("打开辅助功能设置") {
+                    accessibilityPermissionStore.openSystemSettings()
+                    accessibilityPermissionStore.dismissTaskOpenResult()
+                }
+            }
+            Button("好") {
+                accessibilityPermissionStore.dismissTaskOpenResult()
+            }
+        } message: {
+            Text(taskOpenFailureMessage)
         }
     }
 
@@ -234,6 +252,13 @@ struct ContentView: View {
                                 isFavorite: store.isFavorite(snapshot.id),
                                 isRestoringArchive: isRestoringArchive,
                                 isSubagentExpanded: isExpanded,
+                                canOpenInCodex: !snapshot.isArchived && !isRestoringArchive,
+                                openInCodex: {
+                                    accessibilityPermissionStore.openTask(
+                                        threadID: snapshot.id,
+                                        isArchived: snapshot.isArchived
+                                    )
+                                },
                                 toggleSubagents: {
                                     store.toggleExpansion(for: snapshot.id)
                                     Task { await store.refresh(notificationPolicy: .baseline) }
@@ -399,6 +424,25 @@ struct ContentView: View {
                 }
             }
         )
+    }
+
+    private var taskOpenFailureIsPresented: Binding<Bool> {
+        Binding(
+            get: {
+                accessibilityPermissionStore.taskOpenResult?
+                    .shouldPresentFailure == true
+            },
+            set: { isPresented in
+                if !isPresented {
+                    accessibilityPermissionStore.dismissTaskOpenResult()
+                }
+            }
+        )
+    }
+
+    private var taskOpenFailureMessage: String {
+        guard let result = accessibilityPermissionStore.taskOpenResult else { return "" }
+        return TaskOpenPresentation.message(for: result, locale: locale)
     }
 
     private var archiveRestoreFeedbackTitle: String {

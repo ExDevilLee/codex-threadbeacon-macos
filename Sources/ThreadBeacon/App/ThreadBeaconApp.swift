@@ -128,7 +128,11 @@ struct ThreadBeaconApp: App {
 
     var body: some Scene {
         WindowGroup("ThreadBeacon") {
-            ContentView(store: store, updateCheckStore: updateCheckStore)
+            ContentView(
+                store: store,
+                updateCheckStore: updateCheckStore,
+                accessibilityPermissionStore: accessibilityPermissionStore
+            )
                 .frame(minWidth: 360, minHeight: 240)
                 .environment(\.locale, appLanguageStore.locale)
                 .environmentObject(appLanguageStore)

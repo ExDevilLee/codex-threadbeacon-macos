@@ -8,9 +8,22 @@ struct ThreadRowView: View {
     let isFavorite: Bool
     let isRestoringArchive: Bool
     let isSubagentExpanded: Bool
+    let canOpenInCodex: Bool
+    let openInCodex: () -> Void
     let toggleSubagents: () -> Void
 
+    @ViewBuilder
     var body: some View {
+        if canOpenInCodex {
+            rowContent
+                .onTapGesture(count: 2, perform: openInCodex)
+                .help(AppLocalization.string("双击在 Codex App 中打开", locale: locale))
+        } else {
+            rowContent
+        }
+    }
+
+    private var rowContent: some View {
         HStack(alignment: .top, spacing: 10) {
             StatusDotView(status: snapshot.status)
                 .padding(.top, 4)
