@@ -12,8 +12,13 @@ ThreadBeacon 是一个免费、开源的本地 macOS 工具。所有功能都不
 
 ## 付费赞助
 
-付费赞助渠道暂未启用。以后如果增加 GitHub Sponsors、Buy Me a Coffee、微信或支付宝等
-渠道，会继续遵守以下原则：
+如果 ThreadBeacon 对你有帮助，可以通过微信支付或支付宝自愿请作者喝杯咖啡：
+
+<p align="center">
+  <img src="docs/assets/sponsor/wechat-pay.jpg" alt="微信支付赞助二维码" width="240">&nbsp;&nbsp;<img src="docs/assets/sponsor/alipay.jpg" alt="支付宝赞助二维码" width="240">
+</p>
+
+付费赞助继续遵守以下原则：
 
 - 完全自愿，不解锁功能，不影响免费使用。
 - 不提供与数字内容或服务绑定的回报。
@@ -36,7 +41,7 @@ or not you sponsor the project, and the app does not identify sponsors or unlock
 
 ### Financial Sponsorship
 
-Financial sponsorship is not enabled yet. If GitHub Sponsors, Buy Me a Coffee, WeChat Pay, or
-Alipay is added later, support will remain entirely optional, unlock no features, and provide no
-reward tied to digital content or services. Payment advertising and QR codes will stay out of the
-main app window, and the current App Store rules will be reviewed before any store distribution.
+Optional sponsorship is available through the WeChat Pay and Alipay QR codes above. Sponsorship
+unlocks no features and provides no reward tied to digital content or services. Payment advertising
+and QR codes will stay out of the main app window, and the current App Store rules will be reviewed
+before any store distribution.
