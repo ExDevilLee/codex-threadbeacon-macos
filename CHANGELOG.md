@@ -7,6 +7,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-07-21
+
 ### Added
 
 - 新增双击打开 Codex 任务：仅未归档主任务可触发，通过任务 ID deep link 定位并以 rename 标题
@@ -111,7 +113,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.0...v0.1.1
