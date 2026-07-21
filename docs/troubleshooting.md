@@ -9,11 +9,18 @@ macOS 14 或更高版本，并且 Codex Desktop 或 Codex CLI 已经运行过至
 
 当前技术预览包使用 ad-hoc 签名，尚未经过 Apple 公证。首次打开可能被 Gatekeeper 拦截：
 
-1. 把 `ThreadBeacon.app` 移入 `/Applications`。
-2. 在 Finder 中按住 Control 点击 App，选择“打开”。
-3. 如果仍被拦截，前往“系统设置 > 隐私与安全性”，处理与 ThreadBeacon 对应的提示。
+1. 确认 App 来自本项目的
+   [GitHub Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases) 或
+   `ExDevilLee/tap/threadbeacon` Cask，并位于 `/Applications`。
+2. 如果警告窗口只有“移到废纸篓”和“完成”，点击“完成”，不要点击“移到废纸篓”。
+3. 打开 Finder 的“应用程序”，按住 Control 点击 `ThreadBeacon.app`，选择“打开”。
+4. 在第二个确认窗口中再次选择“打开”。
+5. 如果仍没有“打开”选项，前往“系统设置 > 隐私与安全性”，向下找到 ThreadBeacon 被阻止
+   的提示，点击“仍要打开”；按系统要求使用密码或 Touch ID 确认后，再点击“打开”。
 
-不要关闭 Gatekeeper，也不要执行来源不明的 `xattr` 或系统安全绕过命令。
+这是当前技术预览签名状态的限制，不代表 Homebrew 安装失败。不要关闭 Gatekeeper，也不要执行
+来源不明的 `xattr`、quarantine 清除或系统安全绕过命令。取得 Developer ID Application 并
+完成 Apple 公证后，应移除这套临时首次打开说明。
 
 ## 窗口中没有任务
 

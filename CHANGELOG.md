@@ -11,7 +11,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 - 新增项目自有 Homebrew Tap，可通过
   `brew install --cask ExDevilLee/tap/threadbeacon` 安装技术预览版；Cask 固定校验 GitHub
-  Release 的版本和 SHA-256，并通过 CI 验证 style、strict audit、下载及隔离安装／卸载。
+  Release 的版本和 SHA-256，并通过 CI 验证 style、strict audit、下载及隔离安装／卸载；
+  安装后明确提示当前未公证限制和安全的首次打开步骤。
 
 ## [0.1.4] - 2026-07-21
 

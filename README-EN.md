@@ -51,7 +51,9 @@ Then:
 1. Install with `brew install --cask ExDevilLee/tap/threadbeacon`, or download the ZIP from
    [Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases), extract it,
    and move `ThreadBeacon.app` to `/Applications`.
-2. If macOS blocks the first launch, Control-click the app in Finder and select **Open**.
+2. If the first launch shows **“ThreadBeacon” Not Opened**, select **Done** instead of
+   **Move to Trash**, then Control-click the app in Finder's **Applications** folder and select
+   **Open**. See [`Troubleshooting`](docs/troubleshooting-en.md#macos-blocks-the-app) for details.
 3. ThreadBeacon automatically reads recent local Codex primary tasks. No account, API token,
    or data path is required.
 
@@ -116,8 +118,11 @@ auto-recovery logs, run `brew uninstall --zap --cask threadbeacon`. The cask sou
 [`ExDevilLee/homebrew-tap`](https://github.com/ExDevilLee/homebrew-tap).
 
 Homebrew downloads, verifies, and installs the app; it does not bypass Gatekeeper. The current
-technical preview remains ad-hoc signed and unnotarized, so its first-launch boundary is the same
-as the GitHub Release installation below.
+technical preview remains ad-hoc signed and unnotarized. If the first launch warning only offers
+**Move to Trash** and **Done**, select **Done**, then Control-click `ThreadBeacon.app` in Finder's
+**Applications** folder and select **Open**. If it remains blocked, follow
+[`Troubleshooting`](docs/troubleshooting-en.md#macos-blocks-the-app) to use
+**System Settings > Privacy & Security > Open Anyway**.
 
 ### GitHub Release
 
@@ -136,10 +141,10 @@ shasum -a 256 -c ThreadBeacon-vX.Y.Z-macos-universal.zip.sha256
 ```
 
 Extract the ZIP, move `ThreadBeacon.app` to `/Applications`, and open it. The current
-technical preview uses an ad-hoc signature and is not notarized by Apple. If macOS blocks
-the first launch, Control-click the app in Finder, select **Open**, and confirm the source,
-or follow the matching prompt in **System Settings > Privacy & Security**. Do not disable
-system-wide security protections.
+technical preview uses an ad-hoc signature and is not notarized by Apple. Its first-launch
+steps are the same as the Homebrew installation above; see
+[`Troubleshooting`](docs/troubleshooting-en.md#macos-blocks-the-app). Do not disable system-wide
+security protections.
 
 Launch at login is not guaranteed for the current preview package. It will be verified again
 after Developer ID Application signing and notarization are available. See

@@ -11,12 +11,21 @@ Codex Desktop or Codex CLI has run at least one task.
 The current preview is ad-hoc signed and has not been notarized by Apple. Gatekeeper may block
 the first launch:
 
-1. Move `ThreadBeacon.app` to `/Applications`.
-2. Control-click the app in Finder and select **Open**.
-3. If it is still blocked, open **System Settings > Privacy & Security** and follow the prompt
-   that specifically refers to ThreadBeacon.
+1. Confirm that the app came from this project's
+   [GitHub Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases) or the
+   `ExDevilLee/tap/threadbeacon` cask, and that it is in `/Applications`.
+2. If the warning only offers **Move to Trash** and **Done**, select **Done**, not
+   **Move to Trash**.
+3. Open Finder's **Applications** folder, Control-click `ThreadBeacon.app`, and select **Open**.
+4. Select **Open** again in the second confirmation dialog.
+5. If **Open** is still unavailable, open **System Settings > Privacy & Security**, scroll to the
+   notice that ThreadBeacon was blocked, and select **Open Anyway**. Authenticate with your
+   password or Touch ID when requested, then confirm **Open**.
 
-Do not disable Gatekeeper or run untrusted `xattr` or system-security bypass commands.
+This is a limitation of the current technical-preview signature, not a failed Homebrew install.
+Do not disable Gatekeeper or run untrusted `xattr`, quarantine-removal, or system-security bypass
+commands. Remove this temporary first-launch guidance after Developer ID Application signing and
+Apple notarization are available.
 
 ## No Tasks Appear
 
