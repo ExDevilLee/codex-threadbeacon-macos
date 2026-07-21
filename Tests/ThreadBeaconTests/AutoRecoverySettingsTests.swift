@@ -18,6 +18,70 @@ let autoRecoverySettingsTests = [
             "every supported incident should have a default prompt"
         )
     },
+    TestCase(name: "auto recovery defaults use the selected prompt language") {
+        let chinese = AutoRecoverySettings.defaultValue(
+            promptLanguage: .simplifiedChinese
+        )
+        let english = AutoRecoverySettings.defaultValue(promptLanguage: .english)
+
+        try expect(
+            chinese.rule(for: .http400).prompt
+                == "刚才请求异常中断了，请继续未完成的任务",
+            "Chinese should keep the existing HTTP 400 default"
+        )
+        try expect(
+            english.rule(for: .http400).prompt
+                == "The previous request was interrupted by an error. Please continue the unfinished task.",
+            "English should use the English HTTP 400 default"
+        )
+        try expect(
+            english.rule(for: .http429).prompt
+                == "The previous request was interrupted by rate limiting. Please continue the unfinished task.",
+            "English should use the English HTTP 429 default"
+        )
+        try expect(
+            english.rule(for: .http503).prompt
+                == "The previous request was interrupted because the service was unavailable. Please continue the unfinished task.",
+            "English should use the English HTTP 503 default"
+        )
+        try expect(
+            english.rule(for: .otherHTTP).prompt
+                == "The previous request was interrupted by an HTTP error. Please continue the unfinished task.",
+            "English should use the English fallback HTTP default"
+        )
+        try expect(
+            english.rule(for: .modelCapacity).prompt
+                == "The previous request was interrupted due to model capacity limits. Please continue the unfinished task.",
+            "English should use the English model-capacity default"
+        )
+        try expect(
+            AutoRecoveryIncidentType.allCases.allSatisfy {
+                english.rule(for: $0).promptSource == .defaultValue
+            },
+            "built-in prompts should retain default provenance"
+        )
+    },
+    TestCase(name: "auto recovery v1 migration distinguishes defaults from custom prompts") {
+        let data = Data(
+            #"{"version":1,"isEnabled":true,"rules":{"http400":{"isEnabled":true,"prompt":"刚才请求异常中断了，请继续未完成的任务"},"http429":{"isEnabled":true,"prompt":"my custom retry prompt"}}}"#.utf8
+        )
+
+        let settings = try JSONDecoder().decode(AutoRecoverySettings.self, from: data)
+
+        try expect(settings.version == 2, "v1 settings should migrate to v2")
+        try expect(
+            settings.rule(for: .http400).promptSource == .defaultValue,
+            "an exact legacy built-in prompt should migrate as a default"
+        )
+        try expect(
+            settings.rule(for: .http429).promptSource == .custom,
+            "a non-default legacy prompt should migrate as custom"
+        )
+        try expect(
+            settings.rule(for: .http429).prompt == "my custom retry prompt",
+            "migration must preserve custom prompt text"
+        )
+    },
     TestCase(name: "auto recovery prompt validation trims valid text and rejects invalid text") {
         try expect(
             AutoRecoveryPromptValidation.validate("  继续未完成任务  ") == .valid("继续未完成任务"),
@@ -88,6 +152,119 @@ let autoRecoverySettingsTests = [
 
         try expect(loaded == .defaultValue, "corrupt data should restore safe defaults")
         try expect(!loaded.isEnabled, "corrupt data must not enable automatic recovery")
+    },
+    TestCase(name: "auto recovery store localizes defaults and preserves custom prompts") {
+        let suiteName = "AutoRecoverySettingsTests.language.\(UUID().uuidString)"
+        let result = await MainActor.run { () -> (
+            String,
+            AutoRecoveryPromptSource,
+            String,
+            AutoRecoveryPromptSource,
+            Bool,
+            AutoRecoveryPromptSource,
+            String,
+            AutoRecoveryPromptSource
+        )? in
+            guard let defaults = UserDefaults(suiteName: suiteName) else { return nil }
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            let repository = AutoRecoverySettingsRepository(defaults: defaults)
+            let store = AutoRecoverySettingsStore(
+                repository: repository,
+                promptLanguage: .simplifiedChinese
+            )
+
+            store.setPromptLanguage(.english)
+            let englishDefault = store.settings.rule(for: .http400)
+            _ = store.savePrompt(for: .http429, prompt: "my custom retry prompt")
+            store.setPromptLanguage(.simplifiedChinese)
+            let customAfterLanguageChange = store.settings.rule(for: .http429)
+            store.setRuleEnabled(false, for: .http429)
+            let customAfterToggle = store.settings.rule(for: .http429)
+            store.resetRule(for: .http429)
+            let resetRule = store.settings.rule(for: .http429)
+
+            return (
+                englishDefault.prompt,
+                englishDefault.promptSource,
+                customAfterLanguageChange.prompt,
+                customAfterLanguageChange.promptSource,
+                customAfterToggle.isEnabled,
+                customAfterToggle.promptSource,
+                resetRule.prompt,
+                resetRule.promptSource
+            )
+        }
+        guard let result else {
+            throw TestFailure(description: "could not create isolated UserDefaults suite")
+        }
+
+        try expect(
+            result.0
+                == "The previous request was interrupted by an error. Please continue the unfinished task.",
+            "default prompts should switch to English"
+        )
+        try expect(result.1 == .defaultValue, "language sync should retain default provenance")
+        try expect(result.2 == "my custom retry prompt", "custom text should survive language changes")
+        try expect(result.3 == .custom, "saved prompts should be custom")
+        try expect(!result.4, "rule enabled state should update independently")
+        try expect(result.5 == .custom, "toggling a rule must preserve prompt provenance")
+        try expect(
+            result.6 == "刚才请求频率受限并已中断，请继续未完成的任务",
+            "restore default should use the current prompt language"
+        )
+        try expect(result.7 == .defaultValue, "restore default should restore default provenance")
+    },
+    TestCase(name: "auto recovery store migrates legacy defaults using the active language") {
+        let suiteName = "AutoRecoverySettingsTests.storeMigration.\(UUID().uuidString)"
+        let result = await MainActor.run { () -> (AutoRecoveryRule, AutoRecoveryRule, String?)? in
+            guard let defaults = UserDefaults(suiteName: suiteName) else { return nil }
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            defaults.set(
+                #"{"version":1,"isEnabled":false,"rules":{"http400":{"isEnabled":true,"prompt":"刚才请求异常中断了，请继续未完成的任务"},"http429":{"isEnabled":true,"prompt":"user-authored prompt"}}}"#,
+                forKey: AutoRecoverySettingsRepository.storageKey
+            )
+            let store = AutoRecoverySettingsStore(
+                repository: AutoRecoverySettingsRepository(defaults: defaults),
+                promptLanguage: .english
+            )
+            return (
+                store.settings.rule(for: .http400),
+                store.settings.rule(for: .http429),
+                defaults.string(forKey: AutoRecoverySettingsRepository.storageKey)
+            )
+        }
+        guard let result else {
+            throw TestFailure(description: "could not create isolated UserDefaults suite")
+        }
+
+        try expect(
+            result.0.prompt
+                == "The previous request was interrupted by an error. Please continue the unfinished task.",
+            "legacy defaults should migrate to the active language"
+        )
+        try expect(result.0.promptSource == .defaultValue, "legacy defaults should remain defaults")
+        try expect(result.1.prompt == "user-authored prompt", "legacy custom text should be preserved")
+        try expect(result.1.promptSource == .custom, "legacy custom text should remain custom")
+        try expect(
+            result.2?.contains(#""version":2"#) == true,
+            "the migrated payload should be persisted as v2"
+        )
+    },
+    TestCase(name: "saving a built-in prompt still records explicit customization") {
+        let suiteName = "AutoRecoverySettingsTests.explicitSave.\(UUID().uuidString)"
+        let source = await MainActor.run { () -> AutoRecoveryPromptSource? in
+            guard let defaults = UserDefaults(suiteName: suiteName) else { return nil }
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            let store = AutoRecoverySettingsStore(
+                repository: AutoRecoverySettingsRepository(defaults: defaults),
+                promptLanguage: .english
+            )
+            let prompt = store.settings.rule(for: .http400).prompt
+            _ = store.savePrompt(for: .http400, prompt: prompt)
+            return store.settings.rule(for: .http400).promptSource
+        }
+
+        try expect(source == .custom, "an explicit save should always mark the prompt as custom")
     },
     TestCase(name: "service incidents map to stable auto recovery types") {
         let cases: [(ServiceIncidentKind, AutoRecoveryIncidentType)] = [

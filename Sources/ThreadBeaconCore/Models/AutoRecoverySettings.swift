@@ -1,5 +1,21 @@
 import Foundation
 
+public enum AutoRecoveryPromptLanguage: String, Codable, Sendable {
+    case simplifiedChinese
+    case english
+
+    public init(localeIdentifier: String) {
+        self = localeIdentifier.lowercased().hasPrefix("zh")
+            ? .simplifiedChinese
+            : .english
+    }
+}
+
+public enum AutoRecoveryPromptSource: String, Codable, Sendable {
+    case defaultValue
+    case custom
+}
+
 public enum AutoRecoveryIncidentType: String, Codable, CaseIterable, Sendable {
     case http400
     case http429
@@ -23,32 +39,62 @@ public enum AutoRecoveryIncidentType: String, Codable, CaseIterable, Sendable {
     }
 
     public var defaultRule: AutoRecoveryRule {
+        defaultRule(promptLanguage: .simplifiedChinese)
+    }
+
+    public func defaultRule(
+        promptLanguage: AutoRecoveryPromptLanguage
+    ) -> AutoRecoveryRule {
+        AutoRecoveryRule(
+            isEnabled: defaultIsEnabled,
+            prompt: defaultPrompt(promptLanguage: promptLanguage),
+            promptSource: .defaultValue
+        )
+    }
+
+    fileprivate func isLegacyDefaultPrompt(_ prompt: String) -> Bool {
+        prompt == defaultPrompt(promptLanguage: .simplifiedChinese)
+    }
+
+    private func defaultPrompt(
+        promptLanguage: AutoRecoveryPromptLanguage
+    ) -> String {
+        switch promptLanguage {
+        case .simplifiedChinese:
+            switch self {
+            case .http400:
+                "刚才请求异常中断了，请继续未完成的任务"
+            case .http429:
+                "刚才请求频率受限并已中断，请继续未完成的任务"
+            case .http503:
+                "刚才服务暂时不可用并已中断，请继续未完成的任务"
+            case .otherHTTP:
+                "刚才请求异常中断了，请继续未完成的任务"
+            case .modelCapacity:
+                "刚才因模型容量限制中断了，请继续未完成的任务"
+            }
+        case .english:
+            switch self {
+            case .http400:
+                "The previous request was interrupted by an error. Please continue the unfinished task."
+            case .http429:
+                "The previous request was interrupted by rate limiting. Please continue the unfinished task."
+            case .http503:
+                "The previous request was interrupted because the service was unavailable. Please continue the unfinished task."
+            case .otherHTTP:
+                "The previous request was interrupted by an HTTP error. Please continue the unfinished task."
+            case .modelCapacity:
+                "The previous request was interrupted due to model capacity limits. Please continue the unfinished task."
+            }
+        }
+    }
+
+    private var defaultIsEnabled: Bool {
         switch self {
-        case .http400:
-            AutoRecoveryRule(
-                isEnabled: true,
-                prompt: "刚才请求异常中断了，请继续未完成的任务"
-            )
-        case .http429:
-            AutoRecoveryRule(
-                isEnabled: true,
-                prompt: "刚才请求频率受限并已中断，请继续未完成的任务"
-            )
         case .http503:
-            AutoRecoveryRule(
-                isEnabled: false,
-                prompt: "刚才服务暂时不可用并已中断，请继续未完成的任务"
-            )
-        case .otherHTTP:
-            AutoRecoveryRule(
-                isEnabled: true,
-                prompt: "刚才请求异常中断了，请继续未完成的任务"
-            )
-        case .modelCapacity:
-            AutoRecoveryRule(
-                isEnabled: true,
-                prompt: "刚才因模型容量限制中断了，请继续未完成的任务"
-            )
+            false
+        case .http400, .http429, .otherHTTP, .modelCapacity:
+            true
         }
     }
 }
@@ -97,10 +143,39 @@ public enum AutoRecoveryPolicy {
 public struct AutoRecoveryRule: Codable, Equatable, Sendable {
     public var isEnabled: Bool
     public var prompt: String
+    public var promptSource: AutoRecoveryPromptSource
 
-    public init(isEnabled: Bool, prompt: String) {
+    public init(
+        isEnabled: Bool,
+        prompt: String,
+        promptSource: AutoRecoveryPromptSource = .custom
+    ) {
         self.isEnabled = isEnabled
         self.prompt = prompt
+        self.promptSource = promptSource
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case isEnabled
+        case prompt
+        case promptSource
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        isEnabled = try container.decode(Bool.self, forKey: .isEnabled)
+        prompt = try container.decode(String.self, forKey: .prompt)
+        promptSource = try container.decodeIfPresent(
+            AutoRecoveryPromptSource.self,
+            forKey: .promptSource
+        ) ?? .custom
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(isEnabled, forKey: .isEnabled)
+        try container.encode(prompt, forKey: .prompt)
+        try container.encode(promptSource, forKey: .promptSource)
     }
 }
 
@@ -120,7 +195,7 @@ public enum AutoRecoveryPromptValidation: Equatable, Sendable {
 }
 
 public struct AutoRecoverySettings: Codable, Equatable, Sendable {
-    public static let currentVersion = 1
+    public static let currentVersion = 2
 
     public var version: Int
     public var isEnabled: Bool
@@ -134,14 +209,20 @@ public struct AutoRecoverySettings: Codable, Equatable, Sendable {
         self.version = version
         self.isEnabled = isEnabled
         self.rules = rules
-        normalizeRules()
+        normalizeRules(sourceVersion: version)
     }
 
     public static var defaultValue: AutoRecoverySettings {
+        defaultValue(promptLanguage: .simplifiedChinese)
+    }
+
+    public static func defaultValue(
+        promptLanguage: AutoRecoveryPromptLanguage
+    ) -> AutoRecoverySettings {
         AutoRecoverySettings(
             isEnabled: false,
             rules: Dictionary(uniqueKeysWithValues: AutoRecoveryIncidentType.allCases.map {
-                ($0, $0.defaultRule)
+                ($0, $0.defaultRule(promptLanguage: promptLanguage))
             })
         )
     }
@@ -153,9 +234,28 @@ public struct AutoRecoverySettings: Codable, Equatable, Sendable {
     public mutating func setRule(_ rule: AutoRecoveryRule, for type: AutoRecoveryIncidentType) {
         switch AutoRecoveryPromptValidation.validate(rule.prompt) {
         case let .valid(prompt):
-            rules[type] = AutoRecoveryRule(isEnabled: rule.isEnabled, prompt: prompt)
+            rules[type] = AutoRecoveryRule(
+                isEnabled: rule.isEnabled,
+                prompt: prompt,
+                promptSource: rule.promptSource
+            )
         case .empty, .tooLong:
             rules[type] = type.defaultRule
+        }
+    }
+
+    public mutating func synchronizeDefaultPrompts(
+        to promptLanguage: AutoRecoveryPromptLanguage
+    ) {
+        for type in AutoRecoveryIncidentType.allCases {
+            let currentRule = rule(for: type)
+            guard currentRule.promptSource == .defaultValue else { continue }
+            let localizedDefault = type.defaultRule(promptLanguage: promptLanguage)
+            rules[type] = AutoRecoveryRule(
+                isEnabled: currentRule.isEnabled,
+                prompt: localizedDefault.prompt,
+                promptSource: .defaultValue
+            )
         }
     }
 
@@ -167,7 +267,8 @@ public struct AutoRecoverySettings: Codable, Equatable, Sendable {
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        version = try container.decodeIfPresent(Int.self, forKey: .version) ?? Self.currentVersion
+        let storedVersion = try container.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        version = storedVersion
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? false
         let storedRules = try container.decodeIfPresent(
             [String: AutoRecoveryRule].self,
@@ -176,7 +277,7 @@ public struct AutoRecoverySettings: Codable, Equatable, Sendable {
         rules = Dictionary(uniqueKeysWithValues: storedRules.compactMap { key, value in
             AutoRecoveryIncidentType(rawValue: key).map { ($0, value) }
         })
-        normalizeRules()
+        normalizeRules(sourceVersion: storedVersion)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -189,15 +290,19 @@ public struct AutoRecoverySettings: Codable, Equatable, Sendable {
         )
     }
 
-    private mutating func normalizeRules() {
+    private mutating func normalizeRules(sourceVersion: Int) {
         version = Self.currentVersion
         for type in AutoRecoveryIncidentType.allCases {
             let savedRule = rules[type] ?? type.defaultRule
             switch AutoRecoveryPromptValidation.validate(savedRule.prompt) {
             case let .valid(prompt):
+                let promptSource = sourceVersion < Self.currentVersion
+                    ? (type.isLegacyDefaultPrompt(prompt) ? .defaultValue : .custom)
+                    : savedRule.promptSource
                 rules[type] = AutoRecoveryRule(
                     isEnabled: savedRule.isEnabled,
-                    prompt: prompt
+                    prompt: prompt,
+                    promptSource: promptSource
                 )
             case .empty, .tooLong:
                 rules[type] = type.defaultRule

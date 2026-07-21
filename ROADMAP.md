@@ -175,7 +175,9 @@
 - **MVP 已完成（自动恢复设置）**：Release 构建移除手工诊断、任务 ID 和测试发送控件，Debug
   构建保留开发验证入口；正式设置支持总开关，以及 HTTP 400、HTTP 429、HTTP 503、其他终止型
   HTTP 错误和模型容量异常各自的启用状态与自定义提示词。HTTP 503 默认关闭，只在重试耗尽后
-  才允许触发。设计见 [`docs/auto-recovery-settings-design.md`](docs/auto-recovery-settings-design.md)。
+  才允许触发。内置提示词跟随 App 语言，用户主动保存的提示词和未保存草稿不会被语言切换覆盖。
+  设计见 [`docs/auto-recovery-settings-design.md`](docs/auto-recovery-settings-design.md) 和
+  [`docs/auto-recovery-prompt-language-design.md`](docs/auto-recovery-prompt-language-design.md)。
 - **后续（恢复原前台 App）**：自动发送完成后恢复操作前的原前台 App；需要避免覆盖用户发送
   期间的主动切换行为，作为独立阶段验证，不阻塞自动恢复配置功能。
 - **后续（双击打开 Codex 任务）**：用户已授予 Accessibility 权限后，双击 ThreadBeacon 主任务

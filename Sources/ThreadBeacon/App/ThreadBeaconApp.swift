@@ -28,7 +28,8 @@ struct ThreadBeaconApp: App {
     private let soundPlayer: SoundPlaybackService
 
     init() {
-        _appLanguageStore = StateObject(wrappedValue: AppLanguageStore())
+        let languageStore = AppLanguageStore()
+        _appLanguageStore = StateObject(wrappedValue: languageStore)
         let displaySettingsRepository = DisplaySettingsRepository()
         let displaySettings = displaySettingsRepository.load()
         displaySettingsRepository.save(displaySettings)
@@ -36,7 +37,11 @@ struct ThreadBeaconApp: App {
         let loader = ThreadStatusLoader(repository: repository)
         let archiveRestoreService = CodexArchiveRestoreService()
         let recoveryLogs = AutoRecoveryLogStore()
-        let recoverySettings = AutoRecoverySettingsStore()
+        let recoverySettings = AutoRecoverySettingsStore(
+            promptLanguage: AutoRecoveryPromptLanguage(
+                localeIdentifier: languageStore.locale.identifier
+            )
+        )
         let accessibilityStore = AccessibilityPermissionStore()
         _autoRecoveryLogStore = StateObject(wrappedValue: recoveryLogs)
         _autoRecoverySettingsStore = StateObject(wrappedValue: recoverySettings)
@@ -128,6 +133,9 @@ struct ThreadBeaconApp: App {
                 .environment(\.locale, appLanguageStore.locale)
                 .environmentObject(appLanguageStore)
                 .preferredColorScheme(selectedTheme.colorScheme)
+                .onChange(of: appLanguageStore.locale.identifier) { _, identifier in
+                    synchronizeRecoveryPromptLanguage(identifier)
+                }
         }
         .defaultSize(width: 420, height: 360)
         .windowResizability(.contentMinSize)
@@ -155,11 +163,20 @@ struct ThreadBeaconApp: App {
             .environment(\.locale, appLanguageStore.locale)
             .environmentObject(appLanguageStore)
             .preferredColorScheme(selectedTheme.colorScheme)
+            .onChange(of: appLanguageStore.locale.identifier) { _, identifier in
+                synchronizeRecoveryPromptLanguage(identifier)
+            }
         }
     }
 
     private var selectedTheme: AppTheme {
         AppTheme(rawValue: appThemeRawValue) ?? .defaultValue
+    }
+
+    private func synchronizeRecoveryPromptLanguage(_ localeIdentifier: String) {
+        autoRecoverySettingsStore.setPromptLanguage(
+            AutoRecoveryPromptLanguage(localeIdentifier: localeIdentifier)
+        )
     }
 
 }

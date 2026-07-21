@@ -10,12 +10,15 @@ public struct AutoRecoverySettingsRepository {
         self.defaults = defaults
     }
 
-    public func load() -> AutoRecoverySettings {
+    public func load(
+        promptLanguage: AutoRecoveryPromptLanguage = .simplifiedChinese
+    ) -> AutoRecoverySettings {
         guard let value = defaults.string(forKey: Self.storageKey),
               let data = value.data(using: .utf8),
-              let settings = try? JSONDecoder().decode(AutoRecoverySettings.self, from: data) else {
-            return .defaultValue
+              var settings = try? JSONDecoder().decode(AutoRecoverySettings.self, from: data) else {
+            return .defaultValue(promptLanguage: promptLanguage)
         }
+        settings.synchronizeDefaultPrompts(to: promptLanguage)
         return settings
     }
 
@@ -33,10 +36,16 @@ public final class AutoRecoverySettingsStore: ObservableObject {
     @Published public private(set) var settings: AutoRecoverySettings
 
     private let repository: AutoRecoverySettingsRepository
+    private var promptLanguage: AutoRecoveryPromptLanguage
 
-    public init(repository: AutoRecoverySettingsRepository = AutoRecoverySettingsRepository()) {
+    public init(
+        repository: AutoRecoverySettingsRepository = AutoRecoverySettingsRepository(),
+        promptLanguage: AutoRecoveryPromptLanguage = .simplifiedChinese
+    ) {
         self.repository = repository
-        settings = repository.load()
+        self.promptLanguage = promptLanguage
+        settings = repository.load(promptLanguage: promptLanguage)
+        repository.save(settings)
     }
 
     public func setEnabled(_ isEnabled: Bool) {
@@ -44,16 +53,38 @@ public final class AutoRecoverySettingsStore: ObservableObject {
         repository.save(settings)
     }
 
+    public func setPromptLanguage(_ promptLanguage: AutoRecoveryPromptLanguage) {
+        guard self.promptLanguage != promptLanguage else { return }
+        self.promptLanguage = promptLanguage
+        settings.synchronizeDefaultPrompts(to: promptLanguage)
+        repository.save(settings)
+    }
+
+    public func setRuleEnabled(
+        _ isEnabled: Bool,
+        for type: AutoRecoveryIncidentType
+    ) {
+        var rule = settings.rule(for: type)
+        guard rule.isEnabled != isEnabled else { return }
+        rule.isEnabled = isEnabled
+        settings.setRule(rule, for: type)
+        repository.save(settings)
+    }
+
     @discardableResult
-    public func updateRule(
+    public func savePrompt(
         for type: AutoRecoveryIncidentType,
-        isEnabled: Bool,
         prompt: String
     ) -> AutoRecoveryPromptValidation {
         let validation = AutoRecoveryPromptValidation.validate(prompt)
         guard case let .valid(normalizedPrompt) = validation else { return validation }
+        let currentRule = settings.rule(for: type)
         settings.setRule(
-            AutoRecoveryRule(isEnabled: isEnabled, prompt: normalizedPrompt),
+            AutoRecoveryRule(
+                isEnabled: currentRule.isEnabled,
+                prompt: normalizedPrompt,
+                promptSource: .custom
+            ),
             for: type
         )
         repository.save(settings)
@@ -61,7 +92,16 @@ public final class AutoRecoverySettingsStore: ObservableObject {
     }
 
     public func resetRule(for type: AutoRecoveryIncidentType) {
-        settings.setRule(type.defaultRule, for: type)
+        let currentRule = settings.rule(for: type)
+        let defaultRule = type.defaultRule(promptLanguage: promptLanguage)
+        settings.setRule(
+            AutoRecoveryRule(
+                isEnabled: currentRule.isEnabled,
+                prompt: defaultRule.prompt,
+                promptSource: .defaultValue
+            ),
+            for: type
+        )
         repository.save(settings)
     }
 }

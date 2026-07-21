@@ -155,6 +155,7 @@ private struct AutoRecoveryRuleEditor: View {
     @Environment(\.locale) private var locale
     @State private var isExpanded = false
     @State private var draftPrompt: String
+    @State private var isDraftDirty = false
     @State private var validationError: AutoRecoveryPromptValidation?
 
     init(settingsStore: AutoRecoverySettingsStore, type: AutoRecoveryIncidentType) {
@@ -169,7 +170,7 @@ private struct AutoRecoveryRuleEditor: View {
                 Text(localized("自动恢复提示词"))
                     .font(.caption.weight(.medium))
 
-                TextEditor(text: $draftPrompt)
+                TextEditor(text: draftPromptBinding)
                     .font(.body)
                     .frame(minHeight: 58, maxHeight: 82)
                     .padding(4)
@@ -188,6 +189,7 @@ private struct AutoRecoveryRuleEditor: View {
                     Button(localized("恢复默认")) {
                         settingsStore.resetRule(for: type)
                         draftPrompt = settingsStore.settings.rule(for: type).prompt
+                        isDraftDirty = false
                         validationError = nil
                     }
 
@@ -218,18 +220,32 @@ private struct AutoRecoveryRuleEditor: View {
                 Spacer()
             }
         }
+        .onChange(of: storedPrompt) { _, newPrompt in
+            guard !isDraftDirty else { return }
+            draftPrompt = newPrompt
+        }
     }
 
     private var enabledBinding: Binding<Bool> {
         Binding(
             get: { settingsStore.settings.rule(for: type).isEnabled },
             set: { isEnabled in
-                let savedPrompt = settingsStore.settings.rule(for: type).prompt
-                _ = settingsStore.updateRule(
-                    for: type,
-                    isEnabled: isEnabled,
-                    prompt: savedPrompt
-                )
+                settingsStore.setRuleEnabled(isEnabled, for: type)
+            }
+        )
+    }
+
+    private var storedPrompt: String {
+        settingsStore.settings.rule(for: type).prompt
+    }
+
+    private var draftPromptBinding: Binding<String> {
+        Binding(
+            get: { draftPrompt },
+            set: { newValue in
+                draftPrompt = newValue
+                isDraftDirty = true
+                validationError = nil
             }
         )
     }
@@ -239,14 +255,14 @@ private struct AutoRecoveryRuleEditor: View {
     }
 
     private func savePrompt() {
-        let validation = settingsStore.updateRule(
+        let validation = settingsStore.savePrompt(
             for: type,
-            isEnabled: settingsStore.settings.rule(for: type).isEnabled,
             prompt: draftPrompt
         )
         validationError = validation
         if case let .valid(normalizedPrompt) = validation {
             draftPrompt = normalizedPrompt
+            isDraftDirty = false
             validationError = nil
         }
     }

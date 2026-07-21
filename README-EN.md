@@ -20,7 +20,8 @@ for HTTP 400, HTTP 429, HTTP 503, other HTTP failures, and model-capacity failur
 Only terminal incidents trigger recovery, and HTTP 503 remains off by default. Sending
 requires explicit macOS Accessibility permission and uses the visible Codex App input
 field; ThreadBeacon never falls back to an external Codex CLI resume. Historical
-incidents found at startup are not replayed, and monitoring continues.
+incidents found at startup are not replayed, and monitoring continues. Built-in prompts
+follow the app language; prompts explicitly saved by the user keep their original text.
 
 This is an unofficial community project. It is not affiliated with or endorsed by OpenAI. `Codex` is a trademark of its respective owner.
 
@@ -237,7 +238,9 @@ project-created sounds and verify all assets with:
   and failures suppress a misleading completion sound.
 - The auto-recovery master switch is off by default. HTTP 400, HTTP 429, other terminal
   HTTP failures, and model-capacity rules are prepared as enabled; HTTP 503 is prepared
-  as disabled. Every prompt can be edited or restored, and active retries never trigger.
+  as disabled. Built-in prompts follow the app language, while explicitly saved prompts
+  stay unchanged. Switching languages does not overwrite an unsaved editing draft, and
+  active retries never trigger recovery.
 - Settings > Auto recovery records the session ID, incident episode, record time,
   not-sent/sending/sent/failed state, and a sanitized result. The default not-sent
   reason is that macOS Accessibility permission is required.
