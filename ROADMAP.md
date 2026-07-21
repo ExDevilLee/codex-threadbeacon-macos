@@ -254,9 +254,14 @@
   排查覆盖首次打开、空列表、状态、提示音、升级、回滚、卸载和隐私安全诊断范围。
 - **已完成（P1 上手包 v1）**：提供 Bug/Feature Issue Forms、PR 模板和贡献指南，反馈入口
   明确禁止上传 Codex 数据文件、会话内容、本机路径或凭据。
-- `P1（Homebrew Cask）`：基于现有 GitHub Release Universal ZIP 增加可验证的 Cask 安装入口；
-  首版优先使用项目自有 tap，固定版本、下载 URL 和 SHA-256，并验证安装、升级、回滚与卸载。
-  Homebrew 只改善分发体验，不绕过 Gatekeeper；正式签名和公证仍按独立 `P0` 推进。
+- **已完成（P1 Homebrew Cask MVP）**：项目自有
+  [`ExDevilLee/homebrew-tap`](https://github.com/ExDevilLee/homebrew-tap) 已提供固定版本、Release
+  URL 和 SHA-256 的 `threadbeacon` Cask；本地与 GitHub Actions 已验证 style、strict audit、
+  下载、Universal App 身份、隔离安装和卸载。Homebrew 只改善分发体验，不绕过 Gatekeeper；
+  正式签名和公证仍按独立 `P0` 推进。
+- **待验证（Homebrew Cask）**：下一个版本发布时完成真实的跨版本 `brew upgrade`、维护者回滚
+  和用户设置保留验证；验证稳定后再决定是否由 Release Workflow 向 tap 创建更新 PR，不使用
+  跨仓库自动直推。
 
 详细检查表见 [`docs/public-sharing-readiness.md`](docs/public-sharing-readiness.md)。
 
@@ -277,7 +282,7 @@
 
 1. 研究精确识别等待输入／授权的稳定事件源，优先验证可选 Codex hooks 的任务身份、状态清理、
    版本兼容和隐私边界。
-2. 基于现有 GitHub Release 建立并验证项目自有 Homebrew Cask 分发入口。
+2. 下一个版本发布时验证 Homebrew 跨版本升级和维护者回滚，再评估自动更新 Cask 的 PR 流程。
 3. 获得 Developer ID Application 后补齐正式签名、公证，并完成登录启动端到端验证。
 4. 补充色盲安全设计；根据真实反馈决定是否继续扩展外部付费赞助渠道。
 5. 真实副屏恢复复验，并根据反馈决定是否增加显式显示器选择器。

@@ -48,11 +48,11 @@ Before starting, make sure that:
 
 Then:
 
-1. Download `ThreadBeacon-vX.Y.Z-macos-universal.zip` from
-   [Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases).
-2. Extract it and move `ThreadBeacon.app` to `/Applications`.
-3. If macOS blocks the first launch, Control-click the app in Finder and select **Open**.
-4. ThreadBeacon automatically reads recent local Codex primary tasks. No account, API token,
+1. Install with `brew install --cask ExDevilLee/tap/threadbeacon`, or download the ZIP from
+   [Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases), extract it,
+   and move `ThreadBeacon.app` to `/Applications`.
+2. If macOS blocks the first launch, Control-click the app in Finder and select **Open**.
+3. ThreadBeacon automatically reads recent local Codex primary tasks. No account, API token,
    or data path is required.
 
 If no tasks appear or the footer reports a data-source problem, see
@@ -95,6 +95,31 @@ See the Chinese
 path and the remaining compatibility boundaries.
 
 ## Download And Install
+
+### Homebrew Cask
+
+Install the technical preview from the project tap:
+
+```bash
+brew install --cask ExDevilLee/tap/threadbeacon
+```
+
+After a new release updates the cask, upgrade with:
+
+```bash
+brew update
+brew upgrade --cask threadbeacon
+```
+
+A regular uninstall preserves user settings. To also remove ThreadBeacon preferences and
+auto-recovery logs, run `brew uninstall --zap --cask threadbeacon`. The cask source and CI are in
+[`ExDevilLee/homebrew-tap`](https://github.com/ExDevilLee/homebrew-tap).
+
+Homebrew downloads, verifies, and installs the app; it does not bypass Gatekeeper. The current
+technical preview remains ad-hoc signed and unnotarized, so its first-launch boundary is the same
+as the GitHub Release installation below.
+
+### GitHub Release
 
 Open [GitHub Releases](https://github.com/ExDevilLee/codex-threadbeacon-macos/releases)
 and download both files for the selected version:
