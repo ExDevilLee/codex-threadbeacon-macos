@@ -180,9 +180,11 @@
   [`docs/auto-recovery-prompt-language-design.md`](docs/auto-recovery-prompt-language-design.md)。
 - **后续（恢复原前台 App）**：自动发送完成后恢复操作前的原前台 App；需要避免覆盖用户发送
   期间的主动切换行为，作为独立阶段验证，不阻塞自动恢复配置功能。
-- **后续（双击打开 Codex 任务）**：用户已授予 Accessibility 权限后，双击 ThreadBeacon 主任务
-  行可在 Codex App 打开对应任务。实现时复用任务 ID deep link、rename 标题二次确认和当前输入框
-  草稿保护；Subagent 行、归档任务和未授权状态的交互规则需在设计阶段单独确认。
+- **MVP 已完成（双击打开 Codex 任务）**：用户双击未归档主任务后，ThreadBeacon 通过任务 ID
+  deep link 在 Codex App 打开对应任务，并以 rename 标题和页面结构二次确认；同名任务仍按 ID
+  定位。该功能需要用户主动授予 Accessibility 权限，切换前检测到草稿、身份不唯一或另一个
+  Accessibility 操作正在执行时会停止。Subagent 行和归档任务不触发打开；整个过程不输入、
+  不发送消息，也不会为自动恢复授予发送资格。
 - 所有新增列默认可隐藏，避免破坏小窗口和未来小屏场景。
 
 ### Codex CLI 适配

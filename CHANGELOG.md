@@ -7,6 +7,13 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+### Added
+
+- 新增双击打开 Codex 任务：仅未归档主任务可触发，通过任务 ID deep link 定位并以 rename 标题
+  二次确认，同名任务不会按列表位置猜测。该功能需要用户授予 macOS Accessibility 权限；当前
+  Codex 输入框有草稿、身份不唯一或其他 Accessibility 操作正在执行时会停止。打开过程不输入、
+  不发送消息，Subagent 行和归档任务不触发。
+
 ## [0.1.3] - 2026-07-21
 
 ### Added
