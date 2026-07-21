@@ -7,6 +7,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-21
+
 ### Added
 
 - 新增默认关闭的自动恢复设置：可分别配置 HTTP 400、HTTP 429、HTTP 503、其他终止型 HTTP
@@ -36,6 +38,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 - 补充真实任务现场验证记录：HTTP 400 已确认可被正确关联并显示为红色服务失败状态；验证
   证据脱敏处理，不公开会话 ID、任务标题或日志正文。
+- 中英文 README 新增提示音、自动恢复和小屏状态台示意；概念图明确标注为 AI 生成，
+  实际界面以真实截图为准。
 
 ## [0.1.2] - 2026-07-20
 
@@ -100,7 +104,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/ExDevilLee/codex-threadbeacon-macos/releases/tag/v0.1.0
