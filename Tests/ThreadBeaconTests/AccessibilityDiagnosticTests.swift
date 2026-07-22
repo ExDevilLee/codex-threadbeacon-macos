@@ -316,6 +316,133 @@ let accessibilityDiagnosticTests = [
             ),
             "changing the target ID must invalidate send eligibility"
         )
+    },
+    TestCase(name: "foreground restoration allows only the same Codex process") {
+        let original = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.apple.dt.Xcode",
+            processIdentifier: 101
+        )
+        let codex = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.openai.codex",
+            processIdentifier: 202
+        )
+
+        try expect(
+            AccessibilityForegroundRestorationPolicy.evaluate(
+                mode: .unattended,
+                originalApplication: original,
+                currentFrontmostApplication: codex,
+                codexApplication: codex,
+                isOriginalApplicationTerminated: false
+            ) == .restore,
+            "unattended recovery may restore when the same Codex process remains frontmost"
+        )
+
+        let replacementCodex = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.openai.codex",
+            processIdentifier: 303
+        )
+        try expect(
+            AccessibilityForegroundRestorationPolicy.evaluate(
+                mode: .unattended,
+                originalApplication: original,
+                currentFrontmostApplication: replacementCodex,
+                codexApplication: codex,
+                isOriginalApplicationTerminated: false
+            ) == .skipFrontmostApplicationChanged,
+            "a different process must not be treated as the Codex instance activated by recovery"
+        )
+
+        let reusedProcessIdentifier = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.apple.Safari",
+            processIdentifier: codex.processIdentifier
+        )
+        try expect(
+            AccessibilityForegroundRestorationPolicy.evaluate(
+                mode: .unattended,
+                originalApplication: original,
+                currentFrontmostApplication: reusedProcessIdentifier,
+                codexApplication: codex,
+                isOriginalApplicationTerminated: false
+            ) == .skipFrontmostApplicationChanged,
+            "a reused process ID with another bundle must not pass the Codex identity check"
+        )
+    },
+    TestCase(name: "foreground restoration respects explicit user focus changes") {
+        let original = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.apple.dt.Xcode",
+            processIdentifier: 101
+        )
+        let codex = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.openai.codex",
+            processIdentifier: 202
+        )
+        let browser = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.apple.Safari",
+            processIdentifier: 303
+        )
+
+        try expect(
+            AccessibilityForegroundRestorationPolicy.evaluate(
+                mode: .unattended,
+                originalApplication: original,
+                currentFrontmostApplication: browser,
+                codexApplication: codex,
+                isOriginalApplicationTerminated: false
+            ) == .skipFrontmostApplicationChanged,
+            "a third foreground app means the user has taken control of focus"
+        )
+        try expect(
+            AccessibilityForegroundRestorationPolicy.evaluate(
+                mode: .userInitiated,
+                originalApplication: original,
+                currentFrontmostApplication: codex,
+                codexApplication: codex,
+                isOriginalApplicationTerminated: false
+            ) == .skipUserInitiated,
+            "explicit navigation and debug sends must leave Codex frontmost"
+        )
+    },
+    TestCase(name: "foreground restoration fails closed for invalid original apps") {
+        let codex = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.openai.codex",
+            processIdentifier: 202
+        )
+
+        try expect(
+            AccessibilityForegroundRestorationPolicy.evaluate(
+                mode: .unattended,
+                originalApplication: nil,
+                currentFrontmostApplication: codex,
+                codexApplication: codex,
+                isOriginalApplicationTerminated: false
+            ) == .skipOriginalApplicationUnavailable,
+            "missing original app identity must skip restoration"
+        )
+        try expect(
+            AccessibilityForegroundRestorationPolicy.evaluate(
+                mode: .unattended,
+                originalApplication: codex,
+                currentFrontmostApplication: codex,
+                codexApplication: codex,
+                isOriginalApplicationTerminated: false
+            ) == .skipOriginalApplicationIsCodex,
+            "Codex must never be restored as the app displaced by unattended recovery"
+        )
+        let original = AccessibilityApplicationIdentity(
+            bundleIdentifier: "com.apple.dt.Xcode",
+            processIdentifier: 101
+        )
+        try expect(
+            AccessibilityForegroundRestorationPolicy.evaluate(
+                mode: .unattended,
+                originalApplication: original,
+                currentFrontmostApplication: codex,
+                codexApplication: codex,
+                isOriginalApplicationTerminated: true
+            ) == .skipOriginalApplicationTerminated,
+            "a terminated original app must not be relaunched or guessed"
+        )
     }
 ]
 

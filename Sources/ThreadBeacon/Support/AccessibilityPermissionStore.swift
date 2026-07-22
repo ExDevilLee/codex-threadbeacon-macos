@@ -141,10 +141,13 @@ final class AccessibilityPermissionStore: ObservableObject {
 
         isChecking = true
         defer { isChecking = false }
-        return await SystemAccessibilityRecoverySender.send(
+        let foregroundSession = SystemAccessibilityForegroundSession.capture()
+        let result = await SystemAccessibilityRecoverySender.send(
             threadID: threadID,
             prompt: prompt,
             mode: .unattended
         )
+        foregroundSession.restoreIfSafe()
+        return result
     }
 }

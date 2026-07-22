@@ -185,7 +185,7 @@
 - **当前边界（Accessibility）**：AX 树不暴露任务 ID；当前依赖版本敏感的
   `codex://threads/<thread-id>` 按 ID 导航，再以 rename 标题和目标 rollout 回读确认。已区分用户
   主动与无人值守交互模式；无人值守策略会在 Codex 前台、存在草稿、身份不唯一或另一个恢复操作
-  正在执行时停止。发送后恢复原前台 App 和更完整的连续失败熔断仍待后续验证。
+  正在执行时停止。更完整的连续失败熔断仍待后续验证。
 - **MVP 已完成（自动恢复设置）**：Release 构建移除手工诊断、任务 ID 和测试发送控件，Debug
   构建保留开发验证入口；正式设置支持总开关，以及 HTTP 400、HTTP 429、HTTP 503、其他终止型
   HTTP 错误、模型容量异常和连接中断各自的启用状态与自定义提示词。连接中断规则默认开启，
@@ -194,8 +194,11 @@
   设计见
   [`自动恢复设置`](docs/auto-recovery-settings-design.md) 和
   [`提示词语言`](docs/auto-recovery-prompt-language-design.md)。
-- **后续（恢复原前台 App）**：自动发送完成后恢复操作前的原前台 App；需要避免覆盖用户发送
-  期间的主动切换行为，作为独立阶段验证，不阻塞自动恢复配置功能。
+- **MVP 已完成（恢复原前台 App）**：无人值守自动恢复前记录原前台 App，发送结束后只有当前
+  前台仍是本次激活的同一 Codex 进程时才恢复；如果用户期间切换到第三个 App、原 App 已退出、
+  原 App 是 Codex 或身份不可用，则静默跳过。Debug 手工发送与双击打开任务不使用该行为。
+  Core 策略、AppKit 构建和回归测试已通过，真实异常自动恢复场景仍需持续观察。设计见
+  [`自动恢复后恢复原前台 App`](docs/auto-recovery-foreground-restoration-design.md)。
 - **MVP 已完成（双击打开 Codex 任务）**：用户双击未归档主任务后，ThreadBeacon 通过任务 ID
   deep link 在 Codex App 打开对应任务，并以 rename 标题和页面结构二次确认；同名任务仍按 ID
   定位。该功能需要用户主动授予 Accessibility 权限，切换前检测到草稿、身份不唯一或另一个
