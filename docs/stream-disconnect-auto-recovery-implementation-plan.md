@@ -140,7 +140,7 @@ Run: `git diff --check`
 
 Expected: 所有命令退出码为 0，无私人路径、会话 ID、URL 或日志正文进入提交。
 
-- [ ] **Step 5: 提交并推送**
+- [x] **Step 5: 提交并推送**
 
 ```bash
 git add Sources Tests Resources README.md README-EN.md ROADMAP.md CHANGELOG.md docs
