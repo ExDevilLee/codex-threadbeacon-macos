@@ -40,16 +40,15 @@
 ## P2：公开后逐步补齐
 
 - [x] GitHub Releases 自动生成 Universal App ZIP、SHA-256 和版本说明。
-- [x] 项目自有 Homebrew Tap 提供固定版本和 SHA-256 的 Cask，并验证下载、隔离安装与卸载；
-      未公证构建仍明确标记为技术预览，不把 Homebrew 描述为绕过 Gatekeeper 的方式。
-- [ ] 下一个版本发布时验证 Homebrew 跨版本升级和维护者回滚，再决定是否自动创建 Cask 更新 PR。
+- [x] 项目自有 Homebrew Tap 提供固定版本和 SHA-256 的 Cask，并验证下载、隔离安装、卸载、
+      `0.1.4 → 0.1.6` 升级、设置保留和回滚模拟；未公证构建仍明确标记为技术预览，不把
+      Homebrew 描述为绕过 Gatekeeper 的方式。
+- [ ] 获得 Developer ID Application 签名、公证后，再评估是否自动创建 Cask 更新 PR。
 - [ ] 根据真实反馈决定是否加入主题、更多状态、压缩历史、CLI 长周期兼容和副屏支持。
 - [ ] Windows 版本继续使用独立仓库和独立发布流程，不与 macOS 源码混合。
 
 ## 当前推荐顺序
 
 1. 继续邀请少量技术用户验证 GitHub Release 和 Homebrew Cask 技术预览安装路径。
-2. 下一个版本发布时验证 Homebrew 跨版本升级与维护者回滚。
-3. 补充色盲安全设计。
-4. 拿到 Developer ID 后加入签名、公证和 Staple，并重新验证 Gatekeeper。
-5. 在正式签名环境复验登录启动，并把结果更新到 Roadmap。
+2. 拿到 Developer ID 后加入签名、公证和 Staple，并重新验证 Gatekeeper。
+3. 在正式签名环境复验登录启动，并把结果更新到 Roadmap。

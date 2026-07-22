@@ -268,9 +268,10 @@
   URL 和 SHA-256 的 `threadbeacon` Cask；本地与 GitHub Actions 已验证 style、strict audit、
   下载、Universal App 身份、隔离安装和卸载。Homebrew 只改善分发体验，不绕过 Gatekeeper；
   正式签名和公证仍按独立 `P0` 推进。
-- **待验证（Homebrew Cask）**：下一个版本发布时完成真实的跨版本 `brew upgrade`、维护者回滚
-  和用户设置保留验证；验证稳定后再决定是否由 Release Workflow 向 tap 创建更新 PR，不使用
-  跨仓库自动直推。
+- **已完成（Homebrew Cask 跨版本验证，2026-07-22）**：真实执行 `0.1.4 → 0.1.6`
+  的 `brew upgrade`，确认 Universal App、启动和用户设置保留；使用已发布 `0.1.5` ZIP
+  完成本地回滚模拟后再次升级到 `0.1.6`。当前 Release 为 prerelease，因此 Homebrew strict
+  audit 会按策略提示 prerelease，不代表 Cask 内容错误。暂不引入跨仓库自动直推。
 
 详细检查表见 [`docs/public-sharing-readiness.md`](docs/public-sharing-readiness.md)。
 
@@ -291,10 +292,9 @@
 
 1. 研究精确识别等待输入／授权的稳定事件源，优先验证可选 Codex hooks 的任务身份、状态清理、
    版本兼容和隐私边界。
-2. 下一个版本发布时验证 Homebrew 跨版本升级和维护者回滚，再评估自动更新 Cask 的 PR 流程。
-3. 获得 Developer ID Application 后补齐正式签名、公证，并完成登录启动端到端验证。
-4. 根据真实反馈决定是否继续扩展外部付费赞助渠道。
-5. 真实副屏恢复复验，并根据反馈决定是否增加显式显示器选择器。
-6. Codex CLI 长生命周期、归档、resume 与跨版本兼容性验证。
-7. 扩展状态、压缩历史、Token 与 Subagent 后续增强可行性验证。
-8. 外接小屏和 Windows 版本扩展。
+2. 获得 Developer ID Application 后补齐正式签名、公证，并完成登录启动端到端验证。
+3. 根据真实反馈决定是否继续扩展外部付费赞助渠道。
+4. 真实副屏恢复复验，并根据反馈决定是否增加显式显示器选择器。
+5. Codex CLI 长生命周期、归档、resume 与跨版本兼容性验证。
+6. 扩展状态、压缩历史、Token 与 Subagent 后续增强可行性验证。
+7. 外接小屏和 Windows 版本扩展。
