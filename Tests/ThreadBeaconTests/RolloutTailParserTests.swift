@@ -57,6 +57,7 @@ let rolloutTailParserTests = [
 
         try expect(result.status == .interrupted, "interrupted abort should end the active turn")
         try expect(result.statusChangedAt == expected, "abort timestamp should start the interrupted duration")
+        try expect(result.interruptionEventAt == expected, "abort should expose marker cleanup evidence")
         try expect(!retainedFields.contains("reason"), "abort reason must not be retained")
         try expect(!retainedFields.contains("turnID"), "turn ID must not be retained")
     },

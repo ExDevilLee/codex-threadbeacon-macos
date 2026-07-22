@@ -165,6 +165,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
     public let latestTaskStartedAt: Date?
     public let completionEventAt: Date?
     public let tokenUsage: TokenUsageSnapshot?
+    public let compaction: CompactionSnapshot
     public let subagentCount: Int
     public let activeSubagentCount: Int
     public let subagents: [SubagentSnapshot]
@@ -183,6 +184,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         latestTaskStartedAt: Date? = nil,
         completionEventAt: Date? = nil,
         tokenUsage: TokenUsageSnapshot? = nil,
+        compaction: CompactionSnapshot = CompactionSnapshot(),
         subagentCount: Int = 0,
         activeSubagentCount: Int = 0,
         subagents: [SubagentSnapshot] = [],
@@ -200,6 +202,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         self.latestTaskStartedAt = latestTaskStartedAt
         self.completionEventAt = completionEventAt
         self.tokenUsage = tokenUsage
+        self.compaction = compaction
         self.subagentCount = max(0, subagentCount)
         self.activeSubagentCount = min(max(0, activeSubagentCount), self.subagentCount)
         self.subagents = subagents

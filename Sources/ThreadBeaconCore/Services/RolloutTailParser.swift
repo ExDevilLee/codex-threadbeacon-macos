@@ -134,6 +134,7 @@ public struct RolloutTailParser: Sendable {
             statusChangedAt: statusChangedAt,
             latestEventAt: latestEvent,
             completionEventAt: latestCompletionEventAt,
+            interruptionEventAt: latestInterruptedAt,
             latestTaskStartedAt: latestTaskStartedAt,
             tokenUsage: tokenSnapshot,
             model: latestModel,

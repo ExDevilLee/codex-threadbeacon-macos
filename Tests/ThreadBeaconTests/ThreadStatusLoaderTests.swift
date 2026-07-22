@@ -708,6 +708,122 @@ let threadStatusLoaderTests = [
         try expect(snapshot?.status == .running, "new task_started should restore rollout status")
         try expect(snapshot?.serviceIncident == nil, "old incident details should be cleared")
     },
+    TestCase(name: "loader merges compaction history and active phase") {
+        let now = Date(timeIntervalSince1970: 10_500)
+        let startedAt = now.addingTimeInterval(-12)
+        let history = CompactionHistory(
+            completionCount: 3,
+            lastCompletedAt: now.addingTimeInterval(-60)
+        )
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "019f8902-a543-7ab0-8833-81d2ce9f5783",
+                    title: "Compacting",
+                    rolloutPath: "/tmp/compacting",
+                    updatedAt: now
+                )]
+            },
+            loadCompactionHistory: { url in
+                try expect(url.path == "/tmp/compacting", "history should use the rollout path")
+                return history
+            },
+            loadCompactionActivity: { sessionID, completionAt, interruptionAt, requestedNow in
+                try expect(sessionID == "019f8902-a543-7ab0-8833-81d2ce9f5783", "activity should use task ID")
+                try expect(completionAt == now.addingTimeInterval(-60), "history completion should clear stale markers")
+                try expect(interruptionAt == now.addingTimeInterval(-90), "interruption should clear stale markers")
+                try expect(requestedNow == now, "activity validation should use one refresh time")
+                return CompactionActivity(
+                    sessionID: sessionID,
+                    turnID: "019f8902-a543-7ab0-8833-81d2ce9f5784",
+                    trigger: .auto,
+                    startedAt: startedAt
+                )
+            },
+            observe: { _ in
+                RolloutObservation(
+                    status: .justCompleted,
+                    statusChangedAt: now.addingTimeInterval(-60),
+                    latestEventAt: now.addingTimeInterval(-60),
+                    completionEventAt: now.addingTimeInterval(-60),
+                    interruptionEventAt: now.addingTimeInterval(-90)
+                )
+            },
+            now: { now }
+        )
+
+        let snapshot = try await loader.load(limit: 8).first
+
+        try expect(snapshot?.status == .running, "active compaction should participate as running")
+        try expect(snapshot?.statusChangedAt == startedAt, "compaction start should drive duration")
+        try expect(snapshot?.compaction.history == history, "history should reach task details")
+        try expect(snapshot?.compaction.activity?.trigger == .auto, "active trigger should reach presentation")
+        try expect(snapshot?.completionEventAt == nil, "active compaction must suppress stale completion evidence")
+    },
+    TestCase(name: "loader suppresses live compaction for incidents and archived tasks") {
+        let now = Date(timeIntervalSince1970: 10_800)
+        let active = CompactionActivity(
+            sessionID: "019f8902-a543-7ab0-8833-81d2ce9f5783",
+            turnID: "019f8902-a543-7ab0-8833-81d2ce9f5784",
+            trigger: .manual,
+            startedAt: now.addingTimeInterval(-5)
+        )
+        let records = [
+            ThreadRecord(
+                id: active.sessionID,
+                title: "Incident",
+                rolloutPath: "/tmp/incident-compaction",
+                updatedAt: now
+            ),
+            ThreadRecord(
+                id: "019f8902-a543-7ab0-8833-81d2ce9f5785",
+                title: "Archived",
+                rolloutPath: "/tmp/archived-compaction",
+                updatedAt: now,
+                isArchived: true
+            )
+        ]
+        let incident = ServiceIncident(
+            episodeID: "failed",
+            phase: .failed,
+            httpStatusCode: 400,
+            retryAttempt: nil,
+            retryLimit: nil,
+            occurredAt: now
+        )
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in records },
+            loadIncidents: { _ in [active.sessionID: incident] },
+            loadCompactionHistory: { _ in CompactionHistory(completionCount: 1) },
+            loadCompactionActivity: { sessionID, _, _, _ in
+                CompactionActivity(
+                    sessionID: sessionID,
+                    turnID: active.turnID,
+                    trigger: active.trigger,
+                    startedAt: active.startedAt
+                )
+            },
+            observe: { _ in
+                RolloutObservation(
+                    status: .running,
+                    statusChangedAt: now,
+                    latestEventAt: now
+                )
+            },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(limit: 8)
+        let incidentSnapshot = snapshots.first { $0.id == active.sessionID }
+        let archivedSnapshot = snapshots.first { $0.isArchived }
+
+        try expect(incidentSnapshot?.status == .error, "service failure should override compacting")
+        try expect(incidentSnapshot?.compaction.activity == nil, "incident should hide live compaction")
+        try expect(incidentSnapshot?.compaction.history.completionCount == 1, "incident keeps history")
+        try expect(archivedSnapshot?.status == .idle, "archived task should remain idle")
+        try expect(archivedSnapshot?.compaction.activity == nil, "archived task should hide live compaction")
+        try expect(archivedSnapshot?.compaction.history.completionCount == 1, "archived task keeps history")
+    },
     TestCase(name: "loader reports optional data source degradation without dropping tasks") {
         let now = Date(timeIntervalSince1970: 11_000)
         let loader = ThreadStatusLoader(

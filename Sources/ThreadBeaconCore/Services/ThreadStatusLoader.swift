@@ -11,6 +11,13 @@ public struct ThreadStatusLoader: Sendable {
     ) throws -> [String: [SubagentActivityCandidate]]
     private let loadIncidents: @Sendable (Set<String>) throws -> [String: ServiceIncident]
     private let loadTitleOverrides: @Sendable () throws -> [String: String]
+    private let loadCompactionHistory: @Sendable (URL) throws -> CompactionHistory
+    private let loadCompactionActivity: @Sendable (
+        String,
+        Date?,
+        Date?,
+        Date
+    ) throws -> CompactionActivity?
     private let observe: @Sendable (URL) throws -> RolloutObservation
     private let now: @Sendable () -> Date
     private let completedRetention: TimeInterval
@@ -25,6 +32,8 @@ public struct ThreadStatusLoader: Sendable {
     ) {
         let titleRepository = SessionIndexTitleRepository(indexURL: CodexPaths.sessionIndexURL)
         let logRepository = LogEventRepository(databaseURL: CodexPaths.logsDatabaseURL)
+        let compactionHistoryRepository = CompactionHistoryRepository()
+        let compactionActivityRepository = CompactionActivityRepository()
         self.init(
             loadRecords: { limit in try repository.loadRecent(limit: limit) },
             loadIncludedRecords: { threadIDs in try repository.loadByIDs(Array(threadIDs)) },
@@ -44,6 +53,17 @@ public struct ThreadStatusLoader: Sendable {
                 try logRepository.loadLatestIncidents(threadIDs: threadIDs)
             },
             loadTitleOverrides: { try titleRepository.loadLatestTitles() },
+            loadCompactionHistory: { url in
+                try compactionHistoryRepository.history(for: url)
+            },
+            loadCompactionActivity: { sessionID, completionAt, interruptionAt, currentDate in
+                compactionActivityRepository.activity(
+                    for: sessionID,
+                    completionEvidenceAt: completionAt,
+                    interruptionEvidenceAt: interruptionAt,
+                    now: currentDate
+                )
+            },
             observe: { url in try parser.parse(fileURL: url) },
             now: now,
             completedRetention: completedRetention,
@@ -62,6 +82,15 @@ public struct ThreadStatusLoader: Sendable {
         ) throws -> [String: [SubagentActivityCandidate]] = { _, _ in [:] },
         loadIncidents: @escaping @Sendable (Set<String>) throws -> [String: ServiceIncident] = { _ in [:] },
         loadTitleOverrides: @escaping @Sendable () throws -> [String: String] = { [:] },
+        loadCompactionHistory: @escaping @Sendable (URL) throws -> CompactionHistory = { _ in
+            CompactionHistory()
+        },
+        loadCompactionActivity: @escaping @Sendable (
+            String,
+            Date?,
+            Date?,
+            Date
+        ) throws -> CompactionActivity? = { _, _, _, _ in nil },
         observe: @escaping @Sendable (URL) throws -> RolloutObservation,
         now: @escaping @Sendable () -> Date = Date.init,
         completedRetention: TimeInterval = 60,
@@ -74,6 +103,8 @@ public struct ThreadStatusLoader: Sendable {
         self.loadActiveSubagentCandidates = loadActiveSubagentCandidates
         self.loadIncidents = loadIncidents
         self.loadTitleOverrides = loadTitleOverrides
+        self.loadCompactionHistory = loadCompactionHistory
+        self.loadCompactionActivity = loadCompactionActivity
         self.observe = observe
         self.now = now
         self.completedRetention = completedRetention
@@ -238,6 +269,22 @@ public struct ThreadStatusLoader: Sendable {
                 incidentsByThread[record.id],
                 observation: observation
             )
+            let history = (try? loadCompactionHistory(URL(fileURLWithPath: record.rolloutPath)))
+                ?? CompactionHistory()
+            let completionEvidenceAt = [observation.completionEventAt, history.lastCompletedAt]
+                .compactMap { $0 }
+                .max()
+            let activity: CompactionActivity?
+            if record.isArchived || incident != nil {
+                activity = nil
+            } else {
+                activity = (try? loadCompactionActivity(
+                    record.id,
+                    completionEvidenceAt,
+                    observation.interruptionEventAt,
+                    currentDate
+                )) ?? nil
+            }
             let tokenUsage = tokenUsage(for: observation, fallbackTokens: record.tokensUsed)
             let subagents = (subagentRecordsByParent[record.id] ?? [])
                 .map { subagent in
@@ -253,13 +300,20 @@ public struct ThreadStatusLoader: Sendable {
             return ThreadSnapshot(
                 id: record.id,
                 title: titleOverrides[record.id] ?? record.title,
-                status: record.isArchived ? .idle : (incident.map(displayStatus) ?? state.status),
-                statusChangedAt: record.isArchived ? record.updatedAt : (incident?.occurredAt ?? state.changedAt),
+                status: record.isArchived
+                    ? .idle
+                    : (incident.map(displayStatus) ?? (activity == nil ? state.status : .running)),
+                statusChangedAt: record.isArchived
+                    ? record.updatedAt
+                    : (incident?.occurredAt ?? activity?.startedAt ?? state.changedAt),
                 updatedAt: record.updatedAt,
                 latestEventAt: observation.latestEventAt,
                 latestTaskStartedAt: record.isArchived ? nil : observation.latestTaskStartedAt,
-                completionEventAt: record.isArchived || incident != nil ? nil : observation.completionEventAt,
+                completionEventAt: record.isArchived || incident != nil || activity != nil
+                    ? nil
+                    : observation.completionEventAt,
                 tokenUsage: tokenUsage,
+                compaction: CompactionSnapshot(history: history, activity: activity),
                 subagentCount: record.subagentCount,
                 activeSubagentCount: activeSubagentCount,
                 subagents: subagents,

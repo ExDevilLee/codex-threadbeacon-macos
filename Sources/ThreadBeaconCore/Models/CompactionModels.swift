@@ -34,6 +34,23 @@ public struct CompactionActivity: Equatable, Sendable {
     }
 }
 
+public struct CompactionSnapshot: Equatable, Sendable {
+    public let history: CompactionHistory
+    public let activity: CompactionActivity?
+
+    public init(
+        history: CompactionHistory = CompactionHistory(),
+        activity: CompactionActivity? = nil
+    ) {
+        self.history = history
+        self.activity = activity
+    }
+
+    public var isActive: Bool {
+        activity != nil
+    }
+}
+
 public enum CompactionHookConfigurationStatus: Equatable, Sendable {
     case notConfigured
     case configured
