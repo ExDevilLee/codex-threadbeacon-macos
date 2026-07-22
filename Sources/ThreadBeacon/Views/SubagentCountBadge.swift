@@ -35,17 +35,13 @@ struct SubagentCountBadge: View {
     }
 
     private var actionLabel: String {
-        let count = Int(label.countText) ?? 0
-        if count == 1 {
-            return AppLocalization.string(
-                isExpanded ? "收起 1 个 Subagent" : "展开 1 个 Subagent",
-                locale: locale
-            )
-        }
         return AppLocalization.formatted(
-            isExpanded ? "收起 %lld 个 Subagent" : "展开 %lld 个 Subagent",
+            isExpanded
+                ? "运行中 %lld 个，共 %lld 个 Subagent；点击收起"
+                : "运行中 %lld 个，共 %lld 个 Subagent；点击展开",
             locale: locale,
-            count
+            label.activeCount,
+            label.totalCount
         )
     }
 }

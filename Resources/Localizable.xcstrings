@@ -151,6 +151,8 @@
     "展开 1 个 Subagent" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Expand 1 Subagent" } } } },
     "收起 %lld 个 Subagent" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Collapse %lld Subagents" } } } },
     "收起 1 个 Subagent" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Collapse 1 Subagent" } } } },
+    "运行中 %lld 个，共 %lld 个 Subagent；点击展开" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld running, %lld Subagents total; click to expand" } } } },
+    "运行中 %lld 个，共 %lld 个 Subagent；点击收起" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld running, %lld Subagents total; click to collapse" } } } },
     "恢复 %@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore %@" } } } },
     "任务 %@" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Task %@" } } } },
     "管理已忽略任务，共 %lld 个" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Manage ignored tasks, %lld total" } } } },

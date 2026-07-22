@@ -72,7 +72,10 @@ struct ThreadRowView: View {
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
-                    if let label = SubagentCountFormatter.label(for: snapshot.subagentCount) {
+                    if let label = SubagentCountFormatter.label(
+                        activeCount: snapshot.activeSubagentCount,
+                        totalCount: snapshot.subagentCount
+                    ) {
                         SubagentCountBadge(
                             label: label,
                             isExpanded: isSubagentExpanded,
