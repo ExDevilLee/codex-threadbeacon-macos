@@ -46,20 +46,21 @@ enum SystemAccessibilityRecoverySender {
             return .composerNotSettable
         }
 
-        guard setValue(prompt, on: composer) else { return .writeFailed }
-        waitForWebContentUpdate()
+        guard SystemAccessibilityKeyboardComposer.type(prompt, into: composer) else {
+            return .writeFailed
+        }
         guard normalizedValue(of: composer) == prompt else {
             return cleanup(composer) ? .readbackFailed : .cleanupFailed
         }
 
         let buttonLookup = nearestSendButton(to: composer)
-        guard let sendButton = buttonLookup.button else {
+        guard buttonLookup.button != nil else {
             return cleanup(composer)
                 ? .sendButtonNotUnique(buttonLookup.candidateCount)
                 : .cleanupFailed
         }
 
-        guard AXUIElementPerformAction(sendButton, kAXPressAction as CFString) == .success else {
+        guard SystemAccessibilityKeyboardComposer.submit(composer) else {
             return cleanup(composer) ? .sendFailed : .cleanupFailed
         }
 
@@ -113,27 +114,19 @@ enum SystemAccessibilityRecoverySender {
                 element,
                 "AXDOMClassList" as CFString
             ) as? [String] ?? [],
-            isEnabled: boolAttribute(element, kAXEnabledAttribute as CFString) ?? false
+            isEnabled: boolAttribute(element, kAXEnabledAttribute as CFString) ?? false,
+            title: stringAttribute(element, kAXTitleAttribute as CFString) ?? "",
+            description: stringAttribute(element, kAXDescriptionAttribute as CFString) ?? ""
         )
     }
 
     private static func cleanup(_ composer: AXUIElement) -> Bool {
-        guard setValue("", on: composer) else { return false }
-        waitForWebContentUpdate()
-        return SystemAccessibilityComposerState.canTemporarilyReplace(composer)
+        SystemAccessibilityKeyboardComposer.clear(composer)
     }
 
     private static func normalizedValue(of element: AXUIElement) -> String {
         (stringAttribute(element, kAXValueAttribute as CFString) ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-
-    private static func setValue(_ value: String, on element: AXUIElement) -> Bool {
-        AXUIElementSetAttributeValue(
-            element,
-            kAXValueAttribute as CFString,
-            value as CFString
-        ) == .success
     }
 
     private static func isSettable(
@@ -189,7 +182,4 @@ enum SystemAccessibilityRecoverySender {
         return value
     }
 
-    private static func waitForWebContentUpdate() {
-        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
-    }
 }

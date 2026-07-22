@@ -139,6 +139,23 @@ ThreadBeacon App 自身的目标任务注入／清理、发送按钮或回车动
   `task_started` 和 `task_complete` 完整确认；
 - 无人值守前台保护最初由纯策略单测覆盖，随后已接入自动异常恢复主链路。
 
+2026-07-22 在当前 Codex App 版本复现新的兼容性变化：恢复提示词可通过 `AXValue` 显示在
+`ProseMirror` 输入框中，但发送动作没有产生 rollout 新事件，提示词继续停留在输入框。现场 AX
+树还确认运行中的“停止”按钮与提交按钮共用 `size-token-button-composer` 和
+`bg-token-foreground` 样式，旧策略只按样式匹配存在误判风险。本次修复调整为：
+
+- 聚焦唯一且通过草稿保护的 Codex 输入框后，通过系统键盘事件输入 Unicode 提示词，使
+  `ProseMirror` 收到真实输入事件，不再直接把 `AXValue` 写入作为正式发送输入；
+- 发送按钮除角色、可用状态、`AXPress` 和样式外，只接受无文本语义或明确的“发送”／“提交”
+  语义；当前 Codex 的真实发送按钮不暴露 title、description、help 或 DOM identifier，而“停止”、
+  语音输入和其他 composer 操作具有非发送语义并失败关闭；
+- 失败清理使用真实的全选和删除键盘事件，避免只清除可见 `AXValue` 而遗留前端状态；
+- 已完成空输入框的真实键盘输入与清理探针、按钮 AX 结构取证、Core 单测和 App 构建；新的
+  Debug 测试随后确认 `AXPress` 虽返回成功，但 Codex/Electron 没有提交消息，输入框内容继续保留；
+- 在同一目标任务、同一完整提示词上改用聚焦输入框后的真实 Return 键，输入框立即清空，目标
+  rollout 新增严格匹配的 `user_message`、`task_started` 和 `task_complete`。正式发送链路因此保留
+  唯一发送按钮结构校验作为安全门，但实际提交动作改为 Return 键。
+
 该保护解决了已复现的草稿覆盖风险，但跳转期间用户重新输入的竞态、完成后是否恢复原任务、连续
 失败熔断仍需单独验证。当前实现通过默认关闭总开关、Codex 前台停止、单次执行锁和失败不重试降低
 上述风险；发送后恢复原前台 App 仍留待后续阶段。

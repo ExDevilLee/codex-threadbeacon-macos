@@ -135,7 +135,8 @@
 - **已完成（P1 国际化 MVP）**：界面支持`跟随系统`、`简体中文`和`English`三档，切换后立即
   生效并持久化。跟随系统时，中文系统映射为简体中文；英文及其他系统语言统一回退为
   English，避免出现未翻译或混合语言界面。
-- **已完成（P1 主题设置 MVP）**：配置主题颜色，支持 `System`、`Light` 和 `Dark`，默认跟随系统；切换后主窗口和 Settings 立即生效并持久化。
+- **已完成（P1 主题设置 MVP）**：配置主题颜色，支持 `System`、`Light` 和 `Dark`，默认跟随系统；
+  切换后主窗口和 Settings 立即生效并持久化。
 - **已完成（About MVP）**：App 菜单提供单实例 About 窗口，展示图标、运行时版本与构建号、
   项目定位、非官方说明和 GitHub、Releases、隐私、License 链接；支持简体中文和英文。
 - **已完成（项目支持入口 MVP）**：About 提供低干扰的外部支持入口，第一版支持页面仅列出
@@ -176,6 +177,11 @@
   草稿冲突保护也已完成实机验证：检测到当前输入框有草稿时，在 deep link 前停止且保持发送禁用。
   已修复 Codex 将可见占位符子树暴露为陈旧非空 `AXValue` 导致的误拦截；只有明确存在
   `placeholder + AXStaticText` 证据时才按空输入处理，普通草稿与不可读值继续失败关闭。
+  2026-07-22 发现直接设置 `AXValue` 可能只改变 `ProseMirror` 可见文本而不触发提交；发送链路已改为
+  聚焦后投递真实 Unicode 键盘输入，并拒绝带有“停止”等非发送语义的共用样式按钮；当前真实发送
+  按钮的 AX 文本属性为空，因此仍以结构唯一性失败关闭。实测还确认 `AXPress` 返回成功但不会提交；
+  改为聚焦输入框后发送真实 Return 键，目标 rollout 已新增严格匹配的 `user_message`、
+  `task_started` 与 `task_complete`，完整链路复测通过。
 - **当前边界（Accessibility）**：AX 树不暴露任务 ID；当前依赖版本敏感的
   `codex://threads/<thread-id>` 按 ID 导航，再以 rename 标题和目标 rollout 回读确认。已区分用户
   主动与无人值守交互模式；无人值守策略会在 Codex 前台、存在草稿、身份不唯一或另一个恢复操作
@@ -185,8 +191,9 @@
   HTTP 错误、模型容量异常和连接中断各自的启用状态与自定义提示词。连接中断规则默认开启，
   但必须等同一 turn 的重试上限与最终断流错误都出现；HTTP 503 默认关闭，只在重试耗尽后
   才允许触发。内置提示词跟随 App 语言，用户主动保存的提示词和未保存草稿不会被语言切换覆盖。
-  设计见 [`docs/auto-recovery-settings-design.md`](docs/auto-recovery-settings-design.md) 和
-  [`docs/auto-recovery-prompt-language-design.md`](docs/auto-recovery-prompt-language-design.md)。
+  设计见
+  [`自动恢复设置`](docs/auto-recovery-settings-design.md) 和
+  [`提示词语言`](docs/auto-recovery-prompt-language-design.md)。
 - **后续（恢复原前台 App）**：自动发送完成后恢复操作前的原前台 App；需要避免覆盖用户发送
   期间的主动切换行为，作为独立阶段验证，不阻塞自动恢复配置功能。
 - **MVP 已完成（双击打开 Codex 任务）**：用户双击未归档主任务后，ThreadBeacon 通过任务 ID

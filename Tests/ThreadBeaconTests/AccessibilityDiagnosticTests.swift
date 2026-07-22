@@ -222,7 +222,8 @@ let accessibilityDiagnosticTests = [
             AccessibilityButtonDescriptor(
                 role: "AXButton",
                 actionNames: ["AXPress"],
-                domClassNames: ["size-token-button-composer", "bg-token-foreground"]
+                domClassNames: ["size-token-button-composer", "bg-token-foreground"],
+                description: "发送"
             ),
             AccessibilityButtonDescriptor(
                 role: "AXButton",
@@ -239,7 +240,8 @@ let accessibilityDiagnosticTests = [
         let candidate = AccessibilityButtonDescriptor(
             role: "AXButton",
             actionNames: ["AXPress"],
-            domClassNames: ["size-token-button-composer", "bg-token-foreground"]
+            domClassNames: ["size-token-button-composer", "bg-token-foreground"],
+            description: "Send"
         )
         try expect(
             AccessibilitySendButtonPolicy.uniqueCandidateIndex(in: [candidate, candidate]) == nil,
@@ -254,6 +256,35 @@ let accessibilityDiagnosticTests = [
         try expect(
             AccessibilitySendButtonPolicy.uniqueCandidateIndex(in: [disabled]) == nil,
             "a disabled submit button must never be pressed"
+        )
+    },
+    TestCase(name: "send button policy rejects stop and unrelated composer actions") {
+        let stop = AccessibilityButtonDescriptor(
+            role: "AXButton",
+            actionNames: ["AXPress"],
+            domClassNames: ["size-token-button-composer", "bg-token-foreground"],
+            description: "停止"
+        )
+        let unrelated = AccessibilityButtonDescriptor(
+            role: "AXButton",
+            actionNames: ["AXPress"],
+            domClassNames: ["size-token-button-composer", "bg-token-foreground"],
+            description: "Voice input"
+        )
+        try expect(
+            AccessibilitySendButtonPolicy.candidateIndices(in: [stop, unrelated]).isEmpty,
+            "shared composer styling must not make stop or voice actions send candidates"
+        )
+    },
+    TestCase(name: "send button policy accepts the current unlabeled Codex submit button") {
+        let currentSubmit = AccessibilityButtonDescriptor(
+            role: "AXButton",
+            actionNames: ["AXPress"],
+            domClassNames: ["size-token-button-composer", "bg-token-foreground"]
+        )
+        try expect(
+            AccessibilitySendButtonPolicy.uniqueCandidateIndex(in: [currentSubmit]) == 0,
+            "the structurally unique submit button may omit every accessible text attribute"
         )
     },
     TestCase(name: "recovery send succeeds only after rollout confirmation") {
