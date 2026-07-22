@@ -141,9 +141,20 @@ let accessibilityDiagnosticTests = [
                 mode: .unattended,
                 isCodexFrontmost: true,
                 isCurrentTargetConfirmed: false,
-                sourceComposerValues: [""]
+                sourceComposerValues: ["unfinished draft"]
             ) == .codexFrontmost,
-            "unattended navigation must not interrupt active Codex interaction"
+            "unattended navigation must not interrupt active Codex interaction when a draft exists"
+        )
+    },
+    TestCase(name: "target interaction preflight allows safe foreground navigation with an empty composer") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .unattended,
+                isCodexFrontmost: true,
+                isCurrentTargetConfirmed: false,
+                sourceComposerValues: [""]
+            ) == .safe,
+            "automatic recovery may deep-link to the failed task when the only foreground composer is empty"
         )
     },
     TestCase(name: "target interaction preflight allows confirmed frontmost recovery") {

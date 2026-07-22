@@ -316,8 +316,9 @@ project-created sounds and verify all assets with:
   requires a matching new message and `task_started` in the rollout belonging to the exact
   target ID. A live test with two identically named tasks succeeded before and after their
   list positions were swapped; only the requested ID changed.
-- Automatic recovery uses the unattended preflight policy. It fails closed while Codex is
-  frontmost, a draft exists, identity is ambiguous, or another recovery is already running.
+- Automatic recovery uses the unattended preflight policy. When Codex is frontmost, it may navigate
+  by the exact task ID only if the single readable composer is empty. It fails closed when a draft,
+  multiple composers, an unreadable composer, ambiguous identity, or another recovery is present.
 - To make the recovery message visible in the corresponding Codex App conversation,
   ThreadBeacon must control the Codex App input field through macOS Accessibility.
   This requires a separate user-granted Accessibility permission. Without it,

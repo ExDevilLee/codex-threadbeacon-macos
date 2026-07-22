@@ -60,8 +60,18 @@ public enum AccessibilityInteractionPreflight {
         isCurrentTargetConfirmed: Bool = false,
         sourceComposerValues: [String?]
     ) -> AccessibilityInteractionPreflightResult {
-        if mode == .unattended, isCodexFrontmost {
-            guard isCurrentTargetConfirmed else { return .codexFrontmost }
+        if mode == .unattended, isCodexFrontmost, !isCurrentTargetConfirmed {
+            // A frontmost Codex window may be navigated only when its single
+            // readable composer is already empty. This avoids disturbing a
+            // draft while allowing a safe deep link to an unselected task.
+            guard sourceComposerValues.count == 1,
+                  sourceComposerValues[0] != nil,
+                  sourceComposerValues[0]?
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .isEmpty == true else {
+                return .codexFrontmost
+            }
+        } else if mode == .unattended, isCodexFrontmost {
             guard sourceComposerValues.count == 1 else {
                 return .sourceComposerNotUnique(sourceComposerValues.count)
             }
