@@ -15,8 +15,8 @@ public enum ThreadDisplayStatus: String, CaseIterable, Sendable {
         case .error: 0
         case .needsAction: 1
         case .warning: 2
-        case .interrupted: 3
-        case .running: 4
+        case .running: 3
+        case .interrupted: 4
         case .justCompleted: 5
         case .idle: 6
         case .unknown: 7
