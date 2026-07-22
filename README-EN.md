@@ -240,8 +240,9 @@ project-created sounds and verify all assets with:
   Child data is read only while expanded; conversation bodies and deeper task-tree levels are not
   displayed.
 - Each row shows a compact cumulative Token total. Hover over the info icon for
-  input, cached and uncached input, output, reasoning, current-turn usage, cache
-  ratio, and update time; click the icon to keep the details open.
+  the effective model, reasoning effort, input, cached and uncached input, output,
+  reasoning, current-turn usage, cache ratio, and update time; click the icon to
+  keep the details open. No persistent list column is added.
 - Task titles prefer the latest renamed value in `session_index.jsonl`, with `threads.title` as fallback.
 - The current version does not read or display conversation summaries or message bodies.
 - Refreshes every 2 seconds by default. Settings can select `1 / 2 / 5 / 10 seconds`,
@@ -329,14 +330,16 @@ project-created sounds and verify all assets with:
 
 The app reads only local data:
 
-- `~/.codex/state_5.sqlite`: metadata, `rollout_path`, archive state, and cumulative `tokens_used`
-  for recent unarchived tasks and archived favorites,
-  parent-child relationships, and nickname, role, model, and reasoning effort for expanded direct
-  Subagents, opened in SQLite read-only mode.
+- `~/.codex/state_5.sqlite`: metadata, `rollout_path`, archive state,
+  cumulative `tokens_used`, model, and reasoning effort for recent unarchived
+  tasks and archived favorites, plus parent-child relationships and nickname,
+  role, model, and reasoning effort for expanded direct Subagents, opened in
+  SQLite read-only mode.
 - `~/.codex/session_index.jsonl`: the latest renamed title matching each task ID.
 - Rollout JSONL: at most the final 2 MiB per task, reading only event types,
-  timestamps, and numeric Token fields to derive status, usage details, and
-  `task_complete` completion events.
+  timestamps, numeric Token fields, and model plus reasoning effort from the
+  latest valid `turn_context` to derive status, usage details, main-task
+  metadata fallback, and `task_complete` completion events.
 - `~/.codex/logs_2.sqlite`: opened read-only and restricted to three allowlisted targets for
   visible tasks. Only turn IDs, HTTP status, retry progress, the exact terminal-disconnect shape, explicit model-capacity kind,
   and terminal failure time are extracted.

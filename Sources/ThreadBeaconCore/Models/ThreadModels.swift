@@ -30,6 +30,8 @@ public struct ThreadRecord: Identifiable, Equatable, Sendable {
     public let tokensUsed: Int64
     public let subagentCount: Int
     public let isArchived: Bool
+    public let model: String?
+    public let reasoningEffort: String?
 
     public init(
         id: String,
@@ -38,7 +40,9 @@ public struct ThreadRecord: Identifiable, Equatable, Sendable {
         updatedAt: Date,
         tokensUsed: Int64 = 0,
         subagentCount: Int = 0,
-        isArchived: Bool = false
+        isArchived: Bool = false,
+        model: String? = nil,
+        reasoningEffort: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -47,6 +51,8 @@ public struct ThreadRecord: Identifiable, Equatable, Sendable {
         self.tokensUsed = tokensUsed
         self.subagentCount = max(0, subagentCount)
         self.isArchived = isArchived
+        self.model = model
+        self.reasoningEffort = reasoningEffort
     }
 }
 
@@ -141,6 +147,8 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
     public let subagents: [SubagentSnapshot]
     public let serviceIncident: ServiceIncident?
     public let isArchived: Bool
+    public let model: String?
+    public let reasoningEffort: String?
 
     public init(
         id: String,
@@ -155,7 +163,9 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         subagentCount: Int = 0,
         subagents: [SubagentSnapshot] = [],
         serviceIncident: ServiceIncident? = nil,
-        isArchived: Bool = false
+        isArchived: Bool = false,
+        model: String? = nil,
+        reasoningEffort: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -170,5 +180,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         self.subagents = subagents
         self.serviceIncident = serviceIncident
         self.isArchived = isArchived
+        self.model = model
+        self.reasoningEffort = reasoningEffort
     }
 }

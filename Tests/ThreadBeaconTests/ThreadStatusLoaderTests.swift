@@ -154,6 +154,32 @@ let threadStatusLoaderTests = [
         )
         try expect(snapshots.first?.tokenUsage?.totalTokens == 1_000, "rollout total should win over fallback")
     },
+    TestCase(name: "loader prefers SQLite model metadata and fills missing values from rollout") {
+        let now = Date(timeIntervalSince1970: 5_250)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "with-model",
+                    title: "With model",
+                    rolloutPath: "/tmp/model",
+                    updatedAt: now,
+                    model: "sqlite-model"
+                )]
+            },
+            observe: { _ in
+                RolloutObservation(
+                    model: "rollout-model",
+                    reasoningEffort: "xhigh"
+                )
+            },
+            now: { now }
+        )
+
+        let snapshot = try await loader.load(limit: 8).first
+
+        try expect(snapshot?.model == "sqlite-model", "SQLite should remain the primary model source")
+        try expect(snapshot?.reasoningEffort == "xhigh", "rollout should fill missing reasoning effort")
+    },
     TestCase(name: "loader retains rollout completion event") {
         let now = Date(timeIntervalSince1970: 5_500)
         let loader = ThreadStatusLoader(

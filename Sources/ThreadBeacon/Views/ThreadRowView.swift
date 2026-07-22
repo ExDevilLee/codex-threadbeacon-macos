@@ -79,7 +79,7 @@ struct ThreadRowView: View {
                             toggle: toggleSubagents
                         )
 
-                        if snapshot.tokenUsage != nil {
+                        if hasTaskDetails {
                             Divider()
                                 .frame(height: 12)
                                 .accessibilityHidden(true)
@@ -91,7 +91,10 @@ struct ThreadRowView: View {
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .fixedSize()
-                        TokenInfoButton(snapshot: tokenUsage)
+                    }
+
+                    if hasTaskDetails {
+                        TokenInfoButton(snapshot: snapshot)
                     }
                 }
 
@@ -145,6 +148,10 @@ struct ThreadRowView: View {
         return snapshot.serviceIncident?.phase == .failed
             ? AppLocalization.string("服务失败", locale: locale)
             : AppLocalization.string(snapshot.status.displayName, locale: locale)
+    }
+
+    private var hasTaskDetails: Bool {
+        snapshot.tokenUsage != nil || snapshot.model != nil || snapshot.reasoningEffort != nil
     }
 }
 

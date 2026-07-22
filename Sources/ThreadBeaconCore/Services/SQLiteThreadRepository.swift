@@ -154,7 +154,9 @@ public struct SQLiteThreadRepository: Sendable {
                     updatedAt: Date(timeIntervalSince1970: Double(updatedAtMilliseconds) / 1_000),
                     tokensUsed: tokensUsed,
                     subagentCount: subagentCount,
-                    isArchived: isArchived
+                    isArchived: isArchived,
+                    model: optionalString(statement, column: 7),
+                    reasoningEffort: optionalString(statement, column: 8)
                 ))
             case SQLITE_DONE:
                 return records
@@ -268,7 +270,9 @@ public struct SQLiteThreadRepository: Sendable {
                COALESCE(t.updated_at_ms, t.updated_at * 1000),
                t.tokens_used,
                COALESCE(children.child_count, 0),
-               t.archived
+               t.archived,
+               t.model,
+               t.reasoning_effort
         FROM threads AS t
         LEFT JOIN (
             SELECT parent_thread_id, COUNT(*) AS child_count
@@ -293,7 +297,9 @@ public struct SQLiteThreadRepository: Sendable {
                COALESCE(updated_at_ms, updated_at * 1000),
                tokens_used,
                0,
-               archived
+               archived,
+               model,
+               reasoning_effort
         FROM threads
         WHERE archived = 0
           AND COALESCE(thread_source, '') <> 'subagent'
@@ -314,7 +320,9 @@ public struct SQLiteThreadRepository: Sendable {
                    COALESCE(t.updated_at_ms, t.updated_at * 1000),
                    t.tokens_used,
                    COALESCE(children.child_count, 0),
-                   t.archived
+                   t.archived,
+                   t.model,
+                   t.reasoning_effort
             FROM threads AS t
             LEFT JOIN (
                 SELECT parent_thread_id, COUNT(*) AS child_count
@@ -338,7 +346,9 @@ public struct SQLiteThreadRepository: Sendable {
                COALESCE(updated_at_ms, updated_at * 1000),
                tokens_used,
                0,
-               archived
+               archived,
+               model,
+               reasoning_effort
         FROM threads
         WHERE id IN (\(placeholders))
           \(legacyArchiveClause)

@@ -3,7 +3,7 @@ import SwiftUI
 
 struct TokenInfoButton: View {
     @Environment(\.locale) private var locale
-    let snapshot: TokenUsageSnapshot
+    let snapshot: ThreadSnapshot
 
     @State private var isHoverPresented = false
     @State private var isPinned = false
@@ -22,8 +22,8 @@ struct TokenInfoButton: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
-        .help("查看 Token 详情")
-        .accessibilityLabel("查看 Token 详情")
+        .help("查看任务详情")
+        .accessibilityLabel("查看任务详情")
         .onHover(perform: handleTriggerHover)
         .popover(isPresented: presentationBinding, arrowEdge: .trailing) {
             TokenDetailPopoverView(snapshot: snapshot)

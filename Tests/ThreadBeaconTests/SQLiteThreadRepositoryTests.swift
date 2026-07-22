@@ -14,6 +14,8 @@ let sqliteThreadRepositoryTests = [
         try expect(records.first?.rolloutPath == "/tmp/new.jsonl", "rollout path should be retained")
         try expect(records.first?.tokensUsed == 70_808_875, "repository should retain token total")
         try expect(records.first?.subagentCount == 3, "all direct child relationships should be counted")
+        try expect(records.first?.model == "gpt-test-main", "repository should retain the main task model")
+        try expect(records.first?.reasoningEffort == "xhigh", "repository should retain main reasoning effort")
     },
     TestCase(name: "repository respects requested limit") {
         let databaseURL = try makeTemporaryThreadDatabase()
@@ -119,7 +121,7 @@ private func makeTemporaryThreadDatabase(includeSpawnEdges: Bool = true) throws 
     );
     INSERT INTO threads VALUES
         ('older-thread', 'Older', '/tmp/older.jsonl', 100, 100000, 100000, 0, 'user', 1, NULL, NULL, NULL, NULL),
-        ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user', 70808875, NULL, NULL, NULL, NULL),
+        ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user', 70808875, NULL, NULL, 'gpt-test-main', 'xhigh'),
         ('subagent-thread', 'Child', '/tmp/child.jsonl', 300, 300000, 500000, 0, 'subagent', 2, 'worker-agent', 'worker', 'gpt-test', 'high'),
         ('legacy-child', 'Legacy Child', '/tmp/legacy.jsonl', 310, 310000, 510000, 0, NULL, 4, 'legacy-agent', 'explorer', 'gpt-test', 'medium'),
         ('archived-child', 'Archived Child', '/tmp/archived-child.jsonl', 320, 320000, 520000, 1, NULL, 5, 'archived-agent', 'default', 'gpt-test', 'low'),

@@ -7,6 +7,8 @@ public struct RolloutObservation: Equatable, Sendable {
     public var completionEventAt: Date?
     public var latestTaskStartedAt: Date?
     public var tokenUsage: TokenUsageSnapshot?
+    public var model: String?
+    public var reasoningEffort: String?
 
     public init(
         status: ThreadDisplayStatus = .unknown,
@@ -14,7 +16,9 @@ public struct RolloutObservation: Equatable, Sendable {
         latestEventAt: Date? = nil,
         completionEventAt: Date? = nil,
         latestTaskStartedAt: Date? = nil,
-        tokenUsage: TokenUsageSnapshot? = nil
+        tokenUsage: TokenUsageSnapshot? = nil,
+        model: String? = nil,
+        reasoningEffort: String? = nil
     ) {
         self.status = status
         self.statusChangedAt = statusChangedAt
@@ -22,5 +26,7 @@ public struct RolloutObservation: Equatable, Sendable {
         self.completionEventAt = completionEventAt
         self.latestTaskStartedAt = latestTaskStartedAt
         self.tokenUsage = tokenUsage
+        self.model = model
+        self.reasoningEffort = reasoningEffort
     }
 }

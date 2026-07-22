@@ -223,7 +223,9 @@ public struct ThreadStatusLoader: Sendable {
                 subagentCount: record.subagentCount,
                 subagents: subagents,
                 serviceIncident: record.isArchived ? nil : incident,
-                isArchived: record.isArchived
+                isArchived: record.isArchived,
+                model: record.model ?? observation.model,
+                reasoningEffort: record.reasoningEffort ?? observation.reasoningEffort
             )
         }
         .sorted(by: snapshotPrecedes)

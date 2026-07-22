@@ -221,8 +221,9 @@ Xcode App target 会把 `.icns` 作为 App bundle 资源，并写入 `CFBundleIc
   并显示状态、最近活动和自身累计 Token；悬浮或点击 info 可查看昵称、角色、模型、
   Reasoning 和 Token 明细。只在展开时读取对应子任务，不读取会话正文，也不显示第二层
   任务树。
-- 每行右侧紧凑显示会话累计 Token；悬浮 info 图标可查看输入、缓存输入、非缓存
-  输入、输出、Reasoning、当前 turn、缓存率和更新时间，点击可保持详情打开。
+- 每行右侧紧凑显示会话累计 Token；悬浮 info 图标可查看当前生效的模型、推理强度、
+  输入、缓存输入、非缓存输入、输出、Reasoning、当前 turn、缓存率和更新时间，点击可保持
+  详情打开。主列表不会因此增加常驻列。
 - 任务标题优先读取 `session_index.jsonl` 中该任务最后一次 rename 的名称；没有有效 rename 记录时回退 `threads.title`。
 - 当前版本不读取或显示会话摘要与正文。
 - 默认每 2 秒自动刷新，可在 Settings 中选择 `1 / 2 / 5 / 10 秒`，也可使用右上角
@@ -292,11 +293,12 @@ App 只在本机读取：
 
 - `~/.codex/state_5.sqlite`：以 SQLite read-only 模式读取近期未归档任务及已收藏归档任务
   的元数据、`rollout_path`、归档状态、
-  累计 `tokens_used`、父子任务关系，以及已展开直接 Subagent 的昵称、角色、模型和
-  Reasoning effort。
+  累计 `tokens_used`、模型、推理强度、父子任务关系，以及已展开直接 Subagent 的昵称、
+  角色、模型和 Reasoning effort。
 - `~/.codex/session_index.jsonl`：只读匹配任务 ID，取最后一条有效 `thread_name` 作为 rename 后标题。
-- rollout JSONL：每个任务最多读取文件末尾 2 MiB，只提取事件类型、时间戳和 Token
-  数字字段，用于推导状态、Token 明细和 `task_complete` 完成事件。
+- rollout JSONL：每个任务最多读取文件末尾 2 MiB，只提取事件类型、时间戳、Token
+  数字字段，以及最新有效 `turn_context` 中的模型和推理强度，用于推导状态、Token 明细、
+  主任务模型元数据回退和 `task_complete` 完成事件。
 - `~/.codex/logs_2.sqlite`：以 SQLite read-only 模式只读取当前可见任务的三个白名单
   target，从结构化日志中提取 turn ID、HTTP 状态、重试次数、精确的最终连接中断、明确的模型容量错误和
   最终失败时间。

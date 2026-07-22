@@ -7,6 +7,13 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-07-22
+
+### Added
+
+- 主任务 info 详情现在显示当前生效的模型和推理强度；SQLite 字段缺失时回退 rollout
+  最新有效 `turn_context`，主列表保持原有紧凑宽度。
+
 ## [0.1.5] - 2026-07-22
 
 ### Added
@@ -129,7 +136,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.2...v0.1.3

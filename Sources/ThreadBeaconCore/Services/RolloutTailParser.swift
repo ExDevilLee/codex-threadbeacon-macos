@@ -38,6 +38,8 @@ public struct RolloutTailParser: Sendable {
         var latestTokenUsage: TokenUsage?
         var latestTokenEventAt: Date?
         var currentTurnBaseline: TokenUsage?
+        var latestModel: String?
+        var latestReasoningEffort: String?
 
         for line in lines {
             guard
@@ -52,6 +54,10 @@ public struct RolloutTailParser: Sendable {
 
             if object["type"] as? String == "turn_context" {
                 latestTurn = max(latestTurn ?? .distantPast, date)
+                if let payload = object["payload"] as? [String: Any] {
+                    latestModel = normalizedString(payload["model"]) ?? latestModel
+                    latestReasoningEffort = normalizedString(payload["effort"]) ?? latestReasoningEffort
+                }
             }
 
             if object["type"] as? String == "event_msg",
@@ -113,8 +119,18 @@ public struct RolloutTailParser: Sendable {
             latestEventAt: latestEvent,
             completionEventAt: latestCompletionEventAt,
             latestTaskStartedAt: latestTaskStartedAt,
-            tokenUsage: tokenSnapshot
+            tokenUsage: tokenSnapshot,
+            model: latestModel,
+            reasoningEffort: latestReasoningEffort
         )
+    }
+
+    private func normalizedString(_ value: Any?) -> String? {
+        guard let value = value as? String else {
+            return nil
+        }
+        let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return normalized.isEmpty ? nil : normalized
     }
 
     private func parseTokenUsage(from payload: [String: Any]) -> TokenUsage? {

@@ -27,8 +27,9 @@
 - 窗口可钉在最前面，并持久化选择。
 - 不显示会话摘要，保持状态视图简洁。
 - 接入 `B1 Graphite / Code Beacon` App 图标。
-- 主列表紧凑显示会话累计 Token，并通过 info popover 按需展示输入、缓存、输出、
-  Reasoning、当前 turn 和缓存率；默认不聚合 subagent。
+- 主列表紧凑显示会话累计 Token，并通过 info popover 按需展示当前生效的模型、推理强度、
+  输入、缓存、输出、Reasoning、当前 turn 和缓存率；默认不聚合 subagent。模型元数据优先
+  使用 SQLite，缺失时回退 rollout 最新有效 `turn_context`。
 - 主任务行显示直接 Subagent 总数，并使用父子关系表补强子任务过滤；数量不表示实时
   运行状态。
 - **已完成（Feature 6A）**：点击数量标记可行内展开直接 Subagent，默认以

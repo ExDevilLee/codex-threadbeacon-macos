@@ -23,6 +23,18 @@ let rolloutTailParserTests = [
 
         try expect(result.status == .running, "latest turn should be running")
     },
+    TestCase(name: "latest valid turn context exposes effective model metadata") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"turn_context","payload":{"model":"gpt-old","effort":"low"}}"#,
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"turn_context","payload":{"model":"gpt-current","effort":"xhigh"}}"#,
+            #"{"timestamp":"2026-07-16T01:02:00Z","type":"turn_context","payload":{"model":"","effort":"   "}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.model == "gpt-current", "latest non-empty model should be retained")
+        try expect(result.reasoningEffort == "xhigh", "latest non-empty effort should be retained")
+    },
     TestCase(name: "latest final produces just completed state") {
         let lines = [
             #"{"timestamp":"2026-07-16T01:00:00Z","type":"turn_context","payload":{}}"#,
