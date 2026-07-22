@@ -158,6 +158,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
     public let completionEventAt: Date?
     public let tokenUsage: TokenUsageSnapshot?
     public let subagentCount: Int
+    public let activeSubagentCount: Int
     public let subagents: [SubagentSnapshot]
     public let serviceIncident: ServiceIncident?
     public let isArchived: Bool
@@ -175,6 +176,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         completionEventAt: Date? = nil,
         tokenUsage: TokenUsageSnapshot? = nil,
         subagentCount: Int = 0,
+        activeSubagentCount: Int = 0,
         subagents: [SubagentSnapshot] = [],
         serviceIncident: ServiceIncident? = nil,
         isArchived: Bool = false,
@@ -191,6 +193,7 @@ public struct ThreadSnapshot: Identifiable, Equatable, Sendable {
         self.completionEventAt = completionEventAt
         self.tokenUsage = tokenUsage
         self.subagentCount = max(0, subagentCount)
+        self.activeSubagentCount = min(max(0, activeSubagentCount), self.subagentCount)
         self.subagents = subagents
         self.serviceIncident = serviceIncident
         self.isArchived = isArchived

@@ -252,6 +252,197 @@ let threadStatusLoaderTests = [
             "loader should pass direct child count to snapshots"
         )
     },
+    TestCase(name: "loader counts active subagents while parent is collapsed") {
+        let now = Date(timeIntervalSince1970: 6_800)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "parent",
+                    title: "Parent",
+                    rolloutPath: "/tmp/parent",
+                    updatedAt: now,
+                    subagentCount: 27
+                )]
+            },
+            loadActiveSubagentCandidates: { parentIDs, cutoff in
+                try expect(parentIDs == ["parent"], "visible parents should request candidates")
+                try expect(
+                    cutoff == now.addingTimeInterval(-120),
+                    "candidate cutoff should match running freshness"
+                )
+                return [
+                    "parent": [
+                        SubagentActivityCandidate(
+                            id: "running-a",
+                            parentID: "parent",
+                            rolloutPath: "/tmp/running-a",
+                            updatedAt: now
+                        ),
+                        SubagentActivityCandidate(
+                            id: "running-b",
+                            parentID: "parent",
+                            rolloutPath: "/tmp/running-b",
+                            updatedAt: now
+                        ),
+                        SubagentActivityCandidate(
+                            id: "completed",
+                            parentID: "parent",
+                            rolloutPath: "/tmp/completed",
+                            updatedAt: now
+                        )
+                    ]
+                ]
+            },
+            observe: { url in
+                if url.lastPathComponent == "completed" {
+                    return RolloutObservation(
+                        status: .justCompleted,
+                        statusChangedAt: now,
+                        latestEventAt: now
+                    )
+                }
+                if url.lastPathComponent.hasPrefix("running-") {
+                    return RolloutObservation(
+                        status: .running,
+                        statusChangedAt: now,
+                        latestEventAt: now
+                    )
+                }
+                return RolloutObservation(status: .idle, statusChangedAt: now)
+            },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(limit: 8)
+
+        try expect(snapshots.first?.activeSubagentCount == 2, "two running children should be active")
+        try expect(snapshots.first?.subagents.isEmpty == true, "collapsed parent should not load details")
+    },
+    TestCase(name: "loader excludes stale running subagent from active count") {
+        let now = Date(timeIntervalSince1970: 6_900)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "parent",
+                    title: "Parent",
+                    rolloutPath: "/tmp/parent",
+                    updatedAt: now,
+                    subagentCount: 1
+                )]
+            },
+            loadActiveSubagentCandidates: { _, _ in
+                [
+                    "parent": [
+                        SubagentActivityCandidate(
+                            id: "stale",
+                            parentID: "parent",
+                            rolloutPath: "/tmp/stale",
+                            updatedAt: now
+                        )
+                    ]
+                ]
+            },
+            observe: { url in
+                url.path == "/tmp/stale"
+                    ? RolloutObservation(
+                        status: .running,
+                        statusChangedAt: now.addingTimeInterval(-121),
+                        latestEventAt: now.addingTimeInterval(-121)
+                    )
+                    : RolloutObservation(status: .idle, statusChangedAt: now)
+            },
+            now: { now },
+            runningFreshness: 120
+        )
+
+        let snapshots = try await loader.load(limit: 8)
+
+        try expect(snapshots.first?.activeSubagentCount == 0, "stale running child should be unknown")
+    },
+    TestCase(name: "loader caps active subagent count at direct total") {
+        let now = Date(timeIntervalSince1970: 6_950)
+        let candidates = ["first", "second"].map { id in
+            SubagentActivityCandidate(
+                id: id,
+                parentID: "parent",
+                rolloutPath: "/tmp/\(id)",
+                updatedAt: now
+            )
+        }
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "parent",
+                    title: "Parent",
+                    rolloutPath: "/tmp/parent",
+                    updatedAt: now,
+                    subagentCount: 1
+                )]
+            },
+            loadActiveSubagentCandidates: { _, _ in ["parent": candidates] },
+            observe: { url in
+                url.path == "/tmp/parent"
+                    ? RolloutObservation(status: .idle, statusChangedAt: now)
+                    : RolloutObservation(status: .running, statusChangedAt: now, latestEventAt: now)
+            },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(limit: 8)
+
+        try expect(snapshots.first?.activeSubagentCount == 1, "active count must not exceed total")
+    },
+    TestCase(name: "loader reuses active observation for expanded subagent") {
+        let now = Date(timeIntervalSince1970: 6_975)
+        let observations = StringIntCounter()
+        let child = SubagentRecord(
+            id: "child",
+            parentID: "parent",
+            title: "Child",
+            rolloutPath: "/tmp/child",
+            updatedAt: now
+        )
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "parent",
+                    title: "Parent",
+                    rolloutPath: "/tmp/parent",
+                    updatedAt: now,
+                    subagentCount: 1
+                )]
+            },
+            loadSubagentRecords: { _ in ["parent": [child]] },
+            loadActiveSubagentCandidates: { _, _ in
+                [
+                    "parent": [
+                        SubagentActivityCandidate(
+                            id: child.id,
+                            parentID: child.parentID,
+                            rolloutPath: child.rolloutPath,
+                            updatedAt: child.updatedAt
+                        )
+                    ]
+                ]
+            },
+            observe: { url in
+                observations.increment(url.path)
+                return url.path == child.rolloutPath
+                    ? RolloutObservation(status: .running, statusChangedAt: now, latestEventAt: now)
+                    : RolloutObservation(status: .idle, statusChangedAt: now)
+            },
+            now: { now }
+        )
+
+        let snapshots = try await loader.load(limit: 8, expandedThreadIDs: ["parent"])
+
+        try expect(snapshots.first?.activeSubagentCount == 1, "expanded child should remain active")
+        try expect(snapshots.first?.subagents.first?.status == .running, "details should share the state")
+        try expect(
+            observations.value(for: child.rolloutPath) == 1,
+            "candidate and expanded detail should parse one rollout once per refresh"
+        )
+    },
     TestCase(name: "loader only loads and sorts subagents for expanded visible parents") {
         let now = Date(timeIntervalSince1970: 7_000)
         let requestedParents = StringSetBox()
@@ -619,5 +810,18 @@ private final class StringSetBox: @unchecked Sendable {
 
     func replace(_ values: Set<String>) {
         lock.withLock { storage = values }
+    }
+}
+
+private final class StringIntCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var storage: [String: Int] = [:]
+
+    func increment(_ key: String) {
+        lock.withLock { storage[key, default: 0] += 1 }
+    }
+
+    func value(for key: String) -> Int {
+        lock.withLock { storage[key, default: 0] }
     }
 }

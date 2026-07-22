@@ -5,6 +5,10 @@ public struct ThreadStatusLoader: Sendable {
     private let loadIncludedRecords: @Sendable (Set<String>) throws -> [ThreadRecord]
     private let loadFavoriteRecords: @Sendable (Set<String>) throws -> [ThreadRecord]
     private let loadSubagentRecords: @Sendable (Set<String>) throws -> [String: [SubagentRecord]]
+    private let loadActiveSubagentCandidates: @Sendable (
+        Set<String>,
+        Date
+    ) throws -> [String: [SubagentActivityCandidate]]
     private let loadIncidents: @Sendable (Set<String>) throws -> [String: ServiceIncident]
     private let loadTitleOverrides: @Sendable () throws -> [String: String]
     private let observe: @Sendable (URL) throws -> RolloutObservation
@@ -30,6 +34,12 @@ public struct ThreadStatusLoader: Sendable {
             loadSubagentRecords: { parentIDs in
                 try repository.loadDirectSubagents(parentIDs: Array(parentIDs))
             },
+            loadActiveSubagentCandidates: { parentIDs, updatedAfter in
+                try repository.loadRecentSubagentCandidates(
+                    parentIDs: Array(parentIDs),
+                    updatedAfter: updatedAfter
+                )
+            },
             loadIncidents: { threadIDs in
                 try logRepository.loadLatestIncidents(threadIDs: threadIDs)
             },
@@ -46,6 +56,10 @@ public struct ThreadStatusLoader: Sendable {
         loadIncludedRecords: @escaping @Sendable (Set<String>) throws -> [ThreadRecord] = { _ in [] },
         loadFavoriteRecords: @escaping @Sendable (Set<String>) throws -> [ThreadRecord] = { _ in [] },
         loadSubagentRecords: @escaping @Sendable (Set<String>) throws -> [String: [SubagentRecord]] = { _ in [:] },
+        loadActiveSubagentCandidates: @escaping @Sendable (
+            Set<String>,
+            Date
+        ) throws -> [String: [SubagentActivityCandidate]] = { _, _ in [:] },
         loadIncidents: @escaping @Sendable (Set<String>) throws -> [String: ServiceIncident] = { _ in [:] },
         loadTitleOverrides: @escaping @Sendable () throws -> [String: String] = { [:] },
         observe: @escaping @Sendable (URL) throws -> RolloutObservation,
@@ -57,6 +71,7 @@ public struct ThreadStatusLoader: Sendable {
         self.loadIncludedRecords = loadIncludedRecords
         self.loadFavoriteRecords = loadFavoriteRecords
         self.loadSubagentRecords = loadSubagentRecords
+        self.loadActiveSubagentCandidates = loadActiveSubagentCandidates
         self.loadIncidents = loadIncidents
         self.loadTitleOverrides = loadTitleOverrides
         self.observe = observe
@@ -135,10 +150,17 @@ public struct ThreadStatusLoader: Sendable {
         let activeThreadIDs = Set(records.filter { !$0.isArchived }.map(\.id))
         let requestedParentIDs = expandedThreadIDs.intersection(visibleThreadIDs)
         let subagentRecordsByParent: [String: [SubagentRecord]]
+        let activeSubagentCandidatesByParent: [String: [SubagentActivityCandidate]]
         do {
             subagentRecordsByParent = requestedParentIDs.isEmpty
                 ? [:]
                 : try loadSubagentRecords(requestedParentIDs)
+            activeSubagentCandidatesByParent = visibleThreadIDs.isEmpty
+                ? [:]
+                : try loadActiveSubagentCandidates(
+                    visibleThreadIDs,
+                    currentDate.addingTimeInterval(-runningFreshness)
+                )
         } catch {
             throw taskDatabaseFailure()
         }
@@ -175,19 +197,37 @@ public struct ThreadStatusLoader: Sendable {
 
         var rolloutSuccessCount = 0
         var rolloutFailureCount = 0
+        var observationsByPath: [String: RolloutObservation] = [:]
         func readObservation(at path: String) -> RolloutObservation {
-            do {
-                let observation = try observe(URL(fileURLWithPath: path))
-                rolloutSuccessCount += 1
+            if let observation = observationsByPath[path] {
                 return observation
-            } catch {
-                rolloutFailureCount += 1
-                return RolloutObservation()
             }
+            let observation: RolloutObservation
+            do {
+                observation = try observe(URL(fileURLWithPath: path))
+                rolloutSuccessCount += 1
+            } catch {
+                observation = RolloutObservation()
+                rolloutFailureCount += 1
+            }
+            observationsByPath[path] = observation
+            return observation
         }
 
         let snapshots = records.map { record in
             let observation = readObservation(at: record.rolloutPath)
+            let activeSubagentCount = (activeSubagentCandidatesByParent[record.id] ?? [])
+                .reduce(into: 0) { count, candidate in
+                    let candidateObservation = readObservation(at: candidate.rolloutPath)
+                    let candidateState = displayState(
+                        for: candidateObservation,
+                        fallbackDate: candidate.updatedAt,
+                        currentDate: currentDate
+                    )
+                    if candidateState.status == .running {
+                        count += 1
+                    }
+                }
 
             let state = displayState(
                 for: observation,
@@ -221,6 +261,7 @@ public struct ThreadStatusLoader: Sendable {
                 completionEventAt: record.isArchived || incident != nil ? nil : observation.completionEventAt,
                 tokenUsage: tokenUsage,
                 subagentCount: record.subagentCount,
+                activeSubagentCount: activeSubagentCount,
                 subagents: subagents,
                 serviceIncident: record.isArchived ? nil : incident,
                 isArchived: record.isArchived,
