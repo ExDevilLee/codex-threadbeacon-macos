@@ -8,10 +8,15 @@ struct ThreadBeaconSettingsView: View {
     @ObservedObject var autoRecoveryLogStore: AutoRecoveryLogStore
     @ObservedObject var autoRecoverySettingsStore: AutoRecoverySettingsStore
     @ObservedObject var accessibilityPermissionStore: AccessibilityPermissionStore
+    @ObservedObject var compactionHookSettingsStore: CompactionHookSettingsStore
 
     var body: some View {
         TabView {
-            GeneralSettingsView(languageStore: languageStore, launchAtLoginStore: launchAtLoginStore)
+            GeneralSettingsView(
+                languageStore: languageStore,
+                launchAtLoginStore: launchAtLoginStore,
+                compactionHookSettingsStore: compactionHookSettingsStore
+            )
                 .tabItem {
                     Label("通用", systemImage: "gearshape")
                 }
@@ -302,6 +307,7 @@ private struct GeneralSettingsView: View {
     private var usesColorBlindSafeStatusIndicators = DisplaySettings.defaultColorBlindSafeStatusIndicators
     @ObservedObject var languageStore: AppLanguageStore
     @ObservedObject var launchAtLoginStore: LaunchAtLoginStore
+    @ObservedObject var compactionHookSettingsStore: CompactionHookSettingsStore
 
     var body: some View {
         Form {
@@ -357,6 +363,8 @@ private struct GeneralSettingsView: View {
                 launchAtLoginStatusDetail
             }
 
+            CompactionHookSettingsSection(store: compactionHookSettingsStore)
+
             Text("修改后立即生效；暂停监听时仍可手动刷新。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -364,10 +372,12 @@ private struct GeneralSettingsView: View {
         .formStyle(.grouped)
         .onAppear {
             launchAtLoginStore.refresh()
+            compactionHookSettingsStore.refresh()
         }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
                 launchAtLoginStore.refresh()
+                compactionHookSettingsStore.refresh()
             }
         }
         .alert("登录启动设置失败", isPresented: launchAtLoginErrorIsPresented) {

@@ -12,10 +12,26 @@
 		100000000000000000000003 /* AppIcon.icns in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000012 /* AppIcon.icns */; };
 		100000000000000000000004 /* Sounds in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000013 /* Sounds */; };
 		100000000000000000000005 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 100000000000000000000014 /* Localizable.xcstrings */; };
+		100000000000000000000006 /* ThreadBeaconHookBridge in Embed Helpers */ = {isa = PBXBuildFile; fileRef = 100000000000000000000016 /* ThreadBeaconHookBridge */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		100000000000000000000007 /* ThreadBeaconCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 100000000000000000000011 /* ThreadBeaconCore.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		100000000000000000000020 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000030 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000041;
+			remoteInfo = ThreadBeaconCore;
+		};
+		100000000000000000000022 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 100000000000000000000030 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 100000000000000000000042;
+			remoteInfo = ThreadBeaconHookBridge;
+		};
+		100000000000000000000025 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 100000000000000000000030 /* Project object */;
 			proxyType = 1;
@@ -36,6 +52,17 @@
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		100000000000000000000057 /* Embed Helpers */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				100000000000000000000006 /* ThreadBeaconHookBridge in Embed Helpers */,
+			);
+			name = "Embed Helpers";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -45,6 +72,7 @@
 		100000000000000000000013 /* Sounds */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Sounds; sourceTree = "<group>"; };
 		100000000000000000000014 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		100000000000000000000015 /* ThreadBeacon-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ThreadBeacon-Info.plist"; sourceTree = "<group>"; };
+		100000000000000000000016 /* ThreadBeaconHookBridge */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ThreadBeaconHookBridge; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -56,6 +84,11 @@
 		100000000000000000000061 /* ThreadBeaconCore */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = Sources/ThreadBeaconCore;
+			sourceTree = SOURCE_ROOT;
+		};
+		100000000000000000000062 /* ThreadBeaconHookBridge */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Sources/ThreadBeaconHookBridge;
 			sourceTree = SOURCE_ROOT;
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -76,6 +109,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		100000000000000000000058 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				100000000000000000000007 /* ThreadBeaconCore.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -84,6 +125,7 @@
 			children = (
 				100000000000000000000060 /* ThreadBeacon */,
 				100000000000000000000061 /* ThreadBeaconCore */,
+				100000000000000000000062 /* ThreadBeaconHookBridge */,
 				100000000000000000000071 /* Resources */,
 				100000000000000000000072 /* Config */,
 				100000000000000000000073 /* Products */,
@@ -113,6 +155,7 @@
 			children = (
 				100000000000000000000010 /* ThreadBeacon.app */,
 				100000000000000000000011 /* ThreadBeaconCore.framework */,
+				100000000000000000000016 /* ThreadBeaconHookBridge */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -128,11 +171,13 @@
 				100000000000000000000052 /* Frameworks */,
 				100000000000000000000054 /* Resources */,
 				100000000000000000000051 /* Embed Frameworks */,
+				100000000000000000000057 /* Embed Helpers */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				100000000000000000000021 /* PBXTargetDependency */,
+				100000000000000000000023 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				100000000000000000000060 /* ThreadBeacon */,
@@ -166,6 +211,28 @@
 			productReference = 100000000000000000000011 /* ThreadBeaconCore.framework */;
 			productType = "com.apple.product-type.framework";
 		};
+		100000000000000000000042 /* ThreadBeaconHookBridge */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 100000000000000000000083 /* Build configuration list for PBXNativeTarget "ThreadBeaconHookBridge" */;
+			buildPhases = (
+				100000000000000000000059 /* Sources */,
+				100000000000000000000058 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				100000000000000000000026 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				100000000000000000000062 /* ThreadBeaconHookBridge */,
+			);
+			name = ThreadBeaconHookBridge;
+			packageProductDependencies = (
+			);
+			productName = ThreadBeaconHookBridge;
+			productReference = 100000000000000000000016 /* ThreadBeaconHookBridge */;
+			productType = "com.apple.product-type.tool";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -180,6 +247,9 @@
 						CreatedOnToolsVersion = 26.6;
 					};
 					100000000000000000000041 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					100000000000000000000042 = {
 						CreatedOnToolsVersion = 26.6;
 					};
 				};
@@ -201,6 +271,7 @@
 			targets = (
 				100000000000000000000040 /* ThreadBeacon */,
 				100000000000000000000041 /* ThreadBeaconCore */,
+				100000000000000000000042 /* ThreadBeaconHookBridge */,
 			);
 		};
 /* End PBXProject section */
@@ -243,6 +314,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		100000000000000000000059 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -250,6 +328,16 @@
 			isa = PBXTargetDependency;
 			target = 100000000000000000000041 /* ThreadBeaconCore */;
 			targetProxy = 100000000000000000000020 /* PBXContainerItemProxy */;
+		};
+		100000000000000000000023 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000042 /* ThreadBeaconHookBridge */;
+			targetProxy = 100000000000000000000022 /* PBXContainerItemProxy */;
+		};
+		100000000000000000000026 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 100000000000000000000041 /* ThreadBeaconCore */;
+			targetProxy = 100000000000000000000025 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -406,6 +494,45 @@
 			};
 			name = Release;
 		};
+		100000000000000000000096 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.exdevillee.threadbeacon.hookbridge;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Sources/CSQLite";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		100000000000000000000097 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.exdevillee.threadbeacon.hookbridge;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_INCLUDE_PATHS = "$(SRCROOT)/Sources/CSQLite";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -432,6 +559,15 @@
 			buildConfigurations = (
 				100000000000000000000094 /* Debug */,
 				100000000000000000000095 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		100000000000000000000083 /* Build configuration list for PBXNativeTarget "ThreadBeaconHookBridge" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				100000000000000000000096 /* Debug */,
+				100000000000000000000097 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

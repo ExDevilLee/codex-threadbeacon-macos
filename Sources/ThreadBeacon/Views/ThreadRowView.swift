@@ -82,11 +82,9 @@ struct ThreadRowView: View {
                             toggle: toggleSubagents
                         )
 
-                        if hasTaskDetails {
-                            Divider()
-                                .frame(height: 12)
-                                .accessibilityHidden(true)
-                        }
+                        Divider()
+                            .frame(height: 12)
+                            .accessibilityHidden(true)
                     }
 
                     if let tokenUsage = snapshot.tokenUsage {
@@ -96,9 +94,7 @@ struct ThreadRowView: View {
                             .fixedSize()
                     }
 
-                    if hasTaskDetails {
-                        TokenInfoButton(snapshot: snapshot)
-                    }
+                    TokenInfoButton(snapshot: snapshot)
                 }
 
                 HStack(spacing: 6) {
@@ -148,13 +144,12 @@ struct ThreadRowView: View {
         if snapshot.isArchived {
             return AppLocalization.string("已归档", locale: locale)
         }
+        if snapshot.compaction.isActive {
+            return AppLocalization.string("压缩中", locale: locale)
+        }
         return snapshot.serviceIncident?.phase == .failed
             ? AppLocalization.string("服务失败", locale: locale)
             : AppLocalization.string(snapshot.status.displayName, locale: locale)
-    }
-
-    private var hasTaskDetails: Bool {
-        snapshot.tokenUsage != nil || snapshot.model != nil || snapshot.reasoningEffort != nil
     }
 }
 

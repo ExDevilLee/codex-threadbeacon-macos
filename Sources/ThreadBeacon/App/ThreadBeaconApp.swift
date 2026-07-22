@@ -23,6 +23,7 @@ struct ThreadBeaconApp: App {
     @StateObject private var autoRecoveryLogStore: AutoRecoveryLogStore
     @StateObject private var autoRecoverySettingsStore: AutoRecoverySettingsStore
     @StateObject private var accessibilityPermissionStore: AccessibilityPermissionStore
+    @StateObject private var compactionHookSettingsStore: CompactionHookSettingsStore
     @AppStorage(DisplayPreferenceKeys.appTheme)
     private var appThemeRawValue = AppTheme.defaultValue.rawValue
     private let soundPlayer: SoundPlaybackService
@@ -46,6 +47,7 @@ struct ThreadBeaconApp: App {
         _autoRecoveryLogStore = StateObject(wrappedValue: recoveryLogs)
         _autoRecoverySettingsStore = StateObject(wrappedValue: recoverySettings)
         _accessibilityPermissionStore = StateObject(wrappedValue: accessibilityStore)
+        _compactionHookSettingsStore = StateObject(wrappedValue: CompactionHookSettingsStore())
         let history = SoundNotificationHistory()
         let preferenceRepository = ThreadListPreferenceRepository()
         let player = SoundPlaybackService()
@@ -162,7 +164,8 @@ struct ThreadBeaconApp: App {
                 previewSound: soundPlayer.preview,
                 autoRecoveryLogStore: autoRecoveryLogStore,
                 autoRecoverySettingsStore: autoRecoverySettingsStore,
-                accessibilityPermissionStore: accessibilityPermissionStore
+                accessibilityPermissionStore: accessibilityPermissionStore,
+                compactionHookSettingsStore: compactionHookSettingsStore
             )
             .environment(\.locale, appLanguageStore.locale)
             .environmentObject(appLanguageStore)

@@ -13,6 +13,8 @@ struct TokenDetailPopoverView: View {
             Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 6) {
                 metricRow("模型", value: snapshot.model ?? "—")
                 metricRow("推理强度", value: reasoningEffortText)
+                metricRow("压缩次数", value: "\(snapshot.compaction.history.completionCount)")
+                metricRow("最近压缩", value: lastCompactionText)
             }
 
             if let tokenUsage = snapshot.tokenUsage {
@@ -87,5 +89,11 @@ struct TokenDetailPopoverView: View {
         case "none": "None"
         default: reasoningEffort
         }
+    }
+
+    private var lastCompactionText: String {
+        snapshot.compaction.history.lastCompletedAt?.formatted(
+            Date.FormatStyle(date: .omitted, time: .standard).locale(locale)
+        ) ?? "—"
     }
 }
