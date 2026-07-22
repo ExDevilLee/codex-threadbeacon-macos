@@ -7,6 +7,21 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-07-22
+
+### Added
+
+- 主任务的 Subagent 标识由历史总数升级为“活跃数/直接 Subagent 总数”，例如 `2/27`；活跃数
+  根据近期 rollout 状态推导，归档主任务不会计入活跃数量，展开与刷新行为保持不变。
+
+### Fixed
+
+- 自动恢复改为通过真实键盘事件向 Codex `ProseMirror` 输入提示词，并使用 Return 提交，解决
+  直接设置 `AXValue` 或调用发送按钮 `AXPress` 只改变可见内容、却没有创建新 turn 的问题。
+  发送前仍要求目标任务身份唯一、输入框无草稿且发送按钮结构唯一；失败清理同样使用真实键盘
+  事件。实机验证已确认目标 rollout 新增匹配的 `user_message`、`task_started` 和
+  `task_complete`。
+
 ## [0.1.6] - 2026-07-22
 
 ### Added
@@ -136,7 +151,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.3...v0.1.4
