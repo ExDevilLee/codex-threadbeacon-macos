@@ -469,6 +469,7 @@ let threadStatusLoaderTests = [
                             tokensUsed: 20,
                             agentNickname: "idle-agent",
                             agentRole: "explorer",
+                            agentPath: "/root/audit_idle_task",
                             model: "gpt-test",
                             reasoningEffort: "medium"
                         ),
@@ -520,6 +521,10 @@ let threadStatusLoaderTests = [
         try expect(subagents[1].title == "Renamed child", "subagent rename should override SQLite title")
         try expect(subagents[1].status == .idle, "subagents should reuse completion retention")
         try expect(subagents[1].agentRole == "explorer", "subagent details should be retained")
+        try expect(
+            subagents[1].agentPath == "/root/audit_idle_task",
+            "subagent task path should reach presentation snapshots"
+        )
         try expect(subagents[1].tokenUsage?.totalTokens == 20, "SQLite token fallback should be retained")
     },
     TestCase(name: "loader merges explicitly included threads without duplicates") {

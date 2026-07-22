@@ -99,6 +99,22 @@ let soundNotificationTests = [
         let events = tracker.observe([snapshot], policy: .notify)
 
         try expect(events.map(\.category) == [.warning], "service failure must not emit done")
+    },
+    TestCase(name: "interrupted task stays silent") {
+        var tracker = SoundNotificationTracker()
+        let date = Date(timeIntervalSince1970: 40)
+        let snapshot = ThreadSnapshot(
+            id: "interrupted",
+            title: "interrupted",
+            status: .interrupted,
+            statusChangedAt: date,
+            updatedAt: date,
+            latestEventAt: date
+        )
+
+        let events = tracker.observe([snapshot], policy: .notify)
+
+        try expect(events.isEmpty, "interrupted lifecycle evidence must not play a sound")
     }
 ]
 

@@ -15,6 +15,14 @@ let threadStatusTests = [
             "warning should sort before running"
         )
         try expect(
+            ThreadDisplayStatus.warning.sortOrder < ThreadDisplayStatus.interrupted.sortOrder,
+            "warning should sort before interrupted"
+        )
+        try expect(
+            ThreadDisplayStatus.interrupted.sortOrder < ThreadDisplayStatus.running.sortOrder,
+            "interrupted should sort before running"
+        )
+        try expect(
             ThreadDisplayStatus.running.sortOrder < ThreadDisplayStatus.idle.sortOrder,
             "running should sort before idle"
         )

@@ -111,6 +111,33 @@ let threadStatusStoreTests = [
         try expect(receivedEvents.values.first?.category == .done, "completion should use done category")
         try expect(receivedHistory.values.count == 2, "new event IDs should be persisted")
     },
+    TestCase(name: "store does not notify or recover an interrupted task") {
+        let date = Date(timeIntervalSince1970: 30)
+        let interrupted = ThreadSnapshot(
+            id: "thread-interrupted",
+            title: "thread-interrupted",
+            status: .interrupted,
+            statusChangedAt: date,
+            updatedAt: date,
+            latestEventAt: date
+        )
+        let sequence = SnapshotSequence(values: [[], [interrupted]])
+        let receivedEvents = EventBox()
+        let recoveryCalls = RecoveryCallBox()
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in await sequence.next() },
+                onNotification: { receivedEvents.append($0) },
+                onAutoRecovery: { recoveryCalls.append($0) }
+            )
+        }
+
+        await store.refresh(notificationPolicy: .baseline)
+        await store.refresh(notificationPolicy: .notify)
+
+        try expect(receivedEvents.values.isEmpty, "interrupted state must not emit a sound event")
+        try expect(recoveryCalls.values.isEmpty, "interrupted state must not create a recovery candidate")
+    },
     TestCase(name: "store emits one structured recovery candidate for a new HTTP 400 incident") {
         let incident = ServiceIncident(
             episodeID: "turn-400",

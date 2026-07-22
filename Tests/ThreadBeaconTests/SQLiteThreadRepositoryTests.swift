@@ -76,6 +76,7 @@ let sqliteThreadRepositoryTests = [
         )
         try expect(records[0].parentID == "new-thread", "parent identity should be retained")
         try expect(records[0].agentNickname == "archived-agent", "agent nickname should load")
+        try expect(records[0].agentPath == "/root/archive_cleanup", "agent task path should load")
         try expect(records[1].agentRole == "explorer", "agent role should load")
         try expect(records[2].model == "gpt-test", "model should load")
         try expect(records[2].reasoningEffort == "high", "reasoning effort should load")
@@ -157,15 +158,16 @@ private func makeTemporaryThreadDatabase(includeSpawnEdges: Bool = true) throws 
         agent_nickname TEXT,
         agent_role TEXT,
         model TEXT,
-        reasoning_effort TEXT
+        reasoning_effort TEXT,
+        agent_path TEXT
     );
     INSERT INTO threads VALUES
-        ('older-thread', 'Older', '/tmp/older.jsonl', 100, 100000, 100000, 0, 'user', 1, NULL, NULL, NULL, NULL),
-        ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user', 70808875, NULL, NULL, 'gpt-test-main', 'xhigh'),
-        ('subagent-thread', 'Child', '/tmp/child.jsonl', 300, 300000, 500000, 0, 'subagent', 2, 'worker-agent', 'worker', 'gpt-test', 'high'),
-        ('legacy-child', 'Legacy Child', '/tmp/legacy.jsonl', 310, 310000, 510000, 0, NULL, 4, 'legacy-agent', 'explorer', 'gpt-test', 'medium'),
-        ('archived-child', 'Archived Child', '/tmp/archived-child.jsonl', 320, 320000, 520000, 1, NULL, 5, 'archived-agent', 'default', 'gpt-test', 'low'),
-        ('archived-thread', 'Archived', '/tmp/archived.jsonl', 400, 400000, 400000, 1, 'user', 3, NULL, NULL, NULL, NULL);
+        ('older-thread', 'Older', '/tmp/older.jsonl', 100, 100000, 100000, 0, 'user', 1, NULL, NULL, NULL, NULL, NULL),
+        ('new-thread', 'New', '/tmp/new.jsonl', 200, 200000, 300000, 0, 'user', 70808875, NULL, NULL, 'gpt-test-main', 'xhigh', NULL),
+        ('subagent-thread', 'Child', '/tmp/child.jsonl', 300, 300000, 500000, 0, 'subagent', 2, 'worker-agent', 'worker', 'gpt-test', 'high', '/root/worker_task'),
+        ('legacy-child', 'Legacy Child', '/tmp/legacy.jsonl', 310, 310000, 510000, 0, NULL, 4, 'legacy-agent', 'explorer', 'gpt-test', 'medium', '/root/legacy_review'),
+        ('archived-child', 'Archived Child', '/tmp/archived-child.jsonl', 320, 320000, 520000, 1, NULL, 5, 'archived-agent', 'default', 'gpt-test', 'low', '/root/archive_cleanup'),
+        ('archived-thread', 'Archived', '/tmp/archived.jsonl', 400, 400000, 400000, 1, 'user', 3, NULL, NULL, NULL, NULL, NULL);
     \(relationshipSQL)
     """
     var errorMessage: UnsafeMutablePointer<CChar>?

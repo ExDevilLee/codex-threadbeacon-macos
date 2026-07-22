@@ -4,6 +4,7 @@ public enum ThreadDisplayStatus: String, CaseIterable, Sendable {
     case error
     case needsAction
     case warning
+    case interrupted
     case running
     case justCompleted
     case idle
@@ -14,10 +15,11 @@ public enum ThreadDisplayStatus: String, CaseIterable, Sendable {
         case .error: 0
         case .needsAction: 1
         case .warning: 2
-        case .running: 3
-        case .justCompleted: 4
-        case .idle: 5
-        case .unknown: 6
+        case .interrupted: 3
+        case .running: 4
+        case .justCompleted: 5
+        case .idle: 6
+        case .unknown: 7
         }
     }
 }
@@ -65,6 +67,7 @@ public struct SubagentRecord: Identifiable, Equatable, Sendable {
     public let tokensUsed: Int64
     public let agentNickname: String?
     public let agentRole: String?
+    public let agentPath: String?
     public let model: String?
     public let reasoningEffort: String?
 
@@ -77,6 +80,7 @@ public struct SubagentRecord: Identifiable, Equatable, Sendable {
         tokensUsed: Int64 = 0,
         agentNickname: String? = nil,
         agentRole: String? = nil,
+        agentPath: String? = nil,
         model: String? = nil,
         reasoningEffort: String? = nil
     ) {
@@ -88,6 +92,7 @@ public struct SubagentRecord: Identifiable, Equatable, Sendable {
         self.tokensUsed = tokensUsed
         self.agentNickname = agentNickname
         self.agentRole = agentRole
+        self.agentPath = agentPath
         self.model = model
         self.reasoningEffort = reasoningEffort
     }
@@ -117,6 +122,7 @@ public struct SubagentSnapshot: Identifiable, Equatable, Sendable {
     public let tokenUsage: TokenUsageSnapshot?
     public let agentNickname: String?
     public let agentRole: String?
+    public let agentPath: String?
     public let model: String?
     public let reasoningEffort: String?
 
@@ -130,6 +136,7 @@ public struct SubagentSnapshot: Identifiable, Equatable, Sendable {
         tokenUsage: TokenUsageSnapshot? = nil,
         agentNickname: String? = nil,
         agentRole: String? = nil,
+        agentPath: String? = nil,
         model: String? = nil,
         reasoningEffort: String? = nil
     ) {
@@ -142,6 +149,7 @@ public struct SubagentSnapshot: Identifiable, Equatable, Sendable {
         self.tokenUsage = tokenUsage
         self.agentNickname = agentNickname
         self.agentRole = agentRole
+        self.agentPath = agentPath
         self.model = model
         self.reasoningEffort = reasoningEffort
     }

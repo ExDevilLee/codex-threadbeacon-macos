@@ -35,6 +35,7 @@ public struct RolloutTailParser: Sendable {
         var latestEvent: Date?
         var latestCompletionEventAt: Date?
         var latestTaskStartedAt: Date?
+        var latestInterruptedAt: Date?
         var latestTokenUsage: TokenUsage?
         var latestTokenEventAt: Date?
         var currentTurnBaseline: TokenUsage?
@@ -68,6 +69,22 @@ public struct RolloutTailParser: Sendable {
                     latestTaskStartedAt = max(latestTaskStartedAt ?? .distantPast, date)
                 } else if eventType == "task_complete" {
                     latestCompletionEventAt = max(latestCompletionEventAt ?? .distantPast, date)
+                } else if eventType == "turn_aborted",
+                          payload["reason"] as? String == "interrupted" {
+                    let interruptedAt: Date
+                    if let completedAtValue = payload["completed_at"] {
+                        guard
+                            let completedAtString = normalizedString(completedAtValue),
+                            let completedAt = parseDate(completedAtString)
+                        else {
+                            continue
+                        }
+                        interruptedAt = max(date, completedAt)
+                    } else {
+                        interruptedAt = date
+                    }
+                    latestInterruptedAt = max(latestInterruptedAt ?? .distantPast, interruptedAt)
+                    latestEvent = max(latestEvent ?? .distantPast, interruptedAt)
                 } else if eventType == "token_count",
                           let usage = parseTokenUsage(from: payload) {
                     latestTokenUsage = usage
@@ -91,17 +108,25 @@ public struct RolloutTailParser: Sendable {
 
         }
 
+        let latestRunningAt = [latestTurn, latestTaskStartedAt].compactMap { $0 }.max()
+        let latestCompletedAt = [latestFinal, latestCompletionEventAt].compactMap { $0 }.max()
         let status: ThreadDisplayStatus
         let statusChangedAt: Date?
-        if let latestTurn, latestTurn > (latestFinal ?? .distantPast) {
-            status = .running
-            statusChangedAt = latestTurn
-        } else if let latestFinal {
+        if let latestCompletedAt,
+           latestCompletedAt >= (latestInterruptedAt ?? .distantPast),
+           latestCompletedAt >= (latestRunningAt ?? .distantPast) {
             status = .justCompleted
-            statusChangedAt = latestFinal
+            statusChangedAt = latestCompletedAt
+        } else if let latestInterruptedAt,
+                  latestInterruptedAt >= (latestRunningAt ?? .distantPast) {
+            status = .interrupted
+            statusChangedAt = latestInterruptedAt
+        } else if let latestRunningAt {
+            status = .running
+            statusChangedAt = latestRunningAt
         } else {
             status = .unknown
-            statusChangedAt = latestTurn
+            statusChangedAt = nil
         }
 
         let tokenSnapshot = latestTokenUsage.map { usage in

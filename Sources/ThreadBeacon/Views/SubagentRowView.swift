@@ -23,6 +23,7 @@ struct SubagentRowView: View {
                 HStack(spacing: 7) {
                     HStack(spacing: 4) {
                         if let alias = SubagentAliasFormatter.displayAlias(
+                            agentPath: snapshot.agentPath,
                             nickname: snapshot.agentNickname,
                             title: snapshot.title
                         ) {
@@ -31,7 +32,8 @@ struct SubagentRowView: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
-                                .layoutPriority(0)
+                                .frame(maxWidth: 150, alignment: .leading)
+                                .layoutPriority(2)
                                 .help(alias)
                             Text("｜")
                                 .font(.caption2)
@@ -43,7 +45,7 @@ struct SubagentRowView: View {
                             : snapshot.title)
                             .font(.system(size: 12, weight: .medium))
                             .lineLimit(1)
-                            .layoutPriority(1)
+                            .layoutPriority(0)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 

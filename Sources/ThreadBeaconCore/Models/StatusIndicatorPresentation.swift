@@ -7,6 +7,8 @@ public extension ThreadDisplayStatus {
             "exclamationmark.square.fill"
         case .warning:
             "exclamationmark.triangle.fill"
+        case .interrupted:
+            "stop.circle.fill"
         case .running:
             "play.circle.fill"
         case .justCompleted:

@@ -112,6 +112,16 @@
 - **P0 验收边界（精确识别等待输入／授权）**：接入必须由用户显式启用，保留当前零配置只读
   模式；需要覆盖事件去重、任务结束后的陈旧状态清理、Codex 版本兼容、卸载还原和数据源健康
   诊断。未获得稳定任务身份或事件语义时失败关闭，不把未知状态显示为需要授权。
+- **POC 阶段结论（等待输入／授权）**：当前 app-server schema 明确定义
+  `waitingOnApproval`、`waitingOnUserInput` 和携带任务 ID 的请求事件，但 Codex Desktop 仍使用
+  私有 stdio 实例，独立 app-server 无法订阅其运行时。Rollout 中 `request_user_input` 未配对
+  output 是等待输入候选，但尚无真实 pending 样本；等待授权没有独立持久化证据，继续失败关闭。
+  详见 [`状态识别 POC`](docs/attention-and-interruption-state-poc.md)。
+- **已完成（任务中断 MVP，等待真实 UI 复验）**：Rollout 的
+  `turn_aborted(reason=interrupted)` 会将主任务或 Subagent 显示为灰色`已中断 / Interrupted`；
+  新 `task_started`、`task_complete` 或 final 按事件时序清除或覆盖旧中断。事件不记录发起方，
+  因此不声称用户一定点击了 STOP；中断不触发提示音或自动恢复。设计见
+  [`docs/interrupted-task-status-design.md`](docs/interrupted-task-status-design.md)。
 - **已完成（自定义提示音 MVP）**：完成与服务异常可分别选择本地音频、试听和清除；
   自定义文件优先，文件被移动、删除或格式不受支持时自动回退各自选定的内置声音。
   当前 App 未启用 Sandbox，因此只在本机偏好中保存所选文件路径，不申请额外权限；

@@ -205,6 +205,7 @@ public struct SQLiteThreadRepository: Sendable {
                child.tokens_used,
                child.agent_nickname,
                child.agent_role,
+               child.agent_path,
                child.model,
                child.reasoning_effort
         FROM thread_spawn_edges AS edge
@@ -252,8 +253,9 @@ public struct SQLiteThreadRepository: Sendable {
                     tokensUsed: sqlite3_column_int64(statement, 5),
                     agentNickname: optionalString(statement, column: 6),
                     agentRole: optionalString(statement, column: 7),
-                    model: optionalString(statement, column: 8),
-                    reasoningEffort: optionalString(statement, column: 9)
+                    agentPath: optionalString(statement, column: 8),
+                    model: optionalString(statement, column: 9),
+                    reasoningEffort: optionalString(statement, column: 10)
                 )
                 recordsByParent[parentID, default: []].append(record)
             case SQLITE_DONE:

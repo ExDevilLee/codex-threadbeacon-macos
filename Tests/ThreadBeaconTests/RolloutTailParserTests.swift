@@ -45,6 +45,65 @@ let rolloutTailParserTests = [
 
         try expect(result.status == .justCompleted, "latest final should be just completed")
     },
+    TestCase(name: "interrupted abort ends the active turn") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:02:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"interrupted","turn_id":"private-turn-id"}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+        let expected = ISO8601DateFormatter().date(from: "2026-07-16T01:02:00Z")
+        let retainedFields = Mirror(reflecting: result).children.compactMap(\.label)
+
+        try expect(result.status == .interrupted, "interrupted abort should end the active turn")
+        try expect(result.statusChangedAt == expected, "abort timestamp should start the interrupted duration")
+        try expect(!retainedFields.contains("reason"), "abort reason must not be retained")
+        try expect(!retainedFields.contains("turnID"), "turn ID must not be retained")
+    },
+    TestCase(name: "new task start clears an older interrupted state") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"interrupted"}}"#,
+            #"{"timestamp":"2026-07-16T01:03:00Z","type":"event_msg","payload":{"type":"task_started"}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.status == .running, "a newer task start should restore running state")
+    },
+    TestCase(name: "task completion overrides an older interrupted state") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"interrupted"}}"#,
+            #"{"timestamp":"2026-07-16T01:03:00Z","type":"event_msg","payload":{"type":"task_complete"}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.status == .justCompleted, "a newer task completion should win by event time")
+    },
+    TestCase(name: "abort completed at uses the later structured timestamp") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"interrupted","completed_at":"2026-07-16T01:04:00Z"}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+        let expected = ISO8601DateFormatter().date(from: "2026-07-16T01:04:00Z")
+
+        try expect(result.status == .interrupted, "valid completed_at should preserve interrupted state")
+        try expect(result.statusChangedAt == expected, "later completed_at should define the boundary")
+    },
+    TestCase(name: "malformed and unsupported abort events are ignored") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"turn_aborted"}}"#,
+            #"{"timestamp":"2026-07-16T01:02:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"cancelled"}}"#,
+            #"{"timestamp":"2026-07-16T01:03:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"interrupted","completed_at":"not-a-date"}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.status == .running, "invalid abort evidence must not end the task")
+    },
     TestCase(name: "real final answer phase produces just completed state") {
         let lines = [
             #"{"timestamp":"2026-07-16T01:00:00Z","type":"turn_context","payload":{}}"#,

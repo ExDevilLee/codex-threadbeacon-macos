@@ -74,6 +74,7 @@
     "查看 Subagent 详情" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "View Subagent details" } } } },
     "错误" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Error" } } } },
     "需要操作" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Action required" } } } },
+    "已中断" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Interrupted" } } } },
     "运行中" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Running" } } } },
     "刚完成" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Just completed" } } } },
     "空闲" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Idle" } } } },

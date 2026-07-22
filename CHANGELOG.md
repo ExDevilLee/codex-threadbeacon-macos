@@ -9,9 +9,19 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ### Added
 
+- 新增任务`已中断 / Interrupted`状态：rollout 出现明确的
+  `turn_aborted(reason=interrupted)` 后，主任务和 Subagent 使用灰色停止状态显示；新的
+  `task_started`、`task_complete` 或 final 会按事件时序清除或覆盖旧中断。该状态不推断是否由
+  用户点击 STOP，不播放提示音，也不生成自动恢复候选。
 - 无人值守自动恢复结束后会安全恢复操作前的原前台 App；只有当前前台仍是本次激活的同一 Codex
   进程时才执行。如果用户期间切换到第三个 App，或原 App 已退出、是 Codex、身份不可用，则保持
   当前焦点。Debug 手工发送和双击打开任务的前台行为不变。
+
+### Fixed
+
+- Subagent 展开行优先显示 `agent_path` 中的表意任务名，例如将
+  `/root/fix_external_sync` 显示为 `Fix external sync`；旧任务缺少该字段时继续回退到 Agent
+  nickname。表意名称获得更高布局优先级，窄窗口下不再被重复的长任务标题压缩到不可见。
 
 ## [0.1.7] - 2026-07-22
 

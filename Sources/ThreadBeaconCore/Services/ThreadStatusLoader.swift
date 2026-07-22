@@ -344,6 +344,7 @@ public struct ThreadStatusLoader: Sendable {
             tokenUsage: tokenUsage(for: observation, fallbackTokens: record.tokensUsed),
             agentNickname: record.agentNickname,
             agentRole: record.agentRole,
+            agentPath: record.agentPath,
             model: record.model,
             reasoningEffort: record.reasoningEffort
         )

@@ -164,6 +164,7 @@ extension ThreadDisplayStatus {
         case .error: "错误"
         case .needsAction: "需要操作"
         case .warning: "服务异常"
+        case .interrupted: "已中断"
         case .running: "运行中"
         case .justCompleted: "刚完成"
         case .idle: "空闲"
@@ -176,6 +177,7 @@ extension ThreadDisplayStatus {
         case .error: .red
         case .needsAction: .orange
         case .warning: .yellow
+        case .interrupted: .secondary
         case .running: .blue
         case .justCompleted: .green
         case .idle: .secondary

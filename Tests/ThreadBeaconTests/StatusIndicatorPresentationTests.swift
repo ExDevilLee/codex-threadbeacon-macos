@@ -6,6 +6,7 @@ let statusIndicatorPresentationTests = [
             .error: "xmark.octagon.fill",
             .needsAction: "exclamationmark.square.fill",
             .warning: "exclamationmark.triangle.fill",
+            .interrupted: "stop.circle.fill",
             .running: "play.circle.fill",
             .justCompleted: "checkmark.circle.fill",
             .idle: "minus.circle.fill",
