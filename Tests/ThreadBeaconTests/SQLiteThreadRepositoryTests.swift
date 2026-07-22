@@ -79,6 +79,46 @@ let sqliteThreadRepositoryTests = [
         try expect(records[1].agentRole == "explorer", "agent role should load")
         try expect(records[2].model == "gpt-test", "model should load")
         try expect(records[2].reasoningEffort == "high", "reasoning effort should load")
+    },
+    TestCase(name: "repository loads only fresh subagent activity candidates") {
+        let databaseURL = try makeTemporaryThreadDatabase()
+        defer { try? FileManager.default.removeItem(at: databaseURL) }
+
+        let recordsByParent = try SQLiteThreadRepository(databaseURL: databaseURL)
+            .loadRecentSubagentCandidates(
+                parentIDs: ["new-thread"],
+                updatedAfter: Date(timeIntervalSince1970: 305)
+            )
+
+        try expect(
+            recordsByParent["new-thread"]?.map(\.id) == ["archived-child", "legacy-child"],
+            "only children at or after the activity cutoff should load"
+        )
+    },
+    TestCase(name: "repository returns no activity candidates without spawn edges") {
+        let databaseURL = try makeTemporaryThreadDatabase(includeSpawnEdges: false)
+        defer { try? FileManager.default.removeItem(at: databaseURL) }
+
+        let records = try SQLiteThreadRepository(databaseURL: databaseURL)
+            .loadRecentSubagentCandidates(
+                parentIDs: ["new-thread"],
+                updatedAfter: Date(timeIntervalSince1970: 0)
+            )
+
+        try expect(records.isEmpty, "missing relationship table should return no candidates")
+    },
+    TestCase(name: "repository skips activity query for empty parent set") {
+        let missingDatabase = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+
+        let records = try SQLiteThreadRepository(databaseURL: missingDatabase)
+            .loadRecentSubagentCandidates(
+                parentIDs: [],
+                updatedAfter: Date(timeIntervalSince1970: 0)
+            )
+
+        try expect(records.isEmpty, "empty parent set should not access the database")
     }
 ]
 

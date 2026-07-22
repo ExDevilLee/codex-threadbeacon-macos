@@ -93,6 +93,20 @@ public struct SubagentRecord: Identifiable, Equatable, Sendable {
     }
 }
 
+public struct SubagentActivityCandidate: Identifiable, Equatable, Sendable {
+    public let id: String
+    public let parentID: String
+    public let rolloutPath: String
+    public let updatedAt: Date
+
+    public init(id: String, parentID: String, rolloutPath: String, updatedAt: Date) {
+        self.id = id
+        self.parentID = parentID
+        self.rolloutPath = rolloutPath
+        self.updatedAt = updatedAt
+    }
+}
+
 public struct SubagentSnapshot: Identifiable, Equatable, Sendable {
     public let id: String
     public let title: String
