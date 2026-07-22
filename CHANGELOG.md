@@ -7,6 +7,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-07-22
+
 ### Added
 
 - 新增任务`已中断 / Interrupted`状态：rollout 出现明确的
@@ -22,6 +24,11 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 - Subagent 展开行优先显示 `agent_path` 中的表意任务名，例如将
   `/root/fix_external_sync` 显示为 `Fix external sync`；旧任务缺少该字段时继续回退到 Agent
   nickname。表意名称获得更高布局优先级，窄窗口下不再被重复的长任务标题压缩到不可见。
+- 修复真实 STOP 事件使用数值型 `completed_at` 时被解析器忽略、任务继续误显示为运行中的问题；
+  无法解析的可选完成时间现在回退到事件顶层时间。真实 UI 复验已确认任务会显示为灰色
+  `已中断 / Interrupted`。
+- 调整任务排序优先级，正在执行的任务现在排在已中断任务之前；错误、需要操作和服务异常仍保持
+  最高优先级。
 
 ## [0.1.7] - 2026-07-22
 
@@ -167,7 +174,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.4...v0.1.5
