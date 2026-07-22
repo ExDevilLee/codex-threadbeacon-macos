@@ -83,6 +83,60 @@ let logEventParserTests = [
         try expect(incident?.httpStatusCode == 429, "terminal 429 should retain its status")
         try expect(incident?.retryAttempt == 5, "terminal 429 should retain retry progress")
     },
+    TestCase(name: "log parser keeps exhausted reconnect attempt as warning before final error") {
+        let records = [
+            logRecord(
+                second: 275,
+                target: "codex_core::responses_retry",
+                body: "turn{turn.id=turn-disconnect-warning}: stream disconnected - retrying sampling request (5/5 in 3s)..."
+            )
+        ]
+
+        let incident = LogEventParser().latestIncidents(from: records)["thread-a"]
+
+        try expect(incident?.phase == .retrying, "5/5 alone should remain a warning")
+        try expect(incident?.retryAttempt == 5, "warning should retain the final reconnect attempt")
+        try expect(incident?.retryLimit == 5, "warning should retain the reconnect limit")
+    },
+    TestCase(name: "log parser turns exhausted reconnect followed by final disconnect into failure") {
+        let records = [
+            logRecord(
+                second: 280,
+                target: "codex_core::responses_retry",
+                body: "turn{turn.id=turn-disconnect}: stream disconnected - retrying sampling request (5/5 in 3s)..."
+            ),
+            logRecord(
+                second: 281,
+                target: "codex_core::session::turn",
+                body: "turn{turn.id=turn-disconnect}: Turn error: stream disconnected before completion: error sending request for url (<redacted>)"
+            )
+        ]
+
+        let incident = LogEventParser().latestIncidents(from: records)["thread-a"]
+
+        try expect(incident?.phase == .failed, "final disconnect after 5/5 should become failure")
+        try expect(incident?.kind == .streamDisconnected, "disconnect should retain its incident kind")
+        try expect(incident?.httpStatusCode == nil, "disconnect should not invent an HTTP status")
+        try expect(incident?.retryAttempt == 5, "disconnect should retain retry progress")
+        try expect(incident?.retryLimit == 5, "disconnect should retain retry limit")
+        try expect(
+            incident?.occurredAt == Date(timeIntervalSince1970: 281),
+            "final disconnect time should override retry time"
+        )
+    },
+    TestCase(name: "log parser ignores final disconnect without exhausted reconnect") {
+        let records = [
+            logRecord(
+                second: 290,
+                target: "codex_core::session::turn",
+                body: "turn{turn.id=turn-disconnect-unmatched}: Turn error: stream disconnected before completion: error sending request for url (<redacted>)"
+            )
+        ]
+
+        let incidents = LogEventParser().latestIncidents(from: records)
+
+        try expect(incidents["thread-a"] == nil, "disconnect without 5/5 should not create an incident")
+    },
     TestCase(name: "log parser clears retry episode after same turn recovers") {
         let records = [
             logRecord(

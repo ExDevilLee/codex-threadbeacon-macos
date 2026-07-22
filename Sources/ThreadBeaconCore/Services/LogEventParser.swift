@@ -49,6 +49,13 @@ public struct LogEventParser: Sendable {
                     episode.kind = .modelCapacity
                     episode.httpStatusCode = nil
                     episode.failedAt = max(episode.failedAt, record.occurredAt)
+                } else if record.body.contains("Turn error: stream disconnected before completion:"),
+                          let retryAttempt = episode.retryAttempt,
+                          let retryLimit = episode.retryLimit,
+                          retryAttempt == retryLimit {
+                    episode.kind = .streamDisconnected
+                    episode.httpStatusCode = nil
+                    episode.failedAt = max(episode.failedAt, record.occurredAt)
                 } else if record.body.contains("Turn error:"),
                           let status = statusCode(in: record.body),
                           let kind = incidentKind(for: status) {

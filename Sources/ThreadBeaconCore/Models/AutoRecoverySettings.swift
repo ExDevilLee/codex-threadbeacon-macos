@@ -22,6 +22,7 @@ public enum AutoRecoveryIncidentType: String, Codable, CaseIterable, Sendable {
     case http503
     case otherHTTP
     case modelCapacity
+    case streamDisconnected
 
     public init(incidentKind: ServiceIncidentKind) {
         switch incidentKind {
@@ -35,6 +36,8 @@ public enum AutoRecoveryIncidentType: String, Codable, CaseIterable, Sendable {
             self = .otherHTTP
         case .modelCapacity:
             self = .modelCapacity
+        case .streamDisconnected:
+            self = .streamDisconnected
         }
     }
 
@@ -72,6 +75,8 @@ public enum AutoRecoveryIncidentType: String, Codable, CaseIterable, Sendable {
                 "刚才请求异常中断了，请继续未完成的任务"
             case .modelCapacity:
                 "刚才因模型容量限制中断了，请继续未完成的任务"
+            case .streamDisconnected:
+                "刚才连接中断且重试失败，请继续未完成的任务"
             }
         case .english:
             switch self {
@@ -85,6 +90,8 @@ public enum AutoRecoveryIncidentType: String, Codable, CaseIterable, Sendable {
                 "The previous request was interrupted by an HTTP error. Please continue the unfinished task."
             case .modelCapacity:
                 "The previous request was interrupted due to model capacity limits. Please continue the unfinished task."
+            case .streamDisconnected:
+                "The connection was interrupted and all retries failed. Please continue the unfinished task."
             }
         }
     }
@@ -93,7 +100,7 @@ public enum AutoRecoveryIncidentType: String, Codable, CaseIterable, Sendable {
         switch self {
         case .http503:
             false
-        case .http400, .http429, .otherHTTP, .modelCapacity:
+        case .http400, .http429, .otherHTTP, .modelCapacity, .streamDisconnected:
             true
         }
     }

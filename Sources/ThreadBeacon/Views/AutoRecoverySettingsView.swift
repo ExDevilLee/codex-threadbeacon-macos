@@ -328,6 +328,7 @@ private extension AutoRecoveryIncidentType {
         case .http503: source = "HTTP 503"
         case .otherHTTP: source = "其他 HTTP 错误"
         case .modelCapacity: source = "模型容量异常"
+        case .streamDisconnected: source = "连接中断"
         }
         return AppLocalization.string(source, locale: locale)
     }
@@ -340,6 +341,7 @@ private extension AutoRecoveryIncidentType {
         case .http503: source = "服务不可用重试耗尽；默认关闭"
         case .otherHTTP: source = "其他结构化终止型 4xx/5xx"
         case .modelCapacity: source = "模型容量限制导致终止"
+        case .streamDisconnected: source = "重新连接重试耗尽后终止"
         }
         return AppLocalization.string(source, locale: locale)
     }

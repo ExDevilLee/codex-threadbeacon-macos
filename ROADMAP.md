@@ -93,12 +93,15 @@
   `notLoaded`，无法看到 Desktop 已加载线程或接收其实时事件；详见
   [`docs/app-server-integration-poc.md`](docs/app-server-integration-poc.md)。
 - **已完成（阶段三）**：通过只读 `logs_2.sqlite` 的三个白名单 target 识别 HTTP
-  400/429/503 与明确的模型容量错误。429/503 自动重试显示黄色 `warning`，HTTP 400、
-  重试耗尽和模型容量错误显示红色 `error`；新 turn 和同 turn
+  400/429/503、重新连接重试耗尽后的最终断流与明确的模型容量错误。429/503 自动重试和
+  尚未终止的连接重试显示黄色 `warning`，HTTP 400、重试耗尽后的最终失败和模型容量错误显示红色 `error`；新 turn 和同 turn
   后续成功会清除旧 warning。
 - **真实验证已完成（2026-07-20）**：使用真实 Codex 任务确认 HTTP 400 能在列表中正确显示
   为红色 `Service failed · HTTP 400`，并保留异常持续时间；原始会话 ID、任务标题和日志正文
   不进入公开文档。
+- **真实样本验证已完成（2026-07-22）**：确认同一 turn 先出现 `5/5` 重新连接记录，随后出现
+  精确最终断流错误。只有两条证据同时存在时才转为 `streamDisconnected + failed`；单独的 `5/5`
+  仍保持重试中，不提前触发自动恢复。样本 ID、URL、标题和完整日志正文不进入仓库。
 - **已完成（阶段三）**：每个异常 episode 只播放一次独立警告音；最终失败覆盖 rollout
   的误导性完成状态，不播放错误的完成音。详见
   [`docs/service-incident-monitoring.md`](docs/service-incident-monitoring.md)。
@@ -178,7 +181,8 @@
   正在执行时停止。发送后恢复原前台 App 和更完整的连续失败熔断仍待后续验证。
 - **MVP 已完成（自动恢复设置）**：Release 构建移除手工诊断、任务 ID 和测试发送控件，Debug
   构建保留开发验证入口；正式设置支持总开关，以及 HTTP 400、HTTP 429、HTTP 503、其他终止型
-  HTTP 错误和模型容量异常各自的启用状态与自定义提示词。HTTP 503 默认关闭，只在重试耗尽后
+  HTTP 错误、模型容量异常和连接中断各自的启用状态与自定义提示词。连接中断规则默认开启，
+  但必须等同一 turn 的重试上限与最终断流错误都出现；HTTP 503 默认关闭，只在重试耗尽后
   才允许触发。内置提示词跟随 App 语言，用户主动保存的提示词和未保存草稿不会被语言切换覆盖。
   设计见 [`docs/auto-recovery-settings-design.md`](docs/auto-recovery-settings-design.md) 和
   [`docs/auto-recovery-prompt-language-design.md`](docs/auto-recovery-prompt-language-design.md)。

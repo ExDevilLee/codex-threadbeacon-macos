@@ -12,6 +12,10 @@ let autoRecoverySettingsTests = [
         try expect(settings.rule(for: .otherHTTP).isEnabled, "other HTTP failures should default on")
         try expect(settings.rule(for: .modelCapacity).isEnabled, "capacity failures should default on")
         try expect(
+            settings.rule(for: .streamDisconnected).isEnabled,
+            "exhausted connection failures should default on"
+        )
+        try expect(
             AutoRecoveryIncidentType.allCases.allSatisfy {
                 !settings.rule(for: $0).prompt.isEmpty
             },
@@ -53,6 +57,16 @@ let autoRecoverySettingsTests = [
             english.rule(for: .modelCapacity).prompt
                 == "The previous request was interrupted due to model capacity limits. Please continue the unfinished task.",
             "English should use the English model-capacity default"
+        )
+        try expect(
+            chinese.rule(for: .streamDisconnected).prompt
+                == "刚才连接中断且重试失败，请继续未完成的任务",
+            "Chinese should use the connection-interrupted default"
+        )
+        try expect(
+            english.rule(for: .streamDisconnected).prompt
+                == "The connection was interrupted and all retries failed. Please continue the unfinished task.",
+            "English should use the connection-interrupted default"
         )
         try expect(
             AutoRecoveryIncidentType.allCases.allSatisfy {
@@ -139,6 +153,10 @@ let autoRecoverySettingsTests = [
         try expect(loaded.rule(for: .http400).prompt == "custom 400", "saved prompt should survive migration")
         try expect(!loaded.rule(for: .http503).isEnabled, "missing 503 rule should use its default")
         try expect(loaded.rule(for: .modelCapacity).isEnabled, "missing capacity rule should use its default")
+        try expect(
+            loaded.rule(for: .streamDisconnected).isEnabled,
+            "missing connection-interrupted rule should use its default"
+        )
     },
     TestCase(name: "auto recovery settings repository fails closed on corrupt data") {
         let suiteName = "AutoRecoverySettingsTests.corrupt.\(UUID().uuidString)"
@@ -273,7 +291,8 @@ let autoRecoverySettingsTests = [
             (.serviceUnavailable, .http503),
             (.httpStatus(401), .otherHTTP),
             (.httpStatus(500), .otherHTTP),
-            (.modelCapacity, .modelCapacity)
+            (.modelCapacity, .modelCapacity),
+            (.streamDisconnected, .streamDisconnected)
         ]
 
         for (kind, expectedType) in cases {

@@ -14,10 +14,10 @@ view reduces the need to repeatedly switch back to Codex. ThreadBeacon does not 
 or control USB display hardware; when macOS recognizes a secondary display, the window
 can be moved there and pinned above other apps. The current sound feature only covers reliably
 detected primary-task completion events, explicit HTTP 4xx/5xx failures (except HTTP 503),
-retries or terminal failures, and selected-model capacity failures found in local structured logs. Approval waiting
+retries or terminal failures, exhausted reconnection failures, and selected-model capacity failures found in local structured logs. Approval waiting
 still has no reliable read-only data source.
 Auto recovery is off by default. Settings provides separate rules and editable prompts
-for HTTP 400, HTTP 429, HTTP 503, other HTTP failures, and model-capacity failures.
+for HTTP 400, HTTP 429, HTTP 503, other HTTP failures, model-capacity failures, and connection interruptions.
 Only terminal incidents trigger recovery, and HTTP 503 remains off by default. Sending
 requires explicit macOS Accessibility permission and uses the visible Codex App input
 field; ThreadBeacon never falls back to an external Codex CLI resume. Historical
@@ -284,11 +284,12 @@ project-created sounds and verify all assets with:
   files. Missing, moved, or unsupported custom files fall back to the selected built-in sound.
   Settings persist across
   launches. Startup, manual refresh, and resumed monitoring do not replay historical events.
-- Retryable 429/503 incidents appear as yellow `warning`; HTTP 400, exhausted retries, and
+- Retryable 429/503 incidents and active reconnection attempts appear as yellow `warning`; HTTP 400,
+  terminal disconnects after exhausted reconnection attempts, exhausted HTTP retries, and
   selected-model capacity failures appear as red `error`. One incident episode plays at most one warning sound,
   and failures suppress a misleading completion sound.
 - The auto-recovery master switch is off by default. HTTP 400, HTTP 429, other terminal
-  HTTP failures, and model-capacity rules are prepared as enabled; HTTP 503 is prepared
+  HTTP failures, model-capacity, and connection-interrupted rules are prepared as enabled; HTTP 503 is prepared
   as disabled. Built-in prompts follow the app language, while explicitly saved prompts
   stay unchanged. Switching languages does not overwrite an unsaved editing draft, and
   active retries never trigger recovery.
@@ -337,7 +338,7 @@ The app reads only local data:
   timestamps, and numeric Token fields to derive status, usage details, and
   `task_complete` completion events.
 - `~/.codex/logs_2.sqlite`: opened read-only and restricted to three allowlisted targets for
-  visible tasks. Only turn IDs, HTTP status, retry progress, explicit model-capacity kind,
+  visible tasks. Only turn IDs, HTTP status, retry progress, the exact terminal-disconnect shape, explicit model-capacity kind,
   and terminal failure time are extracted.
 
 The app does not read `codex_http_client::transport` or extract reasoning summaries,

@@ -102,11 +102,14 @@ struct ThreadRowView: View {
                     if let incident = snapshot.serviceIncident {
                         if incident.kind == .modelCapacity {
                             Text(AppLocalization.string("所选模型容量已满", locale: locale))
+                        } else if incident.kind == .streamDisconnected {
+                            Text("·")
+                            Text(AppLocalization.string("连接中断", locale: locale))
                         } else if let statusCode = incident.httpStatusCode {
                             Text("·")
                             Text("HTTP \(statusCode)")
                         }
-                        if incident.phase == .retrying,
+                        if (incident.phase == .retrying || incident.kind == .streamDisconnected),
                            let attempt = incident.retryAttempt,
                            let limit = incident.retryLimit {
                             Text("·")

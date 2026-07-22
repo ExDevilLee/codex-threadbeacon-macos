@@ -366,6 +366,7 @@ private extension ServiceIncident {
         case .serviceUnavailable: "HTTP 503"
         case let .httpStatus(code): "HTTP \(code)"
         case .modelCapacity: "模型容量"
+        case .streamDisconnected: "连接中断"
         }
     }
 }

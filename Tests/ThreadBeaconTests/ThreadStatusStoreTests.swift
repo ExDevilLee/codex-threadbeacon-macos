@@ -187,7 +187,22 @@ let threadStatusStoreTests = [
             retryLimit: 5,
             occurredAt: Date(timeIntervalSince1970: 20)
         )
-        let snapshots = [retryIncident, unavailableIncident, otherHTTPIncident, activeRetryIncident].enumerated().map { index, incident in
+        let disconnectedIncident = ServiceIncident(
+            episodeID: "turn-disconnect",
+            phase: .failed,
+            kind: .streamDisconnected,
+            httpStatusCode: nil,
+            retryAttempt: 5,
+            retryLimit: 5,
+            occurredAt: Date(timeIntervalSince1970: 20)
+        )
+        let snapshots = [
+            retryIncident,
+            unavailableIncident,
+            otherHTTPIncident,
+            activeRetryIncident,
+            disconnectedIncident
+        ].enumerated().map { index, incident in
             ThreadSnapshot(
                 id: "thread-\(index)",
                 title: "thread-\(index)",
@@ -213,12 +228,54 @@ let threadStatusStoreTests = [
         await store.refresh(notificationPolicy: .notify)
 
         try expect(
-            recoveryCalls.values.map(\.threadID) == ["thread-0", "thread-1", "thread-2"],
+            recoveryCalls.values.map(\.threadID) == ["thread-0", "thread-1", "thread-2", "thread-4"],
             "every terminal incident should become a candidate while active retries stay excluded"
         )
         try expect(
-            recoveryCalls.values.map(\.incidentType) == [.http429, .http503, .otherHTTP],
+            recoveryCalls.values.map(\.incidentType) == [.http429, .http503, .otherHTTP, .streamDisconnected],
             "candidates should retain stable rule types"
+        )
+        try expect(
+            recoveryCalls.values.last?.incidentLabel == "连接中断",
+            "connection failure should retain a stable log label"
+        )
+    },
+    TestCase(name: "store emits one recovery candidate for the same disconnected episode") {
+        let incident = ServiceIncident(
+            episodeID: "turn-disconnect-once",
+            phase: .failed,
+            kind: .streamDisconnected,
+            httpStatusCode: nil,
+            retryAttempt: 5,
+            retryLimit: 5,
+            occurredAt: Date(timeIntervalSince1970: 30)
+        )
+        let snapshot = ThreadSnapshot(
+            id: "thread-disconnect-once",
+            title: "thread-disconnect-once",
+            status: .error,
+            statusChangedAt: incident.occurredAt,
+            updatedAt: incident.occurredAt,
+            latestEventAt: incident.occurredAt,
+            serviceIncident: incident
+        )
+        let sequence = SnapshotSequence(values: [[], [snapshot], [snapshot]])
+        let recoveryCalls = RecoveryCallBox()
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in await sequence.next() },
+                onAutoRecovery: { recoveryCalls.append($0) }
+            )
+        }
+
+        await store.refresh(notificationPolicy: .baseline)
+        await store.refresh(notificationPolicy: .notify)
+        await store.refresh(notificationPolicy: .notify)
+
+        try expect(recoveryCalls.values.count == 1, "one disconnected episode should trigger once")
+        try expect(
+            recoveryCalls.values.first?.incidentType == .streamDisconnected,
+            "disconnected episode should use its dedicated rule"
         )
     },
     TestCase(name: "store passes transient expanded thread IDs to refreshes") {

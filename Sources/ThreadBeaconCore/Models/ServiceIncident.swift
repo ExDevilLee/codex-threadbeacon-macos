@@ -12,6 +12,7 @@ public enum ServiceIncidentKind: Equatable, Sendable {
     /// A structured HTTP failure not covered by a dedicated semantic case.
     case httpStatus(Int)
     case modelCapacity
+    case streamDisconnected
 }
 
 public struct ServiceIncident: Equatable, Sendable {
