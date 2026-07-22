@@ -57,10 +57,14 @@ public enum AccessibilityInteractionPreflight {
     public static func evaluate(
         mode: AccessibilityInteractionMode,
         isCodexFrontmost: Bool,
+        isCurrentTargetConfirmed: Bool = false,
         sourceComposerValues: [String?]
     ) -> AccessibilityInteractionPreflightResult {
         if mode == .unattended, isCodexFrontmost {
-            return .codexFrontmost
+            guard isCurrentTargetConfirmed else { return .codexFrontmost }
+            guard sourceComposerValues.count == 1 else {
+                return .sourceComposerNotUnique(sourceComposerValues.count)
+            }
         }
         guard sourceComposerValues.count <= 1 else {
             return .sourceComposerNotUnique(sourceComposerValues.count)
@@ -101,5 +105,36 @@ public enum AccessibilityTargetSelectionResult: Equatable, Sendable {
 
     public var isSelected: Bool {
         self == .selected
+    }
+
+    public var diagnosticCode: String {
+        switch self {
+        case .notAuthorized:
+            "not_authorized"
+        case .codexNotRunning:
+            "codex_not_running"
+        case .codexInteractionInProgress:
+            "codex_frontmost"
+        case .invalidThreadID:
+            "invalid_thread_id"
+        case .sessionIndexUnavailable:
+            "session_index_unavailable"
+        case .titleUnavailable:
+            "title_unavailable"
+        case .sourceComposerNotEmpty:
+            "source_composer_not_empty"
+        case let .sourceComposerNotUnique(count):
+            "source_composer_count_\(count)"
+        case .sourceComposerValueUnavailable:
+            "source_composer_value_unavailable"
+        case .selectionFailed:
+            "deep_link_failed"
+        case let .targetHeaderNotUnique(count):
+            "target_header_count_\(count)"
+        case let .composerNotUnique(count):
+            "composer_count_\(count)"
+        case .selected:
+            "selected"
+        }
     }
 }

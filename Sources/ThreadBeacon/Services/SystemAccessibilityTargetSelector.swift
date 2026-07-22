@@ -61,10 +61,12 @@ enum SystemAccessibilityTargetAccess {
         }
 
         let application = AXUIElementCreateApplication(codex.processIdentifier)
-        let source = snapshot(root: application, targetTitle: "")
+        let source = snapshot(root: application, targetTitle: identity.title)
+        let isCurrentTargetConfirmed = source.headerTitleMatchCount == 1
         switch AccessibilityInteractionPreflight.evaluate(
             mode: mode,
             isCodexFrontmost: codex.isActive,
+            isCurrentTargetConfirmed: isCurrentTargetConfirmed,
             sourceComposerValues: source.textAreas.map(
                 SystemAccessibilityComposerState.valueForPreflight
             )
@@ -79,6 +81,13 @@ enum SystemAccessibilityTargetAccess {
             return .failed(.sourceComposerNotUnique(count))
         case .sourceComposerValueUnavailable:
             return .failed(.sourceComposerValueUnavailable)
+        }
+
+        if mode == .unattended, codex.isActive, isCurrentTargetConfirmed {
+            return .selected(AccessibilitySelectedTarget(
+                identity: identity,
+                composer: source.textAreas[0]
+            ))
         }
 
         guard let deepLink = AccessibilityThreadDeepLink.url(

@@ -140,9 +140,32 @@ let accessibilityDiagnosticTests = [
             AccessibilityInteractionPreflight.evaluate(
                 mode: .unattended,
                 isCodexFrontmost: true,
+                isCurrentTargetConfirmed: false,
                 sourceComposerValues: [""]
             ) == .codexFrontmost,
             "unattended navigation must not interrupt active Codex interaction"
+        )
+    },
+    TestCase(name: "target interaction preflight allows confirmed frontmost recovery") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .unattended,
+                isCodexFrontmost: true,
+                isCurrentTargetConfirmed: true,
+                sourceComposerValues: [""]
+            ) == .safe,
+            "automatic recovery should proceed without navigation when the failed task is confirmed"
+        )
+    },
+    TestCase(name: "target interaction preflight preserves a confirmed task draft") {
+        try expect(
+            AccessibilityInteractionPreflight.evaluate(
+                mode: .unattended,
+                isCodexFrontmost: true,
+                isCurrentTargetConfirmed: true,
+                sourceComposerValues: ["unfinished draft"]
+            ) == .sourceComposerNotEmpty,
+            "automatic recovery must not replace a draft even on the confirmed target"
         )
     },
     TestCase(name: "target interaction preflight allows explicit action while Codex is frontmost") {
@@ -215,6 +238,23 @@ let accessibilityDiagnosticTests = [
         try expect(
             !AccessibilityTargetSelectionResult.sourceComposerNotUnique(2).isSelected,
             "ambiguous source composers must fail closed"
+        )
+    },
+    TestCase(name: "target selection exposes actionable diagnostic codes") {
+        try expect(
+            AccessibilityTargetSelectionResult.codexInteractionInProgress.diagnosticCode
+                == "codex_frontmost",
+            "frontmost safety stops must remain distinguishable in recovery logs"
+        )
+        try expect(
+            AccessibilityTargetSelectionResult.targetHeaderNotUnique(0).diagnosticCode
+                == "target_header_count_0",
+            "missing target headers must report their observed count"
+        )
+        try expect(
+            AccessibilityTargetSelectionResult.composerNotUnique(2).diagnosticCode
+                == "composer_count_2",
+            "ambiguous target composers must report their observed count"
         )
     },
     TestCase(name: "send button policy requires one pressable composer submit button") {

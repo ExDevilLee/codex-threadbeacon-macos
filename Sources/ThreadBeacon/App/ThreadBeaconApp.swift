@@ -202,8 +202,8 @@ private extension AutoRecoveryLogStore {
 private extension AccessibilityRecoverySendResult {
     var recoveryLogDetail: String {
         switch self {
-        case .targetSelectionFailed:
-            "无法安全定位并确认目标任务"
+        case let .targetSelectionFailed(selectionResult):
+            "无法安全定位并确认目标任务：\(selectionResult.diagnosticCode)"
         case .rolloutUnavailable:
             "无法读取目标任务 rollout"
         case .composerNotEmpty:
