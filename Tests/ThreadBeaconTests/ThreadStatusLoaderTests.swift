@@ -566,12 +566,14 @@ let threadStatusLoaderTests = [
     TestCase(name: "loader normalizes archived favorites and suppresses notifications") {
         let now = Date(timeIntervalSince1970: 7_700)
         let requestedFavorites = StringSetBox()
+        let requestedActiveParents = StringSetBox()
         let archived = ThreadRecord(
             id: "archived",
             title: "Archived favorite",
             rolloutPath: "/tmp/archived",
             updatedAt: now.addingTimeInterval(-100),
             tokensUsed: 42,
+            subagentCount: 1,
             isArchived: true
         )
         let loader = ThreadStatusLoader(
@@ -579,6 +581,19 @@ let threadStatusLoaderTests = [
             loadFavoriteRecords: { ids in
                 requestedFavorites.replace(ids)
                 return [archived]
+            },
+            loadActiveSubagentCandidates: { parentIDs, _ in
+                requestedActiveParents.replace(parentIDs)
+                return [
+                    "archived": [
+                        SubagentActivityCandidate(
+                            id: "child",
+                            parentID: "archived",
+                            rolloutPath: "/tmp/child",
+                            updatedAt: now
+                        )
+                    ]
+                ]
             },
             observe: { _ in
                 RolloutObservation(
@@ -604,6 +619,8 @@ let threadStatusLoaderTests = [
         try expect(snapshot?.completionEventAt == nil, "archived task must not emit completion evidence")
         try expect(snapshot?.serviceIncident == nil, "archived task must not expose active incidents")
         try expect(snapshot?.tokenUsage?.totalTokens == 42, "archived task should retain token details")
+        try expect(requestedActiveParents.values.isEmpty, "archived parent must not request active children")
+        try expect(snapshot?.activeSubagentCount == 0, "archived parent must not show active children")
     },
     TestCase(name: "loader lets final service failure override rollout completion") {
         let now = Date(timeIntervalSince1970: 8_000)

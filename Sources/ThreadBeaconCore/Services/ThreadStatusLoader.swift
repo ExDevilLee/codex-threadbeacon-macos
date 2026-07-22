@@ -155,10 +155,10 @@ public struct ThreadStatusLoader: Sendable {
             subagentRecordsByParent = requestedParentIDs.isEmpty
                 ? [:]
                 : try loadSubagentRecords(requestedParentIDs)
-            activeSubagentCandidatesByParent = visibleThreadIDs.isEmpty
+            activeSubagentCandidatesByParent = activeThreadIDs.isEmpty
                 ? [:]
                 : try loadActiveSubagentCandidates(
-                    visibleThreadIDs,
+                    activeThreadIDs,
                     currentDate.addingTimeInterval(-runningFreshness)
                 )
         } catch {
