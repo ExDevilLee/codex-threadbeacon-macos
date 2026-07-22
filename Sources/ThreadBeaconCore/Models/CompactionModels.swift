@@ -33,3 +33,18 @@ public struct CompactionActivity: Equatable, Sendable {
         self.startedAt = startedAt
     }
 }
+
+public enum CompactionHookConfigurationStatus: Equatable, Sendable {
+    case notConfigured
+    case configured
+    case externallyModified
+}
+
+public enum CompactionHookConfigurationError: Error, Equatable, Sendable {
+    case invalidHooksJSON
+    case unsafeHooksFile
+    case inlineHooksPresent
+    case configurationChanged
+    case helperUnavailable
+    case writeFailed
+}
