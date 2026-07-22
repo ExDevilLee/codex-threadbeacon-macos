@@ -15,6 +15,7 @@ enum TestRunner {
             + codexArchiveRestoreServiceTests
             + codexMessageSendServiceTests
             + codexCLIResolverTests
+            + compactionHistoryRepositoryTests
             + dataSourceHealthTests
             + displaySettingsTests
             + statusIndicatorPresentationTests
