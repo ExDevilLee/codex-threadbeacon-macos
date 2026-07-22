@@ -8,7 +8,8 @@ let package = Package(
     name: "ThreadBeacon",
     platforms: [.macOS(.v14)],
     products: [
-        .executable(name: "ThreadBeacon", targets: ["ThreadBeacon"])
+        .executable(name: "ThreadBeacon", targets: ["ThreadBeacon"]),
+        .executable(name: "ThreadBeaconHookBridge", targets: ["ThreadBeaconHookBridge"])
     ],
     targets: [
         .systemLibrary(name: "CSQLite"),
@@ -20,6 +21,10 @@ let package = Package(
             name: "ThreadBeacon",
             dependencies: ["ThreadBeaconCore"],
             resources: [.process("../../Resources/Localizable.xcstrings")]
+        ),
+        .executableTarget(
+            name: "ThreadBeaconHookBridge",
+            dependencies: ["ThreadBeaconCore"]
         ),
         .executableTarget(
             name: "ThreadBeaconTests",
