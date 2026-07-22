@@ -7,6 +7,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-07-22
+
 ### Added
 
 - 新增连接中断终止状态与自动恢复规则：同一 turn 只有在重新连接达到 `5/5` 且随后出现精确
@@ -127,7 +129,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.1...v0.1.2
