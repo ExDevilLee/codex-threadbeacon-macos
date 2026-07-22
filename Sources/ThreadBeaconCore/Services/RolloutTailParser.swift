@@ -71,18 +71,9 @@ public struct RolloutTailParser: Sendable {
                     latestCompletionEventAt = max(latestCompletionEventAt ?? .distantPast, date)
                 } else if eventType == "turn_aborted",
                           payload["reason"] as? String == "interrupted" {
-                    let interruptedAt: Date
-                    if let completedAtValue = payload["completed_at"] {
-                        guard
-                            let completedAtString = normalizedString(completedAtValue),
-                            let completedAt = parseDate(completedAtString)
-                        else {
-                            continue
-                        }
-                        interruptedAt = max(date, completedAt)
-                    } else {
-                        interruptedAt = date
-                    }
+                    let completedAt = normalizedString(payload["completed_at"])
+                        .flatMap(parseDate)
+                    let interruptedAt = max(date, completedAt ?? .distantPast)
                     latestInterruptedAt = max(latestInterruptedAt ?? .distantPast, interruptedAt)
                     latestEvent = max(latestEvent ?? .distantPast, interruptedAt)
                 } else if eventType == "token_count",

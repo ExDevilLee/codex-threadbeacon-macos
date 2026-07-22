@@ -92,17 +92,40 @@ let rolloutTailParserTests = [
         try expect(result.status == .interrupted, "valid completed_at should preserve interrupted state")
         try expect(result.statusChangedAt == expected, "later completed_at should define the boundary")
     },
-    TestCase(name: "malformed and unsupported abort events are ignored") {
+    TestCase(name: "numeric abort completed at falls back to the event timestamp") {
         let lines = [
             #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
-            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"turn_aborted"}}"#,
-            #"{"timestamp":"2026-07-16T01:02:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"cancelled"}}"#,
+            #"{"timestamp":"2026-07-16T01:03:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"interrupted","completed_at":1784710980,"started_at":1784710800}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+        let expected = ISO8601DateFormatter().date(from: "2026-07-16T01:03:00Z")
+
+        try expect(result.status == .interrupted, "numeric completed_at must not discard an interrupted abort")
+        try expect(result.statusChangedAt == expected, "unsupported completed_at should fall back to the event timestamp")
+    },
+    TestCase(name: "malformed abort completed at falls back to the event timestamp") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
             #"{"timestamp":"2026-07-16T01:03:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"interrupted","completed_at":"not-a-date"}}"#
         ]
 
         let result = RolloutTailParser().parse(lines: lines)
+        let expected = ISO8601DateFormatter().date(from: "2026-07-16T01:03:00Z")
 
-        try expect(result.status == .running, "invalid abort evidence must not end the task")
+        try expect(result.status == .interrupted, "malformed optional completed_at must not discard an interrupted abort")
+        try expect(result.statusChangedAt == expected, "malformed completed_at should fall back to the event timestamp")
+    },
+    TestCase(name: "abort events without interrupted reason are ignored") {
+        let lines = [
+            #"{"timestamp":"2026-07-16T01:00:00Z","type":"event_msg","payload":{"type":"task_started"}}"#,
+            #"{"timestamp":"2026-07-16T01:01:00Z","type":"event_msg","payload":{"type":"turn_aborted"}}"#,
+            #"{"timestamp":"2026-07-16T01:02:00Z","type":"event_msg","payload":{"type":"turn_aborted","reason":"cancelled"}}"#
+        ]
+
+        let result = RolloutTailParser().parse(lines: lines)
+
+        try expect(result.status == .running, "unsupported abort reasons must not end the task")
     },
     TestCase(name: "real final answer phase produces just completed state") {
         let lines = [
