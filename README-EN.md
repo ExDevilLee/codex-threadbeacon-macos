@@ -369,7 +369,9 @@ privacy statement.
 
 - `running` means the latest turn has no later `final` or `final_answer` event and has received a new event within 120 seconds.
 - An unresolved turn with no new event for more than 120 seconds becomes `unknown`, preventing interrupted tasks from remaining falsely marked as running. A quiet long-running tool call may also temporarily appear as `unknown`.
-- `justCompleted` is retained for 60 seconds, then derived as `idle`.
+- `justCompleted` is retained for 1 minute by default. Settings can select `1-5 minutes`, after
+  which it is derived as `idle`; changing the value recalculates the baseline without replaying
+  completion sounds.
 - Current-turn usage is calculated from two cumulative snapshots. If the rollout
   tail has no reliable baseline, the UI shows `—` instead of guessing from one call.
 - Cumulative Tokens represent processing across model calls. They are not the

@@ -67,7 +67,8 @@ struct ThreadBeaconApp: App {
                     limit: request.recentLimit,
                     includedThreadIDs: request.includedThreadIDs,
                     favoriteThreadIDs: request.favoriteThreadIDs,
-                    expandedThreadIDs: request.expandedThreadIDs
+                    expandedThreadIDs: request.expandedThreadIDs,
+                    completedRetention: request.completedRetentionSeconds
                 )
             },
             restoreArchive: { threadID in
@@ -75,6 +76,7 @@ struct ThreadBeaconApp: App {
             },
             initialPreferences: preferenceRepository.load(),
             visibleLimit: displaySettings.maximumTaskCount,
+            justCompletedRetentionMinutes: displaySettings.justCompletedRetentionMinutes,
             notificationTracker: SoundNotificationTracker(initialSeenEventIDs: history.load()),
             onNotification: { event in
                 player.play(event)

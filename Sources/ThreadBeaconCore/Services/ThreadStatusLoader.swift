@@ -155,8 +155,10 @@ public struct ThreadStatusLoader: Sendable {
         limit: Int,
         includedThreadIDs: Set<String>,
         favoriteThreadIDs: Set<String>,
-        expandedThreadIDs: Set<String>
+        expandedThreadIDs: Set<String>,
+        completedRetention: TimeInterval? = nil
     ) async throws -> ThreadStatusLoadResult {
+        let effectiveCompletedRetention = completedRetention ?? self.completedRetention
         let recentRecords: [ThreadRecord]
         let includedRecords: [ThreadRecord]
         let favoriteRecords: [ThreadRecord]
@@ -253,7 +255,8 @@ public struct ThreadStatusLoader: Sendable {
                     let candidateState = displayState(
                         for: candidateObservation,
                         fallbackDate: candidate.updatedAt,
-                        currentDate: currentDate
+                        currentDate: currentDate,
+                        completedRetention: effectiveCompletedRetention
                     )
                     if candidateState.status == .running {
                         count += 1
@@ -263,7 +266,8 @@ public struct ThreadStatusLoader: Sendable {
             let state = displayState(
                 for: observation,
                 fallbackDate: record.updatedAt,
-                currentDate: currentDate
+                currentDate: currentDate,
+                completedRetention: effectiveCompletedRetention
             )
             let incident = activeIncident(
                 incidentsByThread[record.id],
@@ -292,7 +296,8 @@ public struct ThreadStatusLoader: Sendable {
                         from: subagent,
                         observation: readObservation(at: subagent.rolloutPath),
                         titleOverrides: titleOverrides,
-                        currentDate: currentDate
+                        currentDate: currentDate,
+                        completedRetention: effectiveCompletedRetention
                     )
                 }
                 .sorted(by: subagentPrecedes)
@@ -379,12 +384,14 @@ public struct ThreadStatusLoader: Sendable {
         from record: SubagentRecord,
         observation: RolloutObservation,
         titleOverrides: [String: String],
-        currentDate: Date
+        currentDate: Date,
+        completedRetention: TimeInterval
     ) -> SubagentSnapshot {
         let state = displayState(
             for: observation,
             fallbackDate: record.updatedAt,
-            currentDate: currentDate
+            currentDate: currentDate,
+            completedRetention: completedRetention
         )
         let fallbackTitle = record.title.isEmpty ? (record.agentNickname ?? "") : record.title
 
@@ -421,7 +428,8 @@ public struct ThreadStatusLoader: Sendable {
     private func displayState(
         for observation: RolloutObservation,
         fallbackDate: Date,
-        currentDate: Date
+        currentDate: Date,
+        completedRetention: TimeInterval
     ) -> (status: ThreadDisplayStatus, changedAt: Date) {
         if observation.status == .justCompleted,
            let changedAt = observation.statusChangedAt,

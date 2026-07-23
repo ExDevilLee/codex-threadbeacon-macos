@@ -11,6 +11,8 @@ struct ContentView: View {
     private var refreshIntervalSeconds = DisplaySettings.defaultRefreshIntervalSeconds
     @AppStorage(DisplayPreferenceKeys.maximumTaskCount)
     private var maximumTaskCount = DisplaySettings.defaultMaximumTaskCount
+    @AppStorage(DisplayPreferenceKeys.justCompletedRetentionMinutes)
+    private var justCompletedRetentionMinutes = DisplaySettings.defaultJustCompletedRetentionMinutes
     @AppStorage(DisplayPreferenceKeys.colorBlindSafeStatusIndicators)
     private var usesColorBlindSafeStatusIndicators = DisplaySettings.defaultColorBlindSafeStatusIndicators
     @State private var monitoringMode = MonitoringMode.active
@@ -59,6 +61,17 @@ struct ContentView: View {
                 maximumTaskCount: newValue
             )
             store.updateVisibleLimit(settings.maximumTaskCount)
+            Task { await store.refresh(notificationPolicy: .baseline) }
+        }
+        .onChange(of: justCompletedRetentionMinutes) { _, newValue in
+            let settings = DisplaySettings(
+                refreshIntervalSeconds: refreshIntervalSeconds,
+                maximumTaskCount: maximumTaskCount,
+                justCompletedRetentionMinutes: newValue
+            )
+            store.updateJustCompletedRetention(
+                minutes: settings.justCompletedRetentionMinutes
+            )
             Task { await store.refresh(notificationPolicy: .baseline) }
         }
         .confirmationDialog(
