@@ -90,7 +90,7 @@ public struct LogEventParser: Sendable {
     }
 
     private func statusCode(in body: String) -> Int? {
-        firstCapture(in: body, patterns: [#"status[= ]+(\d{3})\b"#]).flatMap(Int.init)
+        firstCapture(in: body, patterns: [#"status[=: ]+(\d{3})\b"#]).flatMap(Int.init)
     }
 
     private func incidentKind(for statusCode: Int) -> ServiceIncidentKind? {

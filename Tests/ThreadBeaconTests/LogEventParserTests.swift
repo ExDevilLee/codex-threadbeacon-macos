@@ -209,6 +209,21 @@ let logEventParserTests = [
         try expect(incident?.phase == .failed, "other HTTP failures should become terminal failures")
         try expect(incident?.kind == .httpStatus(500), "unclassified HTTP status should be retained")
         try expect(incident?.httpStatusCode == 500, "other HTTP status should be retained")
+    },
+    TestCase(name: "log parser recognizes retry-limit error with colon status format") {
+        let records = [
+            logRecord(
+                second: 700,
+                target: "codex_core::session::turn",
+                body: "turn{turn.id=turn-colon-status}: Turn error: exceeded retry limit, last status: 429 Too Many Requests, request id: redacted"
+            )
+        ]
+
+        let incident = LogEventParser().latestIncidents(from: records)["thread-a"]
+
+        try expect(incident?.phase == .failed, "retry-limit 429 should become failure")
+        try expect(incident?.kind == .httpRateLimit, "retry-limit 429 should retain its incident kind")
+        try expect(incident?.httpStatusCode == 429, "colon status format should retain HTTP status")
     }
 ]
 

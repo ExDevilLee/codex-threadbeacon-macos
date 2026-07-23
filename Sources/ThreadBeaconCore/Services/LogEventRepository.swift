@@ -64,6 +64,7 @@ public struct LogEventRepository: Sendable {
               AND feedback_log_body LIKE '%Turn error:%'
               AND (
                 feedback_log_body LIKE '%status %'
+                OR feedback_log_body LIKE '%status:%'
                 OR feedback_log_body LIKE '%Turn error: Selected model is at capacity. Please try a different model.%'
                 OR feedback_log_body LIKE '%Turn error: stream disconnected before completion:%'
               )

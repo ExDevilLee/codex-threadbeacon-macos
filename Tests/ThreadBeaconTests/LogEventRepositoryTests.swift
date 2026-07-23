@@ -9,10 +9,17 @@ let logEventRepositoryTests = [
 
         let incidents = try LogEventRepository(databaseURL: databaseURL)
             .loadLatestIncidents(
-                threadIDs: ["thread-a", "thread-b", "thread-capacity", "thread-400", "thread-disconnect"]
+                threadIDs: [
+                    "thread-a",
+                    "thread-b",
+                    "thread-capacity",
+                    "thread-400",
+                    "thread-disconnect",
+                    "thread-colon-status"
+                ]
             )
 
-        try expect(incidents.count == 5, "only requested threads should be returned")
+        try expect(incidents.count == 6, "only requested threads should be returned")
         try expect(incidents["thread-a"]?.phase == .failed, "503 Turn error should be returned")
         try expect(incidents["thread-a"]?.httpStatusCode == 503, "503 should survive SQLite read")
         try expect(incidents["thread-b"]?.phase == .retrying, "429 retry should be returned")
@@ -29,6 +36,9 @@ let logEventRepositoryTests = [
         )
         try expect(incidents["thread-disconnect"]?.retryAttempt == 5, "disconnect should retain retry attempt")
         try expect(incidents["thread-disconnect"]?.retryLimit == 5, "disconnect should retain retry limit")
+        try expect(incidents["thread-colon-status"]?.phase == .failed, "colon status failure should be returned")
+        try expect(incidents["thread-colon-status"]?.kind == .httpRateLimit, "colon status should retain 429 kind")
+        try expect(incidents["thread-colon-status"]?.httpStatusCode == 429, "colon status should retain HTTP status")
         try expect(incidents["thread-c"] == nil, "unrequested thread must stay excluded")
     }
 ]
@@ -84,7 +94,10 @@ private func makeTemporaryLogDatabase() throws -> URL {
          'thread-disconnect'),
         (601, 0, 'INFO', 'codex_core::session::turn',
          'turn{turn.id=turn-disconnect}: Turn error: stream disconnected before completion: error sending request for url (<redacted>)',
-         'thread-disconnect');
+         'thread-disconnect'),
+        (700, 0, 'INFO', 'codex_core::session::turn',
+         'turn{turn.id=turn-colon-status}: Turn error: exceeded retry limit, last status: 429 Too Many Requests, request id: redacted',
+         'thread-colon-status');
     """
     var errorMessage: UnsafeMutablePointer<CChar>?
     guard sqlite3_exec(database, sql, nil, nil, &errorMessage) == SQLITE_OK else {
