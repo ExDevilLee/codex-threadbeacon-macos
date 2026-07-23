@@ -301,6 +301,8 @@ private struct GeneralSettingsView: View {
     private var refreshIntervalSeconds = DisplaySettings.defaultRefreshIntervalSeconds
     @AppStorage(DisplayPreferenceKeys.maximumTaskCount)
     private var maximumTaskCount = DisplaySettings.defaultMaximumTaskCount
+    @AppStorage(DisplayPreferenceKeys.justCompletedRetentionMinutes)
+    private var justCompletedRetentionMinutes = DisplaySettings.defaultJustCompletedRetentionMinutes
     @AppStorage(DisplayPreferenceKeys.appTheme)
     private var appThemeRawValue = AppTheme.defaultValue.rawValue
     @AppStorage(DisplayPreferenceKeys.colorBlindSafeStatusIndicators)
@@ -352,6 +354,16 @@ private struct GeneralSettingsView: View {
                 Picker("最大显示任务数", selection: $maximumTaskCount) {
                     ForEach(DisplaySettings.supportedMaximumTaskCounts, id: \.self) { count in
                         Text(AppLocalization.formatted("%lld 个", locale: locale, count)).tag(count)
+                    }
+                }
+
+                Picker("刚完成保留时间", selection: $justCompletedRetentionMinutes) {
+                    ForEach(
+                        DisplaySettings.supportedJustCompletedRetentionMinutes,
+                        id: \.self
+                    ) { minutes in
+                        Text(AppLocalization.formatted("%lld 分钟", locale: locale, minutes))
+                            .tag(minutes)
                     }
                 }
             }

@@ -382,6 +382,27 @@ let threadStatusStoreTests = [
         try expect(requests.values.first?.recentLimit == 9,
                    "ignored tasks should increase the recent candidate limit")
     },
+    TestCase(name: "store passes updated completed retention to refreshes") {
+        let requests = LoadRequestBox()
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { request in
+                    requests.append(request)
+                    return []
+                },
+                justCompletedRetentionMinutes: 5
+            )
+        }
+
+        await store.refresh()
+        await MainActor.run { store.updateJustCompletedRetention(minutes: 3) }
+        await store.refresh()
+
+        try expect(
+            requests.values.map(\.completedRetentionSeconds) == [300, 180],
+            "each refresh should use the current completed retention"
+        )
+    },
     TestCase(name: "store pinning reorders same-status tasks and persists") {
         let preferenceHistory = PreferenceHistoryBox()
         let candidates = [

@@ -69,6 +69,41 @@ let threadStatusLoaderTests = [
 
         try expect(snapshots.map(\.id) == ["a", "b"], "newer event should sort first")
     },
+    TestCase(name: "loader accepts a per-refresh completed retention override") {
+        let now = Date(timeIntervalSince1970: 2_500)
+        let loader = ThreadStatusLoader(
+            loadRecords: { _ in
+                [ThreadRecord(
+                    id: "completed",
+                    title: "Completed",
+                    rolloutPath: "/tmp/completed-retention",
+                    updatedAt: now
+                )]
+            },
+            observe: { _ in
+                RolloutObservation(
+                    status: .justCompleted,
+                    statusChangedAt: now.addingTimeInterval(-120),
+                    latestEventAt: now.addingTimeInterval(-120)
+                )
+            },
+            now: { now },
+            completedRetention: 60
+        )
+
+        let result = try await loader.loadResult(
+            limit: 8,
+            includedThreadIDs: [],
+            favoriteThreadIDs: [],
+            expandedThreadIDs: [],
+            completedRetention: 300
+        )
+
+        try expect(
+            result.snapshots.first?.status == .justCompleted,
+            "a five-minute override should retain a completion from two minutes ago"
+        )
+    },
     TestCase(name: "loader downgrades stale unresolved turn to unknown") {
         let now = Date(timeIntervalSince1970: 3_000)
         let loader = ThreadStatusLoader(
@@ -507,10 +542,13 @@ let threadStatusLoaderTests = [
             completedRetention: 60
         )
 
-        let snapshots = try await loader.load(
+        let snapshots = try await loader.loadResult(
             limit: 8,
-            expandedThreadIDs: ["parent", "not-visible"]
-        )
+            includedThreadIDs: [],
+            favoriteThreadIDs: [],
+            expandedThreadIDs: ["parent", "not-visible"],
+            completedRetention: 300
+        ).snapshots
         let subagents = snapshots.first?.subagents ?? []
 
         try expect(requestedParents.values == ["parent"], "only visible expanded parents should load")
@@ -519,7 +557,10 @@ let threadStatusLoaderTests = [
             "subagents should use status priority"
         )
         try expect(subagents[1].title == "Renamed child", "subagent rename should override SQLite title")
-        try expect(subagents[1].status == .idle, "subagents should reuse completion retention")
+        try expect(
+            subagents[1].status == .justCompleted,
+            "subagents should reuse the per-refresh completion retention"
+        )
         try expect(subagents[1].agentRole == "explorer", "subagent details should be retained")
         try expect(
             subagents[1].agentPath == "/root/audit_idle_task",

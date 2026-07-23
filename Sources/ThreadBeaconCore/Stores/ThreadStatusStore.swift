@@ -6,17 +6,22 @@ public struct ThreadLoadRequest: Equatable, Sendable {
     public let includedThreadIDs: Set<String>
     public let favoriteThreadIDs: Set<String>
     public let recentLimit: Int
+    public let completedRetentionSeconds: TimeInterval
 
     public init(
         expandedThreadIDs: Set<String>,
         includedThreadIDs: Set<String>,
         favoriteThreadIDs: Set<String> = [],
-        recentLimit: Int
+        recentLimit: Int,
+        completedRetentionSeconds: TimeInterval = TimeInterval(
+            DisplaySettings.defaultJustCompletedRetentionMinutes * 60
+        )
     ) {
         self.expandedThreadIDs = expandedThreadIDs
         self.includedThreadIDs = includedThreadIDs
         self.favoriteThreadIDs = favoriteThreadIDs
         self.recentLimit = recentLimit
+        self.completedRetentionSeconds = completedRetentionSeconds
     }
 }
 
@@ -38,6 +43,7 @@ public final class ThreadStatusStore: ObservableObject {
     private let restoreArchive: @Sendable (String) async throws -> Void
     private let now: @Sendable () -> Date
     private var visibleLimit: Int
+    private var completedRetentionSeconds: TimeInterval
     private var candidateSnapshots: [ThreadSnapshot] = []
     private var notificationTracker: SoundNotificationTracker
     private var autoRecoveryEpisodeIDs: Set<String> = []
@@ -55,6 +61,7 @@ public final class ThreadStatusStore: ObservableObject {
         now: @escaping @Sendable () -> Date = Date.init,
         initialPreferences: ThreadListPreferences = .empty,
         visibleLimit: Int = 8,
+        justCompletedRetentionMinutes: Int = DisplaySettings.defaultJustCompletedRetentionMinutes,
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
         onAutoRecovery: @escaping @MainActor (AutoRecoveryCandidate) -> Void = { _ in },
@@ -80,6 +87,7 @@ public final class ThreadStatusStore: ObservableObject {
             now: now,
             initialPreferences: initialPreferences,
             visibleLimit: visibleLimit,
+            justCompletedRetentionMinutes: justCompletedRetentionMinutes,
             notificationTracker: notificationTracker,
             onNotification: onNotification,
             onAutoRecovery: onAutoRecovery,
@@ -96,6 +104,7 @@ public final class ThreadStatusStore: ObservableObject {
         now: @escaping @Sendable () -> Date = Date.init,
         initialPreferences: ThreadListPreferences = .empty,
         visibleLimit: Int = 8,
+        justCompletedRetentionMinutes: Int = DisplaySettings.defaultJustCompletedRetentionMinutes,
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
         onAutoRecovery: @escaping @MainActor (AutoRecoveryCandidate) -> Void = { _ in },
@@ -107,6 +116,9 @@ public final class ThreadStatusStore: ObservableObject {
         self.now = now
         self.preferences = initialPreferences
         self.visibleLimit = max(1, visibleLimit)
+        self.completedRetentionSeconds = Self.completedRetentionSeconds(
+            minutes: justCompletedRetentionMinutes
+        )
         self.notificationTracker = notificationTracker
         self.onNotification = onNotification
         self.onAutoRecovery = onAutoRecovery
@@ -151,6 +163,10 @@ public final class ThreadStatusStore: ObservableObject {
         guard nextLimit != visibleLimit else { return }
         visibleLimit = nextLimit
         applyCurrentPreferences()
+    }
+
+    public func updateJustCompletedRetention(minutes: Int) {
+        completedRetentionSeconds = Self.completedRetentionSeconds(minutes: minutes)
     }
 
     public func togglePin(for threadID: String) {
@@ -286,7 +302,8 @@ public final class ThreadStatusStore: ObservableObject {
             expandedThreadIDs: expandedThreadIDs,
             includedThreadIDs: includedIDs,
             favoriteThreadIDs: preferences.favoriteThreadIDs,
-            recentLimit: recentLimit
+            recentLimit: recentLimit,
+            completedRetentionSeconds: completedRetentionSeconds
         )
     }
 
@@ -355,6 +372,15 @@ public final class ThreadStatusStore: ObservableObject {
                 incidentLabel: incident.logLabel
             ))
         }
+    }
+
+    private static func completedRetentionSeconds(minutes: Int) -> TimeInterval {
+        let settings = DisplaySettings(
+            refreshIntervalSeconds: DisplaySettings.defaultRefreshIntervalSeconds,
+            maximumTaskCount: DisplaySettings.defaultMaximumTaskCount,
+            justCompletedRetentionMinutes: minutes
+        )
+        return TimeInterval(settings.justCompletedRetentionMinutes * 60)
     }
 }
 
