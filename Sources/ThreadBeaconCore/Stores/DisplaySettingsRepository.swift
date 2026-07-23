@@ -17,7 +17,13 @@ public struct DisplaySettingsRepository {
     }
 
     public func load() -> DisplaySettings {
-        DisplaySettings(
+        let colorBlindSafeStatusIndicators = defaults.object(
+            forKey: DisplayPreferenceKeys.colorBlindSafeStatusIndicators
+        ) == nil
+            ? DisplaySettings.defaultColorBlindSafeStatusIndicators
+            : defaults.bool(forKey: DisplayPreferenceKeys.colorBlindSafeStatusIndicators)
+
+        return DisplaySettings(
             refreshIntervalSeconds: defaults.integer(forKey: DisplayPreferenceKeys.refreshIntervalSeconds),
             maximumTaskCount: defaults.integer(forKey: DisplayPreferenceKeys.maximumTaskCount),
             appLanguage: AppLanguage(
@@ -26,9 +32,7 @@ public struct DisplaySettingsRepository {
             justCompletedRetentionMinutes: defaults.integer(
                 forKey: DisplayPreferenceKeys.justCompletedRetentionMinutes
             ),
-            colorBlindSafeStatusIndicators: defaults.bool(
-                forKey: DisplayPreferenceKeys.colorBlindSafeStatusIndicators
-            )
+            colorBlindSafeStatusIndicators: colorBlindSafeStatusIndicators
         )
     }
 

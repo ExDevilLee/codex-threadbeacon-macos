@@ -17,8 +17,8 @@ let displaySettingsTests = [
         )
         try expect(settings.appLanguage == .system, "language should default to system")
         try expect(
-            settings.colorBlindSafeStatusIndicators == false,
-            "color-blind-safe status indicators should default to disabled"
+            settings.colorBlindSafeStatusIndicators,
+            "color-blind-safe status indicators should default to enabled"
         )
     },
     TestCase(name: "display settings preserve color blind safe status preference") {
@@ -98,6 +98,35 @@ let displaySettingsTests = [
         try expect(
             loaded.justCompletedRetentionMinutes == DisplaySettings.defaultJustCompletedRetentionMinutes,
             "missing completed retention should fall back to one minute"
+        )
+    },
+    TestCase(name: "display settings repository enables color blind safe indicators when preference is missing") {
+        let suiteName = "DisplaySettingsTests.missingColorBlindPreference.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            throw TestFailure(description: "could not create isolated UserDefaults suite")
+        }
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let loaded = DisplaySettingsRepository(defaults: defaults).load()
+
+        try expect(
+            loaded.colorBlindSafeStatusIndicators,
+            "missing color-blind-safe preference should use the enabled default"
+        )
+    },
+    TestCase(name: "display settings repository preserves an explicit disabled color blind preference") {
+        let suiteName = "DisplaySettingsTests.disabledColorBlindPreference.\(UUID().uuidString)"
+        guard let defaults = UserDefaults(suiteName: suiteName) else {
+            throw TestFailure(description: "could not create isolated UserDefaults suite")
+        }
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        defaults.set(false, forKey: DisplayPreferenceKeys.colorBlindSafeStatusIndicators)
+
+        let loaded = DisplaySettingsRepository(defaults: defaults).load()
+
+        try expect(
+            loaded.colorBlindSafeStatusIndicators == false,
+            "an explicitly disabled color-blind-safe preference should remain disabled"
         )
     },
     TestCase(name: "display settings repository falls back for invalid completed retention") {

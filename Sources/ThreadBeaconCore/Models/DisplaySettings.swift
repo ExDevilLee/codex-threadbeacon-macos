@@ -5,7 +5,7 @@ public struct DisplaySettings: Equatable, Sendable {
     public static let defaultRefreshIntervalSeconds = 2
     public static let defaultMaximumTaskCount = 8
     public static let defaultJustCompletedRetentionMinutes = 1
-    public static let defaultColorBlindSafeStatusIndicators = false
+    public static let defaultColorBlindSafeStatusIndicators = true
 
     public let refreshIntervalSeconds: Int
     public let maximumTaskCount: Int

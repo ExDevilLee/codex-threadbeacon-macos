@@ -229,9 +229,9 @@ project-created sounds and verify all assets with:
 - UI language supports `Follow System`, `Simplified Chinese`, and `English`. When following the
   system, unsupported languages fall back to English; more languages are planned.
 - Each row shows a status light, localized status label, task title, and status duration.
-- Settings can enable optional color-blind-safe status indicators. They combine color, a distinct
-  shape, and the existing status text for error, action required, service incident, running,
-  completed, idle, and unknown states. The option is off by default, preserving the original dots.
+- Color-blind-safe status indicators are enabled by default. They combine color, a distinct shape,
+  and the existing status text for error, action required, service incident, running, completed,
+  idle, and unknown states. Settings can disable the option and restore the original dots.
 - A primary task that created Subagents shows its direct Subagent count beside the title. This is
   a historical relationship count, not a live running count.
 - Click the Subagent count to expand direct children inline. Each row shows
