@@ -52,11 +52,23 @@ in data-source health. Refresh and check the Rename index status instead of edit
 - An unresolved turn with no new event for more than 120 seconds becomes `unknown` so an
   interrupted task is not reported as running forever.
 - A quiet, long-running tool call may temporarily appear as `unknown`.
-- `justCompleted` lasts for 60 seconds and then becomes `idle`.
+- `justCompleted` lasts for 1 minute by default. Settings can select `1-5 minutes`, after which it
+  becomes `idle`.
 - Paused monitoring does not refresh automatically, but manual refresh remains available.
 
 If the Rollout source is degraded or unavailable, report only its health category and
 success/failure counts. Do not attach rollout files.
+
+## Token Numbers Do Not Match Expectations
+
+- Cumulative Tokens represent processing across model calls. They are not the current context
+  length or a cost estimate.
+- Current-turn usage is the difference between two reliable cumulative snapshots. If the rollout
+  tail has no baseline, the UI shows `—` instead of guessing from one call.
+- Primary task usage does not aggregate Subagents. Each expanded direct Subagent shows its own
+  cumulative usage.
+- The cumulative compaction count comes from rollout history. Live compacting state appears only
+  after the user explicitly installs the Codex Hook.
 
 ## No Service Incident Warning Appears
 

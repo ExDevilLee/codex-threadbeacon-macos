@@ -33,8 +33,35 @@ English contributions are welcome. Issues and pull requests may be written in En
 ./script/build_and_run.sh --verify
 ```
 
+默认构建使用 ad-hoc 签名。已有本机 Apple Development 身份时，可临时提供 Team ID：
+
+```bash
+THREADBEACON_DEVELOPMENT_TEAM=<YOUR_TEAM_ID> \
+  ./script/build_and_run.sh --verify
+```
+
+Team ID 不会写入项目文件或 Git 历史。只检查状态数量且不输出标题或会话正文时，可运行
+`./script/probe.sh`。
+
 请使用项目脚本；部分机器的 Command Line Tools 与 SwiftPM runtime 可能不一致，直接运行
 `swift test` 不一定能代表项目验证结果。
+
+## 资源与发布脚本
+
+App 图标和项目生成的提示音使用确定性脚本维护：
+
+```bash
+./script/generate_app_icon.sh
+./script/verify_app_icon.sh
+./script/generate_sound_assets.sh
+./script/verify_sound_assets.sh
+```
+
+图标母版和 App 资源分别位于 `Resources/AppIcon-1024.png` 与 `Resources/AppIcon.icns`；第三方
+声音的来源和许可必须同步维护在 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
+
+公开版本通过 Git Tag 触发 GitHub Actions，并复用本地发布脚本生成 Universal ZIP 和 SHA-256。
+发布前先阅读 [`版本管理与发布设计`](docs/release-versioning-design.md)，不要手工改写已发布产物。
 
 ## 修改原则
 

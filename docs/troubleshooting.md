@@ -46,11 +46,19 @@ ThreadBeacon 优先读取 `~/.codex/session_index.jsonl` 中最后一次有效 r
 
 - 未闭合的 turn 超过 120 秒没有新事件时会显示 `unknown`，避免把中断任务一直误报为运行中。
 - 长时间没有输出的工具调用也可能暂时显示 `unknown`。
-- `justCompleted` 只保留 60 秒，随后变为 `idle`。
+- `justCompleted` 默认保留 1 分钟，Settings 可配置为 `1～5 分钟`，随后变为 `idle`。
 - 暂停监听期间状态不会自动刷新，但手动刷新仍可用。
 
 如果 Rollout 数据源显示降级或不可用，请记录健康状态类别和成功／失败计数后提交 Issue；
 不要附加 rollout 文件本身。
+
+## Token 数字与预期不一致
+
+- 累计 Token 表示模型历次调用处理量，不是当前上下文长度，也不是费用估算。
+- 当前 turn 通过两个可靠的累计快照做差；rollout 尾部缺少基线时显示`—`，不会用单次调用
+  数据猜测。
+- 主任务 Token 默认不聚合 Subagent；展开后每个直接 Subagent 显示自身累计量。
+- 累计压缩次数来自 rollout 历史。实时`压缩中`只有在用户主动安装 Codex Hook 后才可显示。
 
 ## 没有出现服务异常警告
 
