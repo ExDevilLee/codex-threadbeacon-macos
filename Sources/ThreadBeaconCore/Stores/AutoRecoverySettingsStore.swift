@@ -71,6 +71,29 @@ public final class AutoRecoverySettingsStore: ObservableObject {
         repository.save(settings)
     }
 
+    public func setCircuitBreakerEnabled(
+        _ isEnabled: Bool,
+        for type: AutoRecoveryIncidentType
+    ) {
+        var rule = settings.rule(for: type)
+        guard rule.isCircuitBreakerEnabled != isEnabled else { return }
+        rule.isCircuitBreakerEnabled = isEnabled
+        settings.setRule(rule, for: type)
+        repository.save(settings)
+    }
+
+    public func setMaximumConsecutiveAttempts(
+        _ maximum: Int,
+        for type: AutoRecoveryIncidentType
+    ) {
+        var rule = settings.rule(for: type)
+        let normalized = AutoRecoveryRule.clampedMaximum(maximum)
+        guard rule.maximumConsecutiveAttempts != normalized else { return }
+        rule.maximumConsecutiveAttempts = normalized
+        settings.setRule(rule, for: type)
+        repository.save(settings)
+    }
+
     @discardableResult
     public func savePrompt(
         for type: AutoRecoveryIncidentType,
@@ -83,7 +106,9 @@ public final class AutoRecoverySettingsStore: ObservableObject {
             AutoRecoveryRule(
                 isEnabled: currentRule.isEnabled,
                 prompt: normalizedPrompt,
-                promptSource: .custom
+                promptSource: .custom,
+                isCircuitBreakerEnabled: currentRule.isCircuitBreakerEnabled,
+                maximumConsecutiveAttempts: currentRule.maximumConsecutiveAttempts
             ),
             for: type
         )
@@ -98,7 +123,9 @@ public final class AutoRecoverySettingsStore: ObservableObject {
             AutoRecoveryRule(
                 isEnabled: currentRule.isEnabled,
                 prompt: defaultRule.prompt,
-                promptSource: .defaultValue
+                promptSource: .defaultValue,
+                isCircuitBreakerEnabled: currentRule.isCircuitBreakerEnabled,
+                maximumConsecutiveAttempts: currentRule.maximumConsecutiveAttempts
             ),
             for: type
         )

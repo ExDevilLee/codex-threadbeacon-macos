@@ -5,6 +5,7 @@ enum TestRunner {
     static func main() async {
         let tests = threadStatusTests
             + accessibilityDiagnosticTests
+            + autoRecoveryCircuitBreakerStoreTests
             + autoRecoveryLogStoreTests
             + autoRecoverySettingsTests
             + aboutAppInfoTests

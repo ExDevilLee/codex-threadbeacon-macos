@@ -62,6 +62,29 @@ public final class AutoRecoveryLogStore: ObservableObject {
         }
     }
 
+    public func recordCircuitOpen(
+        threadID: String,
+        episodeID: String,
+        incident: String,
+        prompt: String,
+        attemptCount: Int,
+        limit: Int
+    ) {
+        let occurredAt = now()
+        let entry = AutoRecoveryLogEntry(
+            threadID: threadID,
+            episodeID: episodeID,
+            incident: incident,
+            prompt: prompt,
+            occurredAt: occurredAt,
+            completedAt: occurredAt,
+            status: .circuitOpen,
+            detail: "连续自动恢复已达到 \(attemptCount)/\(limit) 次，已停止发送"
+        )
+        entries.insert(entry, at: 0)
+        persist()
+    }
+
     public func clear() {
         entries.removeAll()
         persist()

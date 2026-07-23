@@ -50,6 +50,7 @@ public final class ThreadStatusStore: ObservableObject {
     private var pendingRefreshPolicy: RefreshNotificationPolicy?
     private let onNotification: @MainActor (SoundNotificationEvent) -> Void
     private let onAutoRecovery: @MainActor (AutoRecoveryCandidate) -> Void
+    private let onTaskCompletion: @MainActor (String, Date) -> Void
     private let onNotificationHistoryChange: @MainActor ([String]) -> Void
     private let onPreferencesChange: @MainActor (ThreadListPreferences) -> Void
 
@@ -65,6 +66,7 @@ public final class ThreadStatusStore: ObservableObject {
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
         onAutoRecovery: @escaping @MainActor (AutoRecoveryCandidate) -> Void = { _ in },
+        onTaskCompletion: @escaping @MainActor (String, Date) -> Void = { _, _ in },
         onNotificationHistoryChange: @escaping @MainActor ([String]) -> Void = { _ in },
         onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
     ) {
@@ -91,6 +93,7 @@ public final class ThreadStatusStore: ObservableObject {
             notificationTracker: notificationTracker,
             onNotification: onNotification,
             onAutoRecovery: onAutoRecovery,
+            onTaskCompletion: onTaskCompletion,
             onNotificationHistoryChange: onNotificationHistoryChange,
             onPreferencesChange: onPreferencesChange
         )
@@ -108,6 +111,7 @@ public final class ThreadStatusStore: ObservableObject {
         notificationTracker: SoundNotificationTracker = SoundNotificationTracker(),
         onNotification: @escaping @MainActor (SoundNotificationEvent) -> Void = { _ in },
         onAutoRecovery: @escaping @MainActor (AutoRecoveryCandidate) -> Void = { _ in },
+        onTaskCompletion: @escaping @MainActor (String, Date) -> Void = { _, _ in },
         onNotificationHistoryChange: @escaping @MainActor ([String]) -> Void = { _ in },
         onPreferencesChange: @escaping @MainActor (ThreadListPreferences) -> Void = { _ in }
     ) {
@@ -122,6 +126,7 @@ public final class ThreadStatusStore: ObservableObject {
         self.notificationTracker = notificationTracker
         self.onNotification = onNotification
         self.onAutoRecovery = onAutoRecovery
+        self.onTaskCompletion = onTaskCompletion
         self.onNotificationHistoryChange = onNotificationHistoryChange
         self.onPreferencesChange = onPreferencesChange
     }
@@ -263,6 +268,11 @@ public final class ThreadStatusStore: ObservableObject {
                 }.value
                 let refreshedAt = now()
                 applyCandidates(nextResult.snapshots)
+                for snapshot in nextResult.snapshots {
+                    if let completedAt = snapshot.completionEventAt {
+                        onTaskCompletion(snapshot.id, completedAt)
+                    }
+                }
                 lastRefreshedAt = refreshedAt
                 dataSourceHealth = nextResult.health.recordingSuccessfulRefresh(at: refreshedAt)
                 errorMessage = nil

@@ -21,6 +21,18 @@ let autoRecoverySettingsTests = [
             },
             "every supported incident should have a default prompt"
         )
+        try expect(
+            AutoRecoveryIncidentType.allCases.allSatisfy {
+                settings.rule(for: $0).isCircuitBreakerEnabled
+            },
+            "every incident type should enable circuit breaking by default"
+        )
+        try expect(
+            AutoRecoveryIncidentType.allCases.allSatisfy {
+                settings.rule(for: $0).maximumConsecutiveAttempts == 3
+            },
+            "every incident type should default to three consecutive attempts"
+        )
     },
     TestCase(name: "auto recovery defaults use the selected prompt language") {
         let chinese = AutoRecoverySettings.defaultValue(
@@ -82,7 +94,7 @@ let autoRecoverySettingsTests = [
 
         let settings = try JSONDecoder().decode(AutoRecoverySettings.self, from: data)
 
-        try expect(settings.version == 2, "v1 settings should migrate to v2")
+        try expect(settings.version == 3, "v1 settings should migrate to v3")
         try expect(
             settings.rule(for: .http400).promptSource == .defaultValue,
             "an exact legacy built-in prompt should migrate as a default"
@@ -94,6 +106,32 @@ let autoRecoverySettingsTests = [
         try expect(
             settings.rule(for: .http429).prompt == "my custom retry prompt",
             "migration must preserve custom prompt text"
+        )
+    },
+    TestCase(name: "auto recovery v2 migration adds conservative circuit breaker defaults") {
+        let data = Data(
+            #"{"version":2,"isEnabled":true,"rules":{"http400":{"isEnabled":true,"prompt":"custom recovery","promptSource":"custom"}}}"#.utf8
+        )
+
+        let settings = try JSONDecoder().decode(AutoRecoverySettings.self, from: data)
+        let rule = settings.rule(for: .http400)
+
+        try expect(settings.version == 3, "v2 settings should migrate to v3")
+        try expect(rule.prompt == "custom recovery", "migration should preserve custom text")
+        try expect(rule.promptSource == .custom, "migration should preserve prompt provenance")
+        try expect(rule.isCircuitBreakerEnabled, "migration should enable circuit breaking")
+        try expect(rule.maximumConsecutiveAttempts == 3, "migration should use the default limit")
+    },
+    TestCase(name: "auto recovery circuit breaker limits normalize invalid persisted values") {
+        let data = Data(
+            #"{"version":3,"isEnabled":true,"rules":{"http400":{"isEnabled":true,"prompt":"continue","promptSource":"custom","isCircuitBreakerEnabled":true,"maximumConsecutiveAttempts":99}}}"#.utf8
+        )
+
+        let settings = try JSONDecoder().decode(AutoRecoverySettings.self, from: data)
+
+        try expect(
+            settings.rule(for: .http400).maximumConsecutiveAttempts == 3,
+            "out-of-range persisted limits should use the conservative default"
         )
     },
     TestCase(name: "auto recovery prompt validation trims valid text and rejects invalid text") {
@@ -264,8 +302,8 @@ let autoRecoverySettingsTests = [
         try expect(result.1.prompt == "user-authored prompt", "legacy custom text should be preserved")
         try expect(result.1.promptSource == .custom, "legacy custom text should remain custom")
         try expect(
-            result.2?.contains(#""version":2"#) == true,
-            "the migrated payload should be persisted as v2"
+            result.2?.contains(#""version":3"#) == true,
+            "the migrated payload should be persisted as v3"
         )
     },
     TestCase(name: "saving a built-in prompt still records explicit customization") {
@@ -283,6 +321,42 @@ let autoRecoverySettingsTests = [
         }
 
         try expect(source == .custom, "an explicit save should always mark the prompt as custom")
+    },
+    TestCase(name: "auto recovery store updates circuit breaker settings independently") {
+        let suiteName = "AutoRecoverySettingsTests.circuit.\(UUID().uuidString)"
+        let result = await MainActor.run { () -> AutoRecoveryRule? in
+            guard let defaults = UserDefaults(suiteName: suiteName) else { return nil }
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            let store = AutoRecoverySettingsStore(
+                repository: AutoRecoverySettingsRepository(defaults: defaults)
+            )
+
+            store.setCircuitBreakerEnabled(false, for: .http429)
+            store.setMaximumConsecutiveAttempts(8, for: .http429)
+            return store.settings.rule(for: .http429)
+        }
+
+        try expect(result?.isCircuitBreakerEnabled == false, "the type-specific breaker should turn off")
+        try expect(result?.maximumConsecutiveAttempts == 8, "the type-specific limit should persist")
+        try expect(result?.promptSource == .defaultValue, "breaker edits must preserve prompt provenance")
+    },
+    TestCase(name: "auto recovery store clamps manually entered circuit breaker limits") {
+        let suiteName = "AutoRecoverySettingsTests.circuitClamp.\(UUID().uuidString)"
+        let result = await MainActor.run { () -> (Int, Int)? in
+            guard let defaults = UserDefaults(suiteName: suiteName) else { return nil }
+            defer { defaults.removePersistentDomain(forName: suiteName) }
+            let store = AutoRecoverySettingsStore(
+                repository: AutoRecoverySettingsRepository(defaults: defaults)
+            )
+
+            store.setMaximumConsecutiveAttempts(0, for: .http400)
+            let lowerBound = store.settings.rule(for: .http400).maximumConsecutiveAttempts
+            store.setMaximumConsecutiveAttempts(99, for: .http400)
+            return (lowerBound, store.settings.rule(for: .http400).maximumConsecutiveAttempts)
+        }
+
+        try expect(result?.0 == 1, "manual values below the range should clamp to one")
+        try expect(result?.1 == 20, "manual values above the range should clamp to twenty")
     },
     TestCase(name: "service incidents map to stable auto recovery types") {
         let cases: [(ServiceIncidentKind, AutoRecoveryIncidentType)] = [
@@ -361,6 +435,50 @@ let autoRecoverySettingsTests = [
         try expect(
             decision == .send(prompt: "continue this task"),
             "authorized recovery should carry the configured prompt into the sender"
+        )
+    },
+    TestCase(name: "auto recovery policy opens the circuit after the configured attempts") {
+        var settings = AutoRecoverySettings.defaultValue
+        settings.isEnabled = true
+        let prompt = settings.rule(for: .http400).prompt
+
+        let decision = AutoRecoveryPolicy.evaluate(
+            candidate: recoveryCandidate(type: .http400),
+            settings: settings,
+            isAccessibilityAuthorized: true,
+            consecutiveAttempts: 3
+        )
+
+        try expect(
+            decision == .circuitOpen(prompt: prompt, attemptCount: 3, limit: 3),
+            "the fourth candidate should stop before sending"
+        )
+    },
+    TestCase(name: "auto recovery policy keeps sending when circuit breaking is disabled") {
+        var settings = AutoRecoverySettings.defaultValue
+        settings.isEnabled = true
+        let current = settings.rule(for: .http429)
+        settings.setRule(
+            AutoRecoveryRule(
+                isEnabled: current.isEnabled,
+                prompt: current.prompt,
+                promptSource: current.promptSource,
+                isCircuitBreakerEnabled: false,
+                maximumConsecutiveAttempts: 3
+            ),
+            for: .http429
+        )
+
+        let decision = AutoRecoveryPolicy.evaluate(
+            candidate: recoveryCandidate(type: .http429),
+            settings: settings,
+            isAccessibilityAuthorized: true,
+            consecutiveAttempts: 99
+        )
+
+        try expect(
+            decision == .send(prompt: current.prompt),
+            "unlimited mode should ignore the stored attempt count"
         )
     }
 ]

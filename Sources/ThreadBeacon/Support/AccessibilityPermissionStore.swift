@@ -134,13 +134,15 @@ final class AccessibilityPermissionStore: ObservableObject {
 
     func runAutomaticRecovery(
         threadID: String,
-        prompt: String
+        prompt: String,
+        onStart: () -> Void = {}
     ) async -> AccessibilityRecoverySendResult? {
         refresh()
         guard isAuthorized, !isChecking else { return nil }
 
         isChecking = true
         defer { isChecking = false }
+        onStart()
         let foregroundSession = SystemAccessibilityForegroundSession.capture()
         let result = await SystemAccessibilityRecoverySender.send(
             threadID: threadID,

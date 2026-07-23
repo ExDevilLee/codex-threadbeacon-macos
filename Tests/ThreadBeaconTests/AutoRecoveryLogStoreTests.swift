@@ -77,5 +77,28 @@ let autoRecoveryLogStoreTests = [
         try expect(reloaded.first?.status == .skipped, "external recovery should be skipped")
         try expect(reloaded.first?.detail == "需要 macOS Accessibility 授权", "skip detail should explain the permission boundary")
         try? FileManager.default.removeItem(at: fileURL)
+    },
+    TestCase(name: "auto recovery log records an opened circuit distinctly") {
+        let fileURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("threadbeacon-auto-recovery-\(UUID().uuidString).json")
+        let entries = await MainActor.run { () -> [AutoRecoveryLogEntry] in
+            let store = AutoRecoveryLogStore(fileURL: fileURL)
+            store.recordCircuitOpen(
+                threadID: "thread-id",
+                episodeID: "episode-id",
+                incident: "HTTP 429",
+                prompt: "continue",
+                attemptCount: 3,
+                limit: 3
+            )
+            return store.entries
+        }
+
+        try expect(entries.first?.status == .circuitOpen, "circuit blocking should not look like a generic skip")
+        try expect(
+            entries.first?.detail == "连续自动恢复已达到 3/3 次，已停止发送",
+            "the log should expose the configured limit"
+        )
+        try? FileManager.default.removeItem(at: fileURL)
     }
 ]

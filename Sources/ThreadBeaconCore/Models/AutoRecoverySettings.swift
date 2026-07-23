@@ -128,6 +128,7 @@ public struct AutoRecoveryCandidate: Equatable, Sendable {
 public enum AutoRecoveryDecision: Equatable, Sendable {
     case disabled
     case needsAccessibilityAuthorization(prompt: String)
+    case circuitOpen(prompt: String, attemptCount: Int, limit: Int)
     case send(prompt: String)
 }
 
@@ -135,7 +136,8 @@ public enum AutoRecoveryPolicy {
     public static func evaluate(
         candidate: AutoRecoveryCandidate,
         settings: AutoRecoverySettings,
-        isAccessibilityAuthorized: Bool
+        isAccessibilityAuthorized: Bool,
+        consecutiveAttempts: Int = 0
     ) -> AutoRecoveryDecision {
         guard settings.isEnabled else { return .disabled }
         let rule = settings.rule(for: candidate.incidentType)
@@ -143,29 +145,48 @@ public enum AutoRecoveryPolicy {
         guard isAccessibilityAuthorized else {
             return .needsAccessibilityAuthorization(prompt: rule.prompt)
         }
+        if rule.isCircuitBreakerEnabled,
+           consecutiveAttempts >= rule.maximumConsecutiveAttempts {
+            return .circuitOpen(
+                prompt: rule.prompt,
+                attemptCount: consecutiveAttempts,
+                limit: rule.maximumConsecutiveAttempts
+            )
+        }
         return .send(prompt: rule.prompt)
     }
 }
 
 public struct AutoRecoveryRule: Codable, Equatable, Sendable {
+    public static let defaultMaximumConsecutiveAttempts = 3
+    public static let allowedMaximumConsecutiveAttempts = 1...20
+
     public var isEnabled: Bool
     public var prompt: String
     public var promptSource: AutoRecoveryPromptSource
+    public var isCircuitBreakerEnabled: Bool
+    public var maximumConsecutiveAttempts: Int
 
     public init(
         isEnabled: Bool,
         prompt: String,
-        promptSource: AutoRecoveryPromptSource = .custom
+        promptSource: AutoRecoveryPromptSource = .custom,
+        isCircuitBreakerEnabled: Bool = true,
+        maximumConsecutiveAttempts: Int = AutoRecoveryRule.defaultMaximumConsecutiveAttempts
     ) {
         self.isEnabled = isEnabled
         self.prompt = prompt
         self.promptSource = promptSource
+        self.isCircuitBreakerEnabled = isCircuitBreakerEnabled
+        self.maximumConsecutiveAttempts = Self.normalizedMaximum(maximumConsecutiveAttempts)
     }
 
     private enum CodingKeys: String, CodingKey {
         case isEnabled
         case prompt
         case promptSource
+        case isCircuitBreakerEnabled
+        case maximumConsecutiveAttempts
     }
 
     public init(from decoder: Decoder) throws {
@@ -176,6 +197,14 @@ public struct AutoRecoveryRule: Codable, Equatable, Sendable {
             AutoRecoveryPromptSource.self,
             forKey: .promptSource
         ) ?? .custom
+        isCircuitBreakerEnabled = try container.decodeIfPresent(
+            Bool.self,
+            forKey: .isCircuitBreakerEnabled
+        ) ?? true
+        maximumConsecutiveAttempts = Self.normalizedMaximum(
+            try container.decodeIfPresent(Int.self, forKey: .maximumConsecutiveAttempts)
+                ?? Self.defaultMaximumConsecutiveAttempts
+        )
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -183,6 +212,21 @@ public struct AutoRecoveryRule: Codable, Equatable, Sendable {
         try container.encode(isEnabled, forKey: .isEnabled)
         try container.encode(prompt, forKey: .prompt)
         try container.encode(promptSource, forKey: .promptSource)
+        try container.encode(isCircuitBreakerEnabled, forKey: .isCircuitBreakerEnabled)
+        try container.encode(maximumConsecutiveAttempts, forKey: .maximumConsecutiveAttempts)
+    }
+
+    public static func normalizedMaximum(_ value: Int) -> Int {
+        allowedMaximumConsecutiveAttempts.contains(value)
+            ? value
+            : defaultMaximumConsecutiveAttempts
+    }
+
+    public static func clampedMaximum(_ value: Int) -> Int {
+        min(
+            max(value, allowedMaximumConsecutiveAttempts.lowerBound),
+            allowedMaximumConsecutiveAttempts.upperBound
+        )
     }
 }
 
@@ -202,7 +246,7 @@ public enum AutoRecoveryPromptValidation: Equatable, Sendable {
 }
 
 public struct AutoRecoverySettings: Codable, Equatable, Sendable {
-    public static let currentVersion = 2
+    public static let currentVersion = 3
 
     public var version: Int
     public var isEnabled: Bool
@@ -244,7 +288,9 @@ public struct AutoRecoverySettings: Codable, Equatable, Sendable {
             rules[type] = AutoRecoveryRule(
                 isEnabled: rule.isEnabled,
                 prompt: prompt,
-                promptSource: rule.promptSource
+                promptSource: rule.promptSource,
+                isCircuitBreakerEnabled: rule.isCircuitBreakerEnabled,
+                maximumConsecutiveAttempts: rule.maximumConsecutiveAttempts
             )
         case .empty, .tooLong:
             rules[type] = type.defaultRule
@@ -261,7 +307,9 @@ public struct AutoRecoverySettings: Codable, Equatable, Sendable {
             rules[type] = AutoRecoveryRule(
                 isEnabled: currentRule.isEnabled,
                 prompt: localizedDefault.prompt,
-                promptSource: .defaultValue
+                promptSource: .defaultValue,
+                isCircuitBreakerEnabled: currentRule.isCircuitBreakerEnabled,
+                maximumConsecutiveAttempts: currentRule.maximumConsecutiveAttempts
             )
         }
     }
@@ -303,13 +351,15 @@ public struct AutoRecoverySettings: Codable, Equatable, Sendable {
             let savedRule = rules[type] ?? type.defaultRule
             switch AutoRecoveryPromptValidation.validate(savedRule.prompt) {
             case let .valid(prompt):
-                let promptSource = sourceVersion < Self.currentVersion
+                let promptSource = sourceVersion < 2
                     ? (type.isLegacyDefaultPrompt(prompt) ? .defaultValue : .custom)
                     : savedRule.promptSource
                 rules[type] = AutoRecoveryRule(
                     isEnabled: savedRule.isEnabled,
                     prompt: prompt,
-                    promptSource: promptSource
+                    promptSource: promptSource,
+                    isCircuitBreakerEnabled: savedRule.isCircuitBreakerEnabled,
+                    maximumConsecutiveAttempts: savedRule.maximumConsecutiveAttempts
                 )
             case .empty, .tooLong:
                 rules[type] = type.defaultRule

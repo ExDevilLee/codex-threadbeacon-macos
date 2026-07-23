@@ -22,6 +22,7 @@ struct ThreadBeaconApp: App {
     @StateObject private var updateCheckStore: UpdateCheckStore
     @StateObject private var autoRecoveryLogStore: AutoRecoveryLogStore
     @StateObject private var autoRecoverySettingsStore: AutoRecoverySettingsStore
+    @StateObject private var autoRecoveryCircuitBreakerStore: AutoRecoveryCircuitBreakerStore
     @StateObject private var accessibilityPermissionStore: AccessibilityPermissionStore
     @StateObject private var compactionHookSettingsStore: CompactionHookSettingsStore
     @AppStorage(DisplayPreferenceKeys.appTheme)
@@ -43,9 +44,11 @@ struct ThreadBeaconApp: App {
                 localeIdentifier: languageStore.locale.identifier
             )
         )
+        let recoveryCircuitBreaker = AutoRecoveryCircuitBreakerStore()
         let accessibilityStore = AccessibilityPermissionStore()
         _autoRecoveryLogStore = StateObject(wrappedValue: recoveryLogs)
         _autoRecoverySettingsStore = StateObject(wrappedValue: recoverySettings)
+        _autoRecoveryCircuitBreakerStore = StateObject(wrappedValue: recoveryCircuitBreaker)
         _accessibilityPermissionStore = StateObject(wrappedValue: accessibilityStore)
         _compactionHookSettingsStore = StateObject(wrappedValue: CompactionHookSettingsStore())
         let history = SoundNotificationHistory()
@@ -86,7 +89,8 @@ struct ThreadBeaconApp: App {
                 let decision = AutoRecoveryPolicy.evaluate(
                     candidate: candidate,
                     settings: recoverySettings.settings,
-                    isAccessibilityAuthorized: accessibilityStore.isAuthorized
+                    isAccessibilityAuthorized: accessibilityStore.isAuthorized,
+                    consecutiveAttempts: recoveryCircuitBreaker.state(for: candidate)?.attemptCount ?? 0
                 )
                 switch decision {
                 case .disabled:
@@ -97,6 +101,15 @@ struct ThreadBeaconApp: App {
                         prompt: prompt
                     )
                     recoveryLogs.recordSkipped(logID)
+                case let .circuitOpen(prompt, attemptCount, limit):
+                    recoveryLogs.recordCircuitOpen(
+                        threadID: candidate.threadID,
+                        episodeID: candidate.episodeID,
+                        incident: candidate.incidentLabel,
+                        prompt: prompt,
+                        attemptCount: attemptCount,
+                        limit: limit
+                    )
                 case let .send(prompt):
                     let logID = recoveryLogs.recordAttempt(
                         candidate: candidate,
@@ -105,7 +118,10 @@ struct ThreadBeaconApp: App {
                     Task { @MainActor in
                         guard let result = await accessibilityStore.runAutomaticRecovery(
                             threadID: candidate.threadID,
-                            prompt: prompt
+                            prompt: prompt,
+                            onStart: {
+                                recoveryCircuitBreaker.recordAttempt(candidate: candidate)
+                            }
                         ) else {
                             recoveryLogs.recordFailure(
                                 logID,
@@ -120,6 +136,12 @@ struct ThreadBeaconApp: App {
                         }
                     }
                 }
+            },
+            onTaskCompletion: { threadID, completedAt in
+                recoveryCircuitBreaker.observeCompletion(
+                    threadID: threadID,
+                    completedAt: completedAt
+                )
             },
             onNotificationHistoryChange: { eventIDs in
                 history.save(eventIDs)
@@ -166,6 +188,7 @@ struct ThreadBeaconApp: App {
                 previewSound: soundPlayer.preview,
                 autoRecoveryLogStore: autoRecoveryLogStore,
                 autoRecoverySettingsStore: autoRecoverySettingsStore,
+                autoRecoveryCircuitBreakerStore: autoRecoveryCircuitBreakerStore,
                 accessibilityPermissionStore: accessibilityPermissionStore,
                 compactionHookSettingsStore: compactionHookSettingsStore
             )

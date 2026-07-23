@@ -4,6 +4,7 @@ import SwiftUI
 struct AutoRecoverySettingsView: View {
     @ObservedObject var settingsStore: AutoRecoverySettingsStore
     @ObservedObject var logStore: AutoRecoveryLogStore
+    @ObservedObject var circuitBreakerStore: AutoRecoveryCircuitBreakerStore
     @ObservedObject var accessibilityPermissionStore: AccessibilityPermissionStore
     @Environment(\.locale) private var locale
     @Environment(\.scenePhase) private var scenePhase
@@ -17,6 +18,10 @@ struct AutoRecoverySettingsView: View {
                 masterSection
                 Divider()
                 rulesSection
+                if !openCircuitStates.isEmpty {
+                    Divider()
+                    openCircuitsSection
+                }
                 Divider()
                 logSection
 
@@ -144,6 +149,51 @@ struct AutoRecoverySettingsView: View {
         }
     }
 
+    private var openCircuitStates: [AutoRecoveryCircuitState] {
+        circuitBreakerStore.states.filter { state in
+            let rule = settingsStore.settings.rule(for: state.incidentType)
+            return rule.isCircuitBreakerEnabled
+                && state.attemptCount >= rule.maximumConsecutiveAttempts
+        }
+    }
+
+    private var openCircuitsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(localized("当前熔断"))
+                .font(.headline)
+            Text(localized("达到上限的任务不会继续自动发送；正常完成任务或手动解除后恢复。"))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            ForEach(openCircuitStates) { state in
+                HStack(spacing: 8) {
+                    Image(systemName: "pause.octagon.fill")
+                        .foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(state.incidentType.localizedTitle(locale: locale))
+                            .font(.caption.weight(.medium))
+                        Text(state.threadID)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                    Text("\(state.attemptCount)/\(settingsStore.settings.rule(for: state.incidentType).maximumConsecutiveAttempts)")
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    Button(localized("解除")) {
+                        circuitBreakerStore.reset(
+                            threadID: state.threadID,
+                            incidentType: state.incidentType
+                        )
+                    }
+                    .controlSize(.small)
+                }
+                .padding(.vertical, 3)
+            }
+        }
+    }
+
     private func localized(_ source: String) -> String {
         AppLocalization.string(source, locale: locale)
     }
@@ -155,18 +205,56 @@ private struct AutoRecoveryRuleEditor: View {
     @Environment(\.locale) private var locale
     @State private var isExpanded = false
     @State private var draftPrompt: String
+    @State private var draftMaximumAttempts: String
     @State private var isDraftDirty = false
     @State private var validationError: AutoRecoveryPromptValidation?
+    @FocusState private var isMaximumAttemptsFocused: Bool
 
     init(settingsStore: AutoRecoverySettingsStore, type: AutoRecoveryIncidentType) {
         self.settingsStore = settingsStore
         self.type = type
         _draftPrompt = State(initialValue: settingsStore.settings.rule(for: type).prompt)
+        _draftMaximumAttempts = State(
+            initialValue: String(
+                settingsStore.settings.rule(for: type).maximumConsecutiveAttempts
+            )
+        )
     }
 
     var body: some View {
         DisclosureGroup(isExpanded: $isExpanded) {
             VStack(alignment: .leading, spacing: 7) {
+                HStack(spacing: 8) {
+                    Spacer(minLength: 0)
+
+                    Toggle(localized("连续失败"), isOn: circuitBreakerEnabledBinding)
+                        .font(.caption.weight(.medium))
+
+                    Text(localized("[1～20]"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+
+                    TextField("", text: $draftMaximumAttempts)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 44)
+                        .multilineTextAlignment(.trailing)
+                        .font(.caption.monospacedDigit())
+                        .focused($isMaximumAttemptsFocused)
+                        .disabled(!storedRule.isCircuitBreakerEnabled)
+                        .onSubmit {
+                            commitMaximumAttempts()
+                        }
+                    Text(localized("次后停止"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+                .fixedSize(horizontal: false, vertical: true)
+                .help(localized("允许输入 1～20，默认 3 次；关闭后将持续尝试自动恢复。"))
+
+                Divider()
+
                 Text(localized("自动恢复提示词"))
                     .font(.caption.weight(.medium))
 
@@ -224,6 +312,20 @@ private struct AutoRecoveryRuleEditor: View {
             guard !isDraftDirty else { return }
             draftPrompt = newPrompt
         }
+        .onChange(of: storedRule.maximumConsecutiveAttempts) { _, newValue in
+            guard !isMaximumAttemptsFocused else { return }
+            draftMaximumAttempts = String(newValue)
+        }
+        .onChange(of: isMaximumAttemptsFocused) { _, isFocused in
+            if !isFocused {
+                commitMaximumAttempts()
+            }
+        }
+        .onChange(of: storedRule.isCircuitBreakerEnabled) { _, isEnabled in
+            if !isEnabled {
+                isMaximumAttemptsFocused = false
+            }
+        }
     }
 
     private var enabledBinding: Binding<Bool> {
@@ -236,7 +338,18 @@ private struct AutoRecoveryRuleEditor: View {
     }
 
     private var storedPrompt: String {
-        settingsStore.settings.rule(for: type).prompt
+        storedRule.prompt
+    }
+
+    private var storedRule: AutoRecoveryRule {
+        settingsStore.settings.rule(for: type)
+    }
+
+    private var circuitBreakerEnabledBinding: Binding<Bool> {
+        Binding(
+            get: { storedRule.isCircuitBreakerEnabled },
+            set: { settingsStore.setCircuitBreakerEnabled($0, for: type) }
+        )
     }
 
     private var draftPromptBinding: Binding<String> {
@@ -265,6 +378,16 @@ private struct AutoRecoveryRuleEditor: View {
             isDraftDirty = false
             validationError = nil
         }
+    }
+
+    private func commitMaximumAttempts() {
+        let normalized = draftMaximumAttempts.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let value = Int(normalized) else {
+            draftMaximumAttempts = String(storedRule.maximumConsecutiveAttempts)
+            return
+        }
+        settingsStore.setMaximumConsecutiveAttempts(value, for: type)
+        draftMaximumAttempts = String(storedRule.maximumConsecutiveAttempts)
     }
 
     private func validationMessage(_ validation: AutoRecoveryPromptValidation) -> String {
@@ -354,6 +477,7 @@ private extension AutoRecoveryLogStatus {
         case .succeeded: "checkmark.circle.fill"
         case .failed: "xmark.circle.fill"
         case .skipped: "hand.raised.circle.fill"
+        case .circuitOpen: "pause.octagon.fill"
         }
     }
 
@@ -363,6 +487,7 @@ private extension AutoRecoveryLogStatus {
         case .succeeded: .green
         case .failed: .red
         case .skipped: .secondary
+        case .circuitOpen: .orange
         }
     }
 
@@ -373,6 +498,7 @@ private extension AutoRecoveryLogStatus {
         case .succeeded: source = "已发送"
         case .failed: source = "发送失败"
         case .skipped: source = "未发送"
+        case .circuitOpen: source = "已熔断"
         }
         return AppLocalization.string(source, locale: locale)
     }

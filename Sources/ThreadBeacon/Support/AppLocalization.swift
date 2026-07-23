@@ -90,6 +90,25 @@ enum AppLocalization {
             return formatted("发送按钮候选数量异常：%lld", locale: locale, count)
         }
 
+        let circuitPrefix = "连续自动恢复已达到 "
+        let circuitSuffix = " 次，已停止发送"
+        if source.hasPrefix(circuitPrefix), source.hasSuffix(circuitSuffix) {
+            let counts = source
+                .dropFirst(circuitPrefix.count)
+                .dropLast(circuitSuffix.count)
+                .split(separator: "/")
+            if counts.count == 2,
+               let attempts = Int(counts[0]),
+               let limit = Int(counts[1]) {
+                return formatted(
+                    "连续自动恢复已达到 %lld/%lld 次，已停止发送",
+                    locale: locale,
+                    attempts,
+                    limit
+                )
+            }
+        }
+
         let rolloutMarker = " 个任务的 Rollout 不可用，状态可能回退"
         if source.hasSuffix(rolloutMarker),
            let count = Int(source.dropLast(rolloutMarker.count)) {

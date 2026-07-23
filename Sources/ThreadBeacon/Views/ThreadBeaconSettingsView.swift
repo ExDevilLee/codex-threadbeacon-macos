@@ -7,6 +7,7 @@ struct ThreadBeaconSettingsView: View {
     let previewSound: (SoundSource) -> Void
     @ObservedObject var autoRecoveryLogStore: AutoRecoveryLogStore
     @ObservedObject var autoRecoverySettingsStore: AutoRecoverySettingsStore
+    @ObservedObject var autoRecoveryCircuitBreakerStore: AutoRecoveryCircuitBreakerStore
     @ObservedObject var accessibilityPermissionStore: AccessibilityPermissionStore
     @ObservedObject var compactionHookSettingsStore: CompactionHookSettingsStore
 
@@ -29,6 +30,7 @@ struct ThreadBeaconSettingsView: View {
             AutoRecoverySettingsView(
                 settingsStore: autoRecoverySettingsStore,
                 logStore: autoRecoveryLogStore,
+                circuitBreakerStore: autoRecoveryCircuitBreakerStore,
                 accessibilityPermissionStore: accessibilityPermissionStore
             )
                 .tabItem {

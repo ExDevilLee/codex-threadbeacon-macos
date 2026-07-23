@@ -138,6 +138,27 @@ let threadStatusStoreTests = [
         try expect(receivedEvents.values.isEmpty, "interrupted state must not emit a sound event")
         try expect(recoveryCalls.values.isEmpty, "interrupted state must not create a recovery candidate")
     },
+    TestCase(name: "store reports every task completion for circuit reset reconciliation") {
+        let first = completedStoreSnapshot(id: "thread-a", second: 20)
+        let second = completedStoreSnapshot(id: "thread-b", second: 30)
+        let completionCalls = CompletionCallBox()
+        let store = await MainActor.run {
+            ThreadStatusStore(
+                load: { _ in [first, second] },
+                onTaskCompletion: { threadID, completedAt in
+                    completionCalls.append(threadID: threadID, completedAt: completedAt)
+                }
+            )
+        }
+
+        await store.refresh(notificationPolicy: .baseline)
+
+        try expect(completionCalls.values.count == 2, "every completion should reach the reset observer")
+        try expect(
+            Set(completionCalls.values.map(\.threadID)) == Set(["thread-a", "thread-b"]),
+            "completion reconciliation must not inherit sound coalescing"
+        )
+    },
     TestCase(name: "store emits one structured recovery candidate for a new HTTP 400 incident") {
         let incident = ServiceIncident(
             episodeID: "turn-400",
@@ -864,6 +885,26 @@ private final class RecoveryCallBox: @unchecked Sendable {
     func append(_ candidate: AutoRecoveryCandidate) {
         lock.withLock {
             storage.append(candidate)
+        }
+    }
+}
+
+private final class CompletionCallBox: @unchecked Sendable {
+    struct Value: Sendable {
+        let threadID: String
+        let completedAt: Date
+    }
+
+    private let lock = NSLock()
+    private var storage: [Value] = []
+
+    var values: [Value] {
+        lock.withLock { storage }
+    }
+
+    func append(threadID: String, completedAt: Date) {
+        lock.withLock {
+            storage.append(Value(threadID: threadID, completedAt: completedAt))
         }
     }
 }
