@@ -170,10 +170,11 @@
   更深任务树和任务树 Token 聚合继续保留为后续候选。可行性边界见
   [`docs/subagent-count-feasibility.md`](docs/subagent-count-feasibility.md) 和
   [`docs/subagent-expansion-and-compaction-feasibility.md`](docs/subagent-expansion-and-compaction-feasibility.md)。
-- **下一阶段（压缩状态 MVP）**：任务状态增加`压缩中 / Compacting`，Token 详情显示当前会话
-  累计完成的压缩次数。首版不显示百分比进度，不读取会话正文，也不从长时间静默猜测压缩；先验证
-  能与主任务 ID 可靠关联的压缩开始、完成和异常清理证据，再确定使用只读本机事件还是用户可选
-  Hook。历史压缩次数可从 rollout 的结构化压缩完成记录统计，实时状态的数据源仍需 POC 验证。
+- **已完成实现，等待真实压缩复验（压缩状态 MVP）**：任务状态支持`压缩中 / Compacting`，Token
+  详情显示当前会话累计完成的压缩次数。历史次数来自 rollout 结构化记录；实时状态由用户显式启用
+  `PreCompact` / `PostCompact` Hook 后写入本机活动标记。首版不显示百分比进度、不读取会话正文，
+  Settings 明确说明会备份并修改 `~/.codex/hooks.json`。真实 `/compact` 的开始、完成和异常清理 UI
+  仍需持续复验。
 - **MVP 已完成（异常记录）**：启动时的历史异常只建立基线、不发送，同一 episode 每次运行只
   处理一次；日志记录提示词快照和跳过、发送中、成功或失败结果。外部 `codex exec resume` 继续禁用。
   发送链路和独立 app-server 的跨进程限制见
