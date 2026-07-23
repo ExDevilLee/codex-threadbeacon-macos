@@ -7,6 +7,19 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-07-23
+
+### Changed
+
+- 色盲安全状态标识改为新安装和尚未保存该偏好的用户默认开启；已有用户主动保存的关闭选择
+  继续保留，不执行强制迁移。Settings 开关、状态颜色、图标映射和状态推导保持不变。
+
+### Fixed
+
+- 修复 Codex 重试耗尽日志使用 `last status: 429` 冒号格式时未被监控的问题。SQLite 白名单
+  查询和日志解析器现在同时接受 `status=429`、`status 429` 与 `status: 429`，同类终止异常会
+  正确显示红色 `HTTP 429`、覆盖误导性的“刚完成”状态，并进入已启用的自动恢复规则。
+
 ## [0.1.8] - 2026-07-22
 
 ### Added
@@ -174,7 +187,8 @@ ThreadBeacon 的重要用户可见变更记录在此文件中。
   macOS Gatekeeper 可能要求用户在首次打开时确认来源。
 - 登录时启动已经实现，但在当前发布签名条件下不承诺可用。
 
-[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.9...HEAD
+[0.1.9]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.8...v0.1.9
 [0.1.8]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/ExDevilLee/codex-threadbeacon-macos/compare/v0.1.5...v0.1.6
