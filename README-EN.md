@@ -70,9 +70,9 @@ If no tasks appear or the footer reports a data-source problem, see
 | :---: | :---: |
 | ![ThreadBeacon Token usage details](docs/assets/readme/en/threadbeacon-token-details.png) | ![ThreadBeacon General Settings](docs/assets/readme/en/threadbeacon-settings.png) |
 
-| Notification and custom sounds | Auto-recovery rules and prompts |
+| Notification and custom sounds | Auto-recovery rules and successful delivery |
 | :---: | :---: |
-| ![ThreadBeacon notification and custom sounds](docs/assets/readme/en/threadbeacon-sounds.png) | ![ThreadBeacon auto-recovery rules and prompts](docs/assets/readme/en/threadbeacon-auto-recovery.png) |
+| ![ThreadBeacon notification and custom sounds](docs/assets/readme/en/threadbeacon-sounds.png) | ![ThreadBeacon auto-recovery rules and successful delivery](docs/assets/readme/en/threadbeacon-auto-recovery.png) |
 
 ### Update Check
 
