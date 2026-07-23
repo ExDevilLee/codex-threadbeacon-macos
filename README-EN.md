@@ -227,13 +227,15 @@ project-created sounds and verify all assets with:
   default; Settings can change the limit to `4 / 8 / 12 / 20`. Subagent threads are
   excluded, while archived favorites remain available in the favorites filter.
 - UI language supports `Follow System`, `Simplified Chinese`, and `English`. When following the
-  system, unsupported languages fall back to English; more languages are planned.
+  system, unsupported languages fall back to English. Additional languages will be considered
+  only when supported by real user feedback.
 - Each row shows a status light, localized status label, task title, and status duration.
 - Color-blind-safe status indicators are enabled by default. They combine color, a distinct shape,
   and the existing status text for error, action required, service incident, running, completed,
   idle, and unknown states. Settings can disable the option and restore the original dots.
-- A primary task that created Subagents shows its direct Subagent count beside the title. This is
-  a historical relationship count, not a live running count.
+- A primary task that created Subagents shows `active/total` beside the title, such as `2/27`.
+  The numerator includes only direct Subagents confirmed as running from recent rollout evidence;
+  the denominator is the historical total of direct Subagents created by the task.
 - Click the Subagent count to expand direct children inline. Each row shows
   `agent alias | title`, status, recent activity, and the child's cumulative Token usage. Hover
   over or click the info icon for nickname, role, model, reasoning effort, and Token details.

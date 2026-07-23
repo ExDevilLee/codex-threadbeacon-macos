@@ -78,9 +78,10 @@ conversation text, or ordinary timeouts, and it cannot yet detect approval waiti
 
 ## Subagent Counts Or Details Look Unexpected
 
-The count represents historical direct Subagent relationships, not the number currently running.
-Direct child details are read only while a primary task is expanded. Deeper trees and aggregated
-parent-child Tokens are outside the current version.
+The badge uses `active/total`, such as `2/27`. The numerator includes only direct Subagents
+confirmed as running from recent rollout evidence, while the denominator is the historical total
+created by the primary task. Expanding the task loads direct child details. Deeper trees and
+aggregated parent-child Tokens are outside the current version.
 
 ## Launch At Login Is Unavailable
 

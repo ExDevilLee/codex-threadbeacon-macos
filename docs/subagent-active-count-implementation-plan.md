@@ -2,6 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**实施状态（2026-07-23）：已完成。** Repository、Loader、Formatter、SwiftUI 与中英文说明均已落地，
+自动化测试、构建和真实`2/27`界面复验通过；下方复选框同步为执行记录。
+
 **Goal:** 将主任务的 Subagent 徽标从历史总数改为实时的“活跃数/总数”，例如 `2/27`。
 
 **Architecture:** Repository 只查询最近 120 秒内更新的直接 Subagent 候选，Loader 使用现有 rollout 状态机确认 `.running` 并在单轮刷新内复用解析结果。Snapshot 保存结构化计数，Formatter 和 SwiftUI Badge 负责紧凑文本、本地化 Tooltip 与无障碍输出。
@@ -31,7 +34,7 @@
 - Modify: `Sources/ThreadBeaconCore/Services/SQLiteThreadRepository.swift`
 - Modify: `Tests/ThreadBeaconTests/SQLiteThreadRepositoryTests.swift`
 
-- [ ] **Step 1: 写候选过滤和兼容回退失败测试**
+- [x] **Step 1: 写候选过滤和兼容回退失败测试**
 
 在测试数据库中把三个直接子任务更新时间固定为 `300`、`310`、`320` 秒，然后增加：
 
@@ -67,14 +70,14 @@ TestCase(name: "repository returns no activity candidates without spawn edges") 
 
 再增加空父任务集合测试，要求直接返回空字典。
 
-- [ ] **Step 2: 运行测试并确认 RED**
+- [x] **Step 2: 运行测试并确认 RED**
 
 运行：`./script/test.sh`
 
 预期：编译失败，提示 `SQLiteThreadRepository` 没有
 `loadRecentSubagentCandidates(parentIDs:updatedAfter:)`。
 
-- [ ] **Step 3: 增加候选模型和最小查询实现**
+- [x] **Step 3: 增加候选模型和最小查询实现**
 
 在 `ThreadModels.swift` 增加：
 
@@ -114,13 +117,13 @@ ORDER BY edge.parent_thread_id,
 截止时间以毫秒绑定，结果按 `parentID` 分组为
 `[String: [SubagentActivityCandidate]]`。
 
-- [ ] **Step 4: 运行测试并确认 GREEN**
+- [x] **Step 4: 运行测试并确认 GREEN**
 
 运行：`./script/test.sh`
 
 预期：新增 Repository 测试和现有完整测试全部通过。
 
-- [ ] **Step 5: 提交候选查询**
+- [x] **Step 5: 提交候选查询**
 
 ```bash
 git add Sources/ThreadBeaconCore/Models/ThreadModels.swift \
@@ -137,7 +140,7 @@ git commit -m "feat(subagents): query recent activity candidates"
 - Modify: `Sources/ThreadBeaconCore/Services/ThreadStatusLoader.swift`
 - Modify: `Tests/ThreadBeaconTests/ThreadStatusLoaderTests.swift`
 
-- [ ] **Step 1: 写折叠状态活跃计数失败测试**
+- [x] **Step 1: 写折叠状态活跃计数失败测试**
 
 构造总数为 27、两个新鲜 `.running` 候选和一个 `.justCompleted` 候选，不传
 `expandedThreadIDs`：
@@ -183,7 +186,7 @@ let snapshots = try await loader.load(limit: 8)
 try expect(snapshots.first?.activeSubagentCount == 2, "two running children should be active")
 ```
 
-- [ ] **Step 2: 写新鲜度、上限和解析复用失败测试**
+- [x] **Step 2: 写新鲜度、上限和解析复用失败测试**
 
 增加三项断言：
 
@@ -203,14 +206,14 @@ private final class StringIntCounter: @unchecked Sendable {
 }
 ```
 
-- [ ] **Step 3: 运行测试并确认 RED**
+- [x] **Step 3: 运行测试并确认 RED**
 
 运行：`./script/test.sh`
 
 预期：编译失败，缺少 `activeSubagentCount` 和
 `loadActiveSubagentCandidates` 初始化参数。
 
-- [ ] **Step 4: 实现 Snapshot 字段和 Loader 数据流**
+- [x] **Step 4: 实现 Snapshot 字段和 Loader 数据流**
 
 `ThreadSnapshot` 增加默认值为 0 的字段，并在初始化时收敛范围：
 
@@ -263,13 +266,13 @@ func readObservation(at path: String) -> RolloutObservation {
 
 对每个父任务候选调用现有 `displayState`，只统计 `.running`，再传入 Snapshot。
 
-- [ ] **Step 5: 运行测试并确认 GREEN**
+- [x] **Step 5: 运行测试并确认 GREEN**
 
 运行：`./script/test.sh`
 
 预期：折叠计数、新鲜度、计数上限、解析复用及既有展开排序测试全部通过。
 
-- [ ] **Step 6: 提交 Loader 计数**
+- [x] **Step 6: 提交 Loader 计数**
 
 ```bash
 git add Sources/ThreadBeaconCore/Models/ThreadModels.swift \
@@ -288,7 +291,7 @@ git commit -m "feat(subagents): derive active count from rollout state"
 - Modify: `Resources/Localizable.xcstrings`
 - Modify: `Tests/ThreadBeaconTests/SubagentCountFormatterTests.swift`
 
-- [ ] **Step 1: 写 `active/total` Formatter 失败测试**
+- [x] **Step 1: 写 `active/total` Formatter 失败测试**
 
 将现有测试改为：
 
@@ -312,13 +315,13 @@ TestCase(name: "subagent count formatter normalizes invalid counts") {
 }
 ```
 
-- [ ] **Step 2: 运行测试并确认 RED**
+- [x] **Step 2: 运行测试并确认 RED**
 
 运行：`./script/test.sh`
 
 预期：编译失败，旧 Formatter 不接受 `activeCount` 和 `totalCount`。
 
-- [ ] **Step 3: 实现结构化 Formatter**
+- [x] **Step 3: 实现结构化 Formatter**
 
 `SubagentCountLabel` 保存 `countText`、`activeCount` 和 `totalCount`；删除不再使用的固定中文
 `accessibilityLabel`。入口实现为：
@@ -336,7 +339,7 @@ public static func label(activeCount: Int, totalCount: Int) -> SubagentCountLabe
 }
 ```
 
-- [ ] **Step 4: 接入 Badge 和本地化说明**
+- [x] **Step 4: 接入 Badge 和本地化说明**
 
 `ThreadRowView` 改为：
 
@@ -376,19 +379,19 @@ private var actionLabel: String {
 
 保留 chevron、Agent 图标、旋转、`.secondary`、`.fixedSize()`、Tooltip 和无障碍调用。
 
-- [ ] **Step 5: 运行测试并确认 GREEN**
+- [x] **Step 5: 运行测试并确认 GREEN**
 
 运行：`./script/test.sh`
 
 预期：Formatter 新测试和完整测试全部通过。
 
-- [ ] **Step 6: 构建 App**
+- [x] **Step 6: 构建 App**
 
 运行：`./script/swiftpm.sh build`
 
 预期：`ThreadBeacon`、`ThreadBeaconCore` 和资源目录编译成功，无 Swift 6 并发错误。
 
-- [ ] **Step 7: 提交 UI 接入**
+- [x] **Step 7: 提交 UI 接入**
 
 ```bash
 git add Sources/ThreadBeaconCore/Support/SubagentCountFormatter.swift \
@@ -405,13 +408,13 @@ git commit -m "feat(ui): show active and total subagent counts"
 
 - Modify only if validation exposes a defect in files already listed above.
 
-- [ ] **Step 1: 运行完整自动化测试**
+- [x] **Step 1: 运行完整自动化测试**
 
 运行：`./script/test.sh`
 
 预期：所有测试通过，输出 `N/N tests passed` 且进程退出码为 0。
 
-- [ ] **Step 2: 运行构建和差异检查**
+- [x] **Step 2: 运行构建和差异检查**
 
 ```bash
 ./script/swiftpm.sh build
@@ -421,11 +424,11 @@ git status --short
 
 预期：构建成功，`git diff --check` 无输出；工作区只包含本计划明确允许的文件。
 
-- [ ] **Step 3: 本地运行并检查真实样本**
+- [x] **Step 3: 本地运行并检查真实样本**
 
 运行：`./script/build_and_run.sh`
 
-检查任务 `019f7afe-d1a4-7ed0-a394-ffa9ae3c99a4`：
+使用已脱敏的多 Subagent 主任务检查：
 
 - 两个直接 Subagent 为 `.running` 时显示 `2/27`。
 - 其中一个完成后，下一轮两秒刷新显示 `1/27`。
@@ -433,7 +436,7 @@ git status --short
 - 悬浮说明在中文和 English 下分别正确。
 - 浅色、深色和最小窗口宽度下不遮挡标题、Token 或 info 按钮。
 
-- [ ] **Step 4: 记录最终验证结果**
+- [x] **Step 4: 记录最终验证结果**
 
 若无需修复，不创建额外提交；在交付汇总中记录测试数量、构建结果和真实样本结果。若验证发现
 本功能缺陷，只修改本计划列出的文件，重新运行 Task 4 的全部检查后再提交最小修复。
