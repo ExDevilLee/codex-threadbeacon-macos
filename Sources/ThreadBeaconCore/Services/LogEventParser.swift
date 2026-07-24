@@ -3,6 +3,7 @@ import Foundation
 public struct LogEventParser: Sendable {
     public static let allowedTargets: Set<String> = [
         "codex_http_client::default_client",
+        "codex_http_client::client",
         "codex_core::responses_retry",
         "codex_core::session::turn"
     ]
@@ -24,7 +25,7 @@ public struct LogEventParser: Sendable {
             var episode = episodes[key] ?? Episode()
 
             switch record.target {
-            case "codex_http_client::default_client":
+            case "codex_http_client::default_client", "codex_http_client::client":
                 if let status = statusCode(in: record.body) {
                     if status == 200 {
                         episode.latestSuccessAt = max(episode.latestSuccessAt, record.occurredAt)

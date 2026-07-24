@@ -49,7 +49,7 @@ public struct LogEventRepository: Sendable {
           AND feedback_log_body IS NOT NULL
           AND (
             (
-              target = 'codex_http_client::default_client'
+              target IN ('codex_http_client::default_client', 'codex_http_client::client')
               AND feedback_log_body LIKE '%Request completed%'
               AND (
                 feedback_log_body LIKE '%status=%'

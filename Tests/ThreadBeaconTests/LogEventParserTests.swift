@@ -160,6 +160,32 @@ let logEventParserTests = [
 
         try expect(incidents["thread-a"] == nil, "a later success in the same turn should clear warning")
     },
+    TestCase(name: "log parser clears retry episode after new client target recovers") {
+        let records = [
+            logRecord(
+                second: 350,
+                target: "codex_http_client::default_client",
+                body: "turn{turn.id=turn-new-client}: Request completed status=503 Service Unavailable"
+            ),
+            logRecord(
+                second: 351,
+                target: "codex_core::responses_retry",
+                body: "turn{turn.id=turn-new-client}: stream disconnected - retrying sampling request (4/5 in 420ms)..."
+            ),
+            logRecord(
+                second: 352,
+                target: "codex_http_client::client",
+                body: "turn{turn.id=turn-new-client}: Request completed status=200 OK"
+            )
+        ]
+
+        let incidents = LogEventParser().latestIncidents(from: records)
+
+        try expect(
+            incidents["thread-a"] == nil,
+            "a later success from the new client target should clear warning"
+        )
+    },
     TestCase(name: "log parser recognizes model capacity terminal failure") {
         let records = [
             logRecord(

@@ -15,7 +15,8 @@ let logEventRepositoryTests = [
                     "thread-capacity",
                     "thread-400",
                     "thread-disconnect",
-                    "thread-colon-status"
+                    "thread-colon-status",
+                    "thread-new-client"
                 ]
             )
 
@@ -39,6 +40,10 @@ let logEventRepositoryTests = [
         try expect(incidents["thread-colon-status"]?.phase == .failed, "colon status failure should be returned")
         try expect(incidents["thread-colon-status"]?.kind == .httpRateLimit, "colon status should retain 429 kind")
         try expect(incidents["thread-colon-status"]?.httpStatusCode == 429, "colon status should retain HTTP status")
+        try expect(
+            incidents["thread-new-client"] == nil,
+            "new client target success should clear the earlier retry warning"
+        )
         try expect(incidents["thread-c"] == nil, "unrequested thread must stay excluded")
     }
 ]
@@ -97,7 +102,13 @@ private func makeTemporaryLogDatabase() throws -> URL {
          'thread-disconnect'),
         (700, 0, 'INFO', 'codex_core::session::turn',
          'turn{turn.id=turn-colon-status}: Turn error: exceeded retry limit, last status: 429 Too Many Requests, request id: redacted',
-         'thread-colon-status');
+         'thread-colon-status'),
+        (800, 0, 'DEBUG', 'codex_http_client::default_client',
+         'turn{turn.id=turn-new-client}: Request completed status=503 Service Unavailable', 'thread-new-client'),
+        (801, 0, 'INFO', 'codex_core::responses_retry',
+         'turn{turn.id=turn-new-client}: retrying sampling request (4/5 in 500ms)...', 'thread-new-client'),
+        (802, 0, 'DEBUG', 'codex_http_client::client',
+         'turn{turn.id=turn-new-client}: Request completed status=200 OK', 'thread-new-client');
     """
     var errorMessage: UnsafeMutablePointer<CChar>?
     guard sqlite3_exec(database, sql, nil, nil, &errorMessage) == SQLITE_OK else {
